@@ -1,142 +1,121 @@
 // src/pages/Dashboard.jsx
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import Button from "../components/ui/Button.jsx";
+
+const TEMPLATES = [
+  { id: 1, title: "Kanban básico", desc: "Pendiente / En progreso / Hecho" },
+  { id: 2, title: "Proyecto simple", desc: "Ideas, Tareas, Revisar, Terminado" },
+  { id: 3, title: "Estudios", desc: "Temas, Prácticas, Exámenes" },
+];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const initial = (user?.email || "U").charAt(0).toUpperCase();
 
-  // estado para tableros
-  const [boards, setBoards] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-
-  // cargar tableros del usuario
-  useEffect(() => {
-    async function loadBoards() {
-      try {
-        setLoading(true);
-        setError("");
-        const res = await fetch("/api/boards", {
-          credentials: "include",
-          headers: { Accept: "application/json" },
-        });
-        if (!res.ok) {
-          throw new Error("No se pudieron cargar los tableros");
-        }
-        const data = await res.json();
-        setBoards(Array.isArray(data) ? data : []);
-      } catch (e) {
-        setError(e.message || "Error al cargar los tableros");
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadBoards();
-  }, []);
-
-  // filtro simple por nombre
-  const filtered = boards.filter((b) =>
-    (b.name || "").toLowerCase().includes(query.toLowerCase())
-  );
+  function handleLogout() {
+    signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
-    <section className="min-h-screen px-4 py-8">
-      <div className="mx-auto w-full max-w-4xl">
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-sm text-neutral-600">
-              Estás conectado como{" "}
-              <span className="font-medium">{user?.email || "usuario"}</span>
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => navigate("/tableros/nuevo")}>Crear tablero</Button>
-            <Button variant="secondary" onClick={() => navigate("/tableros")}>
-              Ver tableros
-            </Button>
-            <Button variant="ghost" onClick={signOut}>
-              Cerrar sesión
-            </Button>
-          </div>
-        </div>
+    <section className="min-h-screen bg-gradient-to-b from-neutral-50 to-white px-4 py-8">
+      <div className="mx-auto w-full max-w-5xl">
 
 
-        <div className="mt-6">
-          <label className="mb-1 block text-sm font-medium text-neutral-800">
-            Buscar tableros
-          </label>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Escribe un nombre…"
-            className="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-violet-600"
-          />
-        </div>
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
+{/*avatar*/}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <button
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-semibold"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  title="Cuenta"
+                >
+                  {initial}
+                </button>
 
-        <div className="mt-8">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Tus tableros</h2>
-            <Link to="/tableros" className="text-sm text-violet-600 hover:underline">
-              Ver todos
-            </Link>
-          </div>
-
-          {loading && (
-            <div className="rounded-lg border p-4 text-sm text-neutral-600">
-              Cargando tableros…
-            </div>
-          )}
-
-          {!loading && error && (
-            <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {!loading && !error && filtered.length === 0 && (
-            <div className="rounded-lg border p-4 text-sm text-neutral-600">
-              No hay tableros
-            </div>
-          )}
-
-          {!loading && !error && filtered.length > 0 && (
-            <ul className="divide-y rounded-lg border">
-              {filtered.map((b) => (
-                <li key={b.id} className="flex items-center justify-between p-4">
-                  <div>
-                    <div className="font-medium">{b.name}</div>
-                    <div className="text-xs text-neutral-500">
-                      {(b.listsCount || 0)} listas · {(b.cardsCount || 0)} tarjetas
-                    </div>
+                {menuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-10 mt-2 w-44 rounded-xl border bg-white p-1 shadow-lg"
+                  >
+                    <MenuItem onClick={() => { setMenuOpen(false); navigate("/perfil"); }}>
+                      Ver perfil
+                    </MenuItem>
+                    <MenuItem onClick={() => { setMenuOpen(false); navigate("/ajustes"); }}>
+                      Ajustes
+                    </MenuItem>
+                    <MenuItem danger onClick={handleLogout}>
+                      Cerrar sesión
+                    </MenuItem>
                   </div>
-                  <Button variant="secondary" onClick={() => navigate(`/tableros/${b.id}`)}>
-                    Abrir
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                )}
+              </div>
 
+              <h1 className="text-xl font-bold">Dashboard</h1>
+            </div>
 
-        <div className="mt-10">
-          <h2 className="mb-3 text-lg font-semibold">Plantillas</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            
-
-            
+            {/* Acciones */}
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => navigate("/tableros/nuevo")}>Crear tablero</Button>
+              <Button variant="secondary" onClick={() => navigate("/tableros")}>
+                Ver tableros
+              </Button>
+            </div>
           </div>
         </div>
-        
+
+        {/*  plantillas */}
+        <section className="mt-8">
+          <h2 className="mb-3 text-lg font-semibold">Plantillas</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {TEMPLATES.map(t => (
+              <TemplateCard
+                key={t.id}
+                title={t.title}
+                desc={t.desc}
+                onUse={() => navigate(`/tableros/nuevo?plantilla=${t.id}`)}
+              />
+            ))}
+          </div>
+        </section>
+
       </div>
     </section>
+  );
+}
+
+/* Subcomponentes */
+function MenuItem({ children, onClick, danger }) {
+  const dangerClasses = danger ? "text-red-600 hover:bg-red-50" : "";
+  return (
+    <button
+      role="menuitem"
+      onClick={onClick}
+      className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-100 ${dangerClasses}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function TemplateCard({ title, desc, onUse }) {
+  return (
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <div className="h-10 w-10 rounded-lg bg-violet-100" />
+      <h3 className="mt-3 text-base font-semibold">{title}</h3>
+      <p className="mt-1 text-sm text-neutral-600">{desc}</p>
+      <Button variant="secondary" className="mt-4" onClick={onUse}>
+        Usar plantilla
+      </Button>
+    </div>
   );
 }

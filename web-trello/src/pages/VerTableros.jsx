@@ -24,7 +24,7 @@ export default function VerTableros() {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch("api/tableros", {
+        const res = await fetch("/api/boards", {
           credentials: "include",
           headers: { Accept: "application/json" },
         });

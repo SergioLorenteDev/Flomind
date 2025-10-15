@@ -2,17 +2,12 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: update  
   sql:
     init:
-      schema-locations: classpath*:database/schema.sql
-      mode: always
+      mode: never       
   datasource:
-    url: jdbc:mysql://localhost:3306/trello
-    username: sa
-    password: password
-    driverClassName: com.mysql.cj.jdbc.Driver
-security:
-  jwt:
-    secret-key: ***REMOVED***
-    expiration-time: 3600000 #1h en milisegundos
+    url: jdbc:mysql://localhost:3306/trello?useUnicode=true&characterEncoding=utf8&serverTimezone=Europe/Madrid&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: ""         
+    driver-class-name: com.mysql.cj.jdbc.Driver
