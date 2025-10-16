@@ -6,11 +6,15 @@ import com.medac.trello.api.request.CodeGrantRequest;
 import com.medac.trello.api.request.LoginRequest;
 import com.medac.trello.api.request.RegisterRequest;
 import com.medac.trello.api.resources.exception.InvalidLoginCredentialsException;
+import com.medac.trello.api.service.JwtManager;
+import com.medac.trello.api.view.AuthenticatedUserView;
 import com.medac.trello.api.view.GoogleAuthConfig;
 import com.medac.trello.api.view.UserView;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
@@ -21,27 +25,40 @@ import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
 @RequestMapping(value = "/auth", produces = APPLICATION_JSON_VALUE)
-public class UserResource implements TrelloApi {
+public class AuthResource implements TrelloApi {
 
     private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final JwtManager jwtManager;
 
     @Autowired
-    public UserResource(UserRepository userRepository) {
+    public AuthResource(UserRepository userRepository, AuthenticationManager authenticationManager, JwtManager jwtManager) {
         this.userRepository = userRepository;
+        this.authenticationManager = authenticationManager;
+        this.jwtManager = jwtManager;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserView> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthenticatedUserView> login(@Valid @RequestBody LoginRequest request) {
+        final var authenticatedUser = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                request.email(),
+                request.password()));
         return ok(userRepository.findOneByEmail(request.email())
-                .filter(user -> user.getPassword().equals(request.password().trim()))
-                .map(user -> new UserView(user.getName()))
+                .map(user -> new AuthenticatedUserView(
+                        jwtManager.generateToken(user),
+                        new UserView(user.getId(), user.getUsername(), user.getEmail(), user.getName())))
                 .orElseThrow(InvalidLoginCredentialsException::new));
     }
 
     @PostMapping("/register")
     public ResponseEntity<UserView> register(@Valid @RequestBody RegisterRequest request) {
         final var newUser = new User(request.name(),request.userName(), request.email(), request.password());
-        return ok(new UserView(userRepository.save(newUser).getName()));
+        final var registeredUser = userRepository.save(newUser);
+        return ok(new UserView(
+                registeredUser.getId(),
+                registeredUser.getUsername(),
+                registeredUser.getEmail(),
+                registeredUser.getName()));
     }
 
     @GetMapping("/google/config")

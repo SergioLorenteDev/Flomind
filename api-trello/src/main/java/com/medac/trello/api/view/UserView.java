@@ -1,6 +1,8 @@
 package com.medac.trello.api.view;
 
-import java.util.UUID;
-
-public record UserView(String name) {
+public record UserView(
+        long id,
+        String username,
+        String email,
+        String name) {
 }
