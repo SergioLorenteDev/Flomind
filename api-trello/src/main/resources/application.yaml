@@ -1,0 +1,18 @@
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+  sql:
+    init:
+      schema-locations: classpath*:database/schema.sql
+      mode: always
+  datasource:
+    url: jdbc:mysql://localhost:3306/trello
+    username: sa
+    password: password
+    driverClassName: com.mysql.cj.jdbc.Driver
+security:
+  jwt:
+    secret-key: ***REMOVED***
+    expiration-time: 3600000 #1h en milisegundos
