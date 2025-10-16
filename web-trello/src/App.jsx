@@ -7,8 +7,8 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import Perfil from "./pages/Perfil.jsx";
 import VerTableros from "./pages/VerTableros.jsx";
-import NuevoTablero from "./pages/NuevoTablero.jsx";
 import Ajustes from "./pages/Ajustes.jsx";
+import CrearTablero from "./pages/CrearTablero.jsx"; 
 
 export default function App() {
   return (
@@ -23,6 +23,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tableros/nuevo"
+        element={
+          <ProtectedRoute>
+            <CrearTablero />
           </ProtectedRoute>
         }
       />
@@ -45,14 +53,7 @@ export default function App() {
         }
       />
 
-      <Route
-  path="/tableros/nuevo"
-  element={
-    <ProtectedRoute>
-      <NuevoTablero />
-    </ProtectedRoute>
-  }
-/>
+      
 
  <Route
         path="/ajustes"

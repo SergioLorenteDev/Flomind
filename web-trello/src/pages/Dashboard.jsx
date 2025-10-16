@@ -3,12 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import Button from "../components/ui/Button.jsx";
-
-const TEMPLATES = [
-  { id: 1, title: "Kanban básico", desc: "Pendiente / En progreso / Hecho" },
-  { id: 2, title: "Proyecto simple", desc: "Ideas, Tareas, Revisar, Terminado" },
-  { id: 3, title: "Estudios", desc: "Temas, Prácticas, Exámenes" },
-];
+import { TEMPLATES_ARRAY } from "../templates.js";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -24,12 +19,8 @@ export default function Dashboard() {
   return (
     <section className="min-h-screen bg-gradient-to-b from-neutral-50 to-white px-4 py-8">
       <div className="mx-auto w-full max-w-5xl">
-
-
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-{/*avatar*/}
             <div className="flex items-center gap-3">
               <div className="relative">
                 <button
@@ -63,7 +54,7 @@ export default function Dashboard() {
               <h1 className="text-xl font-bold">Dashboard</h1>
             </div>
 
-            {/* Acciones */}
+
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => navigate("/tableros/nuevo")}>Crear tablero</Button>
               <Button variant="secondary" onClick={() => navigate("/tableros")}>
@@ -73,11 +64,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/*  plantillas */}
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold">Plantillas</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {TEMPLATES.map(t => (
+            {TEMPLATES_ARRAY.map((t) => (
               <TemplateCard
                 key={t.id}
                 title={t.title}
@@ -87,13 +77,11 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
-
       </div>
     </section>
   );
 }
 
-/* Subcomponentes */
 function MenuItem({ children, onClick, danger }) {
   const dangerClasses = danger ? "text-red-600 hover:bg-red-50" : "";
   return (
