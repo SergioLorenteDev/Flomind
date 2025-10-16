@@ -34,6 +34,4 @@ export const TEMPLATES = {
     ],
   },
 };
-
-
-export const TEMPLATES_ARRAY = Object.values(TEMPLATES);
+export default TEMPLATES;

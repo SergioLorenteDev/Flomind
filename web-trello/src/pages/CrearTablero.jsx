@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
-import { TEMPLATES } from "../templates.js";
+import TEMPLATES from "../templates.js";
 
 export default function CrearTablero() {
   const navigate = useNavigate();
@@ -10,7 +10,6 @@ export default function CrearTablero() {
   const plantillaInicial = params.get("plantilla") || "";
   const vieneDePlantilla = useMemo(() => Boolean(plantillaInicial), [plantillaInicial]);
 
- 
   const [name, setName] = useState("");
   const [plantilla, setPlantilla] = useState("");
 
@@ -24,7 +23,6 @@ export default function CrearTablero() {
     }
   }, [vieneDePlantilla, plantillaInicial]);
 
- 
   const tpl = plantilla && TEMPLATES[plantilla] ? TEMPLATES[plantilla] : null;
 
   async function handleCreate() {
@@ -32,9 +30,7 @@ export default function CrearTablero() {
       alert("Pon un nombre al tablero");
       return;
     }
-
     try {
-   
       const resBoard = await fetch("/api/boards", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -42,31 +38,7 @@ export default function CrearTablero() {
         body: JSON.stringify({ name: name.trim() }),
       });
       if (!resBoard.ok) throw new Error("No se pudo crear el tablero");
-      const board = await resBoard.json(); 
-
-      if (tpl && board?.id) {
-        for (const list of tpl.lists || []) {
-          const resList = await fetch(`/api/boards/${board.id}/lists`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ name: list.name }),
-          });
-          if (!resList.ok) throw new Error("No se pudo crear una lista");
-          const createdList = await resList.json(); //
-
-          for (const cardTitle of list.cards || []) {
-            const resCard = await fetch(`/api/lists/${createdList.id}/cards`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Accept: "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ title: cardTitle }),
-            });
-            if (!resCard.ok) throw new Error("No se pudo crear una tarjeta");
-          }
-        }
-      }
-
+      const board = await resBoard.json();
       if (board?.id) navigate(`/tableros/${board.id}`, { replace: true });
       else navigate("/tableros", { replace: true });
     } catch (e) {
@@ -103,17 +75,15 @@ export default function CrearTablero() {
                   onChange={(e) => setPlantilla(e.target.value)}
                   className="w-full rounded-xl border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-violet-600 focus:ring-4 focus:ring-violet-100"
                 >
-                  {Object.values(TEMPLATES).map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.title}
-                    </option>
+                  {Object.entries(TEMPLATES).map(([id, t]) => (
+                    <option key={id} value={id}>{t.name}</option>
                   ))}
                 </select>
               </div>
 
               {tpl && (
                 <div className="mt-6">
-                  <h2 className="text-base font-semibold">Se crearán estas listas:</h2>
+                  <h2 className="text-base font-semibold">Vista previa</h2>
                   <ul className="mt-2 space-y-2">
                     {tpl.lists.map((l, i) => (
                       <li key={i} className="rounded border p-3">

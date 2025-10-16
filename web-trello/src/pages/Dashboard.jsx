@@ -1,9 +1,8 @@
-// src/pages/Dashboard.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import Button from "../components/ui/Button.jsx";
-import { TEMPLATES_ARRAY } from "../templates.js";
+import TEMPLATES from "../templates.js";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -32,7 +31,6 @@ export default function Dashboard() {
                 >
                   {initial}
                 </button>
-
                 {menuOpen && (
                   <div
                     role="menu"
@@ -50,11 +48,8 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-
               <h1 className="text-xl font-bold">Dashboard</h1>
             </div>
-
-
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => navigate("/tableros/nuevo")}>Crear tablero</Button>
               <Button variant="secondary" onClick={() => navigate("/tableros")}>
@@ -67,12 +62,12 @@ export default function Dashboard() {
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold">Plantillas</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {TEMPLATES_ARRAY.map((t) => (
+            {Object.entries(TEMPLATES).map(([id, t]) => (
               <TemplateCard
-                key={t.id}
-                title={t.title}
+                key={id}
+                title={t.name}
                 desc={t.desc}
-                onUse={() => navigate(`/tableros/nuevo?plantilla=${t.id}`)}
+                onUse={() => navigate(`/tableros/nuevo?plantilla=${id}`)}
               />
             ))}
           </div>
