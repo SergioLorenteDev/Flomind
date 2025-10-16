@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
@@ -27,12 +28,14 @@ import static org.springframework.http.ResponseEntity.ok;
 @RequestMapping(value = "/auth", produces = APPLICATION_JSON_VALUE)
 public class AuthResource implements TrelloApi {
 
+    private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtManager jwtManager;
 
     @Autowired
-    public AuthResource(UserRepository userRepository, AuthenticationManager authenticationManager, JwtManager jwtManager) {
+    public AuthResource(PasswordEncoder passwordEncoder, UserRepository userRepository, AuthenticationManager authenticationManager, JwtManager jwtManager) {
+        this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtManager = jwtManager;
@@ -52,7 +55,7 @@ public class AuthResource implements TrelloApi {
 
     @PostMapping("/register")
     public ResponseEntity<UserView> register(@Valid @RequestBody RegisterRequest request) {
-        final var newUser = new User(request.name(),request.userName(), request.email(), request.password());
+        final var newUser = new User(request.name(),request.userName(), request.email(), passwordEncoder.encode(request.password()));
         final var registeredUser = userRepository.save(newUser);
         return ok(new UserView(
                 registeredUser.getId(),
