@@ -17,12 +17,11 @@ El fichero ha sido anotado con explicaciones para cada propiedad.
 La aplicacion esta escrita en Java y por lo tanto hace falta tener una JDK instalada.
 La versión de la JDK ha de ser 21 o superior - la última estable es la 25. 
 
-Personalmente recomiendo
-instalar la de la fundación eclipse. Disponible en el siguiente [enlace](https://adoptium.net/es/temurin/releases?version=25&os=any&arch=any)
+Personalmente recomiendo instalar la de la fundación eclipse. Disponible en el siguiente [enlace](https://adoptium.net/es/temurin/releases?version=25&os=any&arch=any)
 no os olvideis la opcion para establecer la variable de entorno `JAVA_HOME` apuntando al directorio donde
 la JDK se ha instalado. Si no lo hace el instalador de la JDK lo tendreis que hacer manualmente.
 
-Para instalar maven solo hay que descargar el binario colocarlo en la carpta que mas os guste
+Para instalar maven solo hay que [descargar](https://maven.apache.org/download.cgi) el binario colocarlo en la carpeta que mas os guste
 p.ej: `C:\Program Files\apache-maven-3.9.11`. Tambien tendreis que agregar el directorio `bin`, dentro
 del directorio de instalacion de maven i.e.: `C:\Program Files\apache-maven-3.9.11\bin` a la variable de entorno PATH de Windows.
 
