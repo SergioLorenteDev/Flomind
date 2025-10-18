@@ -11,7 +11,7 @@ El fichero ha sido anotado con explicaciones para cada propiedad.
 
 ## Requisitos
 > [!WARNING]
-> Si vais a ejecutar el proyecto desde un IDE como IntelliJ, estos ya traen Maven y la JDK 
+> Si vais a ejecutar el proyecto desde un IDE como [IntelliJ](https://www.jetbrains.com/es-es/idea/download/?section=windows), estos ya traen Maven y la JDK 
 > embebidos; si no planeais hacerlo desde el IDE, habreis de instalar Maven y la JDK por separado.
 ### Instalacion de Maven y JDK
 La aplicacion esta escrita en Java y por lo tanto hace falta tener una JDK instalada.
