@@ -14,33 +14,24 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_comentario")
-    private Long id;
+    private long id;
     @Column(name = "contenido", nullable = false)
     private String content;
-    //@Column(name = "fecha", nullable = false)
-    //private LocalDateTime createdOn;
-    @Column(name = "fecha", nullable = false, columnDefinition = "TIMESTAMP")
+    @Column(name = "fecha", nullable = false)
     private LocalDateTime createdOn;
-    //@Column(name = "id_usuario", nullable = false)
-    //private Long addedById;
-    //@Column(name = "id_tarjeta", nullable = false)
-    //private Long owningCardId;
-    @Column(name = "id_usuario", nullable = false, insertable = false, updatable = false)
-    private Long addedById;
-    @Column(name = "id_tarjeta", nullable = false, insertable = false, updatable = false)
-    private Long owningCardId;
+    @Column(name = "id_usuario", nullable = false)
+    private long addedById;
+    @Column(name = "id_tarjeta", nullable = false)
+    private long owningCardId;
 
-    // CONSTRUCTOR SIN ARGUMENTOS REQUERIDO POR JPA
-    public Comment() {
-    }
-    public Comment(String content, LocalDateTime createdOn, Long addedById, Long owningCardId) {
+    public Comment(String content, LocalDateTime createdOn, long addedById, long owningCardId) {
         this.content = content;
         this.createdOn = createdOn;
         this.addedById = addedById;
         this.owningCardId = owningCardId;
     }
 
-    public Long getId() {
+    public long getId() {
         return id;
     }
 
@@ -52,33 +43,19 @@ public class Comment {
         return createdOn;
     }
 
-    public Long getAddedById() {
+    public long getAddedById() {
         return addedById;
     }
 
-    public Long getOwningCardId() {
+    public long getOwningCardId() {
         return owningCardId;
     }
-
-
-    //SETTERS
-    // Setters para las claves foráneas si se van a inyectar en un DTO
-    public void setAddedById(Long addedById) {
-        this.addedById = addedById;
-    }
-
-    public void setOwningCardId(Long owningCardId) {
-        this.owningCardId = owningCardId;
-    }
-
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Comment comment = (Comment) o;
-        //return id == comment.id;
-        //Para comprobaciónn segira de Long
-        return Objects.equals(id, comment.id);
+        return id == comment.id;
     }
 
     @Override

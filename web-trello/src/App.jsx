@@ -7,30 +7,30 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import Perfil from "./pages/Perfil.jsx";
 import VerTableros from "./pages/VerTableros.jsx";
+import NuevoTablero from "./pages/NuevoTablero.jsx";
 import Ajustes from "./pages/Ajustes.jsx";
-import CrearTablero from "./pages/CrearTablero.jsx"; 
+import BoardPage from "./pages/BoardPage.jsx"; // 👈 Import nuevo
 
 export default function App() {
   return (
     <Routes>
+      {/* Redirección inicial */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot" element={<ForgotPassword />} />
 
+      {/* RUTA NUEVA: Ver un tablero concreto (pública para desarrollo front-only) */}
+      <Route path="/tableros/:boardId" element={<BoardPage />} />
+
+      {/* Rutas protegidas */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/tableros/nuevo"
-        element={
-          <ProtectedRoute>
-            <CrearTablero />
           </ProtectedRoute>
         }
       />
@@ -53,9 +53,16 @@ export default function App() {
         }
       />
 
-      
+      <Route
+        path="/tableros/nuevo"
+        element={
+          <ProtectedRoute>
+            <NuevoTablero />
+          </ProtectedRoute>
+        }
+      />
 
- <Route
+      <Route
         path="/ajustes"
         element={
           <ProtectedRoute>
@@ -64,6 +71,7 @@ export default function App() {
         }
       />
 
+      {/* Ruta por defecto */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

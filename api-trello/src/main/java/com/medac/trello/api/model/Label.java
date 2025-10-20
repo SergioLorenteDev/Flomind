@@ -13,16 +13,13 @@ public class Label {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_etiqueta")
-    private Long id;
+    private long id;
     @Column(name = "nombre", nullable = false)
     private String name;
     @Column(name = "color")
     private String colour;
     @Column(name = "id_tablero", nullable = false)
     private long owningBoardId;
-
-    public Label() {
-    }
 
     public Label(String name, String colour, long owningBoardId) {
         this.name = name;

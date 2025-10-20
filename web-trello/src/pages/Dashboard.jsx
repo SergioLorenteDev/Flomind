@@ -1,104 +1,77 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../modules/auth/AuthContext.jsx";
+import PageShell from "../components/layout/PageShell.jsx";
+import Section from "../components/ui/Section.jsx";
+import TemplateCard from "../components/dashboard/TemplateCard.jsx";
+import BoardCard from "../components/dashboard/BoardCard.jsx";
 import Button from "../components/ui/Button.jsx";
-import TEMPLATES from "../templates.js";
+import NewBoardModal from "../components/modals/NewBoardModal.jsx";
+
+
+const TEMPLATES = [
+  { id: 1, title: "Kanban básico", desc: "Pendiente / En progreso / Hecho" },
+  { id: 2, title: "Proyecto simple", desc: "Ideas, Tareas, Revisar, Terminado" },
+  { id: 3, title: "Estudios", desc: "Temas, Prácticas, Exámenes" },
+];
 
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const initial = (user?.email || "U").charAt(0).toUpperCase();
-
-  function handleLogout() {
-    signOut();
-    navigate("/login", { replace: true });
-  }
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-neutral-50 to-white px-4 py-8">
-      <div className="mx-auto w-full max-w-5xl">
-        <div className="rounded-2xl border bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <button
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-violet-700 font-semibold"
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  title="Cuenta"
-                >
-                  {initial}
-                </button>
-                {menuOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 z-10 mt-2 w-44 rounded-xl border bg-white p-1 shadow-lg"
-                  >
-                    <MenuItem onClick={() => { setMenuOpen(false); navigate("/perfil"); }}>
-                      Ver perfil
-                    </MenuItem>
-                    <MenuItem onClick={() => { setMenuOpen(false); navigate("/ajustes"); }}>
-                      Ajustes
-                    </MenuItem>
-                    <MenuItem danger onClick={handleLogout}>
-                      Cerrar sesión
-                    </MenuItem>
-                  </div>
-                )}
-              </div>
-              <h1 className="text-xl font-bold">Dashboard</h1>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => navigate("/tableros/nuevo")}>Crear tablero</Button>
-              <Button variant="secondary" onClick={() => navigate("/tableros")}>
-                Ver tableros
-              </Button>
-            </div>
-          </div>
-        </div>
+    <PageShell
+      title="Mis tableros"
+      actions={<NewBoardModal onCreated={() => {
+        // aquí puedes refrescar tu listado de tableros si lo cargas desde API/estado global
+        // por ejemplo: refetchBoards();
+      }} />}
 
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-semibold">Plantillas</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(TEMPLATES).map(([id, t]) => (
-              <TemplateCard
-                key={id}
-                title={t.name}
-                desc={t.desc}
-                onUse={() => navigate(`/tableros/nuevo?plantilla=${id}`)}
-              />
-            ))}
-          </div>
-        </section>
-      </div>
-    </section>
-  );
-}
-
-function MenuItem({ children, onClick, danger }) {
-  const dangerClasses = danger ? "text-red-600 hover:bg-red-50" : "";
-  return (
-    <button
-      role="menuitem"
-      onClick={onClick}
-      className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-100 ${dangerClasses}`}
     >
-      {children}
-    </button>
-  );
-}
+      {/* Sección: Plantillas */}
+      <Section
+        title="Comienza con una plantilla"
+        description="Crea un tablero listo para usar en segundos."
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {TEMPLATES.map((t) => (
+            <TemplateCard
+              key={t.id}
+              title={t.title}
+              desc={t.desc}
+              onUse={() =>
+                navigate("/nuevo-tablero", { state: { templateId: t.id } })
+              }
+            />
+          ))}
+        </div>
+      </Section>
 
-function TemplateCard({ title, desc, onUse }) {
-  return (
-    <div className="rounded-2xl border bg-white p-5 shadow-sm">
-      <div className="h-10 w-10 rounded-lg bg-violet-100" />
-      <h3 className="mt-3 text-base font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-neutral-600">{desc}</p>
-      <Button variant="secondary" className="mt-4" onClick={onUse}>
-        Usar plantilla
-      </Button>
-    </div>
+      {/* Sección: Tus tableros */}
+      <Section
+        title="Tus tableros"
+        description="Accede rápidamente a tus proyectos."
+        right={
+          <input
+            type="search"
+            placeholder="Buscar tablero..."
+            className="rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200/70"
+          />
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[
+            { id: "a", name: "Trabajo", updatedAt: "hace 2 días" },
+            { id: "b", name: "Estudios", updatedAt: "hace 5 días" },
+            { id: "c", name: "Personal", updatedAt: "ayer" },
+          ].map((b) => (
+            <BoardCard
+              key={b.id}
+              name={b.name}
+              updatedAt={b.updatedAt}
+              onOpen={() => navigate(`/tablero/${b.id}`)}
+            />
+          ))}
+        </div>
+      </Section>
+    </PageShell>
   );
 }
