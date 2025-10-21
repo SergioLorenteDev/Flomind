@@ -38,9 +38,9 @@ export default function App() {
       <Route
         path="/tableros"
         element={
-          <ProtectedRoute>
+          //<ProtectedRoute>
             <VerTableros />
-          </ProtectedRoute>
+          //</ProtectedRoute>
         }
       />
 
@@ -56,9 +56,9 @@ export default function App() {
       <Route
         path="/tableros/nuevo"
         element={
-          <ProtectedRoute>
+          //<ProtectedRoute>
             <NuevoTablero />
-          </ProtectedRoute>
+          //</ProtectedRoute>
         }
       />
 
