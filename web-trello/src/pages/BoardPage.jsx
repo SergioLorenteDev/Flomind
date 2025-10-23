@@ -70,7 +70,7 @@ export default function BoardPage() {
             setError(null);
 
             // 1. Fetch Board details
-            const boardUrl = `${API_BASE_URL}/api/tableros/${boardId}`;
+            const boardUrl = `${API_BASE_URL}/trello/v1/tableros/${boardId}`;
             const boardRes = await fetch(boardUrl, {
                 headers: { Accept: "application/json" },
             });
@@ -86,7 +86,7 @@ export default function BoardPage() {
             setBoard(boardData);
             
             // 2. Fetch Lists for the Board (usa el endpoint anidado)
-            const listsUrl = `${API_BASE_URL}/api/tableros/${boardId}/listas`;
+            const listsUrl = `${API_BASE_URL}/trello/v1/tableros/${boardId}/listas`;
             const listsRes = await fetch(listsUrl, {
                 headers: { Accept: "application/json" },
             });
@@ -134,7 +134,7 @@ export default function BoardPage() {
                 board: { id: parseInt(boardId) } 
             };
 
-            const API_URL_POST = `${API_BASE_URL}/api/tableros/${boardId}/listas`;
+            const API_URL_POST = `${API_BASE_URL}/trello/v1/tableros/${boardId}/listas`;
             
             const res = await fetch(API_URL_POST, {
                 method: 'POST',

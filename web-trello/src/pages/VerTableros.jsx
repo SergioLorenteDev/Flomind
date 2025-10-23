@@ -40,7 +40,7 @@ export default function VerTableros() {
             setLoading(true);
             setError("");
 
-            const API_URL = `${API_BASE_URL}/api/tableros`;
+            const API_URL = `${API_BASE_URL}/trello/v1/tableros`;
 
             const res = await fetch(API_URL, {
                 credentials: "include",
@@ -71,7 +71,7 @@ export default function VerTableros() {
 
         try {
             setDeletingId(id);
-            const API_URL = `${API_BASE_URL}/api/tableros/${id}`;
+            const API_URL = `${API_BASE_URL}/trello/v1/tableros/${id}`;
 
             const res = await fetch(API_URL, {
                 method: 'DELETE',

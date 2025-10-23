@@ -4,7 +4,7 @@ import Button from "../ui/Button.jsx";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "http://localhost:8080";
-const API_URL = `${API_BASE_URL}/api/tableros`;
+const API_URL = `${API_BASE_URL}/trello/v1/tableros`;
 
 const TEMPLATES = {
   "Sin plantilla": {

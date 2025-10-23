@@ -27,7 +27,7 @@ export default function TableroDetalle() {
                 setError(null);
                 
                 // ⭐ CORRECCIÓN DE PUERTO AQUÍ: La petición va al 8080
-                const API_URL = `${API_BASE_URL}/api/tableros/${id}`;
+                const API_URL = `${API_BASE_URL}/trello/v1/tableros/${id}`;
                 
                 const res = await fetch(API_URL, {
                     headers: { Accept: "application/json" },

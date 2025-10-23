@@ -12,7 +12,7 @@ export default function CrearTablero() {
     const [error, setError] = useState(null);
 
   
-    const API_URL = `${API_BASE_URL}/api/tableros`;
+    const API_URL = `${API_BASE_URL}/trello/v1/tableros`;
 
     const handleSubmit = async (e) => {
         e.preventDefault();

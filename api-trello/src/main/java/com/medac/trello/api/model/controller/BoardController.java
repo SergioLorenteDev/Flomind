@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Set;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 // Implementamos la interfaz TrelloApi
 @RestController
-@RequestMapping("/tableros")
+@RequestMapping(value = "/tableros", produces = APPLICATION_JSON_VALUE)
 public class BoardController implements TrelloApi {
 
     @Autowired
