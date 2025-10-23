@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import PageShell from "../components/layout/PageShell.jsx";
 import Section from "../components/ui/Section.jsx";
 import TemplateCard from "../components/dashboard/TemplateCard.jsx";
@@ -16,6 +16,37 @@ const TEMPLATES = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const urlQuery = new URLSearchParams(location.search).get("q") || "";
+  const [search, setSearch] = React.useState(urlQuery);
+  React.useEffect(() => {
+  setSearch(urlQuery);
+
+}, [urlQuery]);
+
+  const boards = [
+    { id: "a", name: "Trabajo", updatedAt: "hace 2 días" },
+    { id: "b", name: "Estudios", updatedAt: "hace 5 días" },
+    { id: "c", name: "Personal", updatedAt: "ayer" },
+  ];
+
+  const filteredBoards = React.useMemo(() => {
+  return boards.filter(b =>
+    b.name.toLowerCase().includes(search.toLowerCase())
+  );
+}, [boards, search]);
+
+  console.log("search:", search);
+  console.log("filteredBoards:", filteredBoards);
+
+   // Barra de búsqueda de "Mis trableros"
+  const [localSearch, setLocalSearch] = React.useState("");
+
+  const locallyFilteredBoards = React.useMemo(() => {
+    return filteredBoards.filter((b) =>
+      b.name.toLowerCase().includes(localSearch.toLowerCase())
+    );
+  }, [filteredBoards, localSearch]);
 
   return (
     <PageShell
@@ -51,26 +82,30 @@ export default function Dashboard() {
         description="Accede rápidamente a tus proyectos."
         right={
           <input
-            type="search"
-            placeholder="Buscar tablero..."
-            className="rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200/70"
-          />
-        }
+          type="search"
+          placeholder="Buscar tablero..."
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          className="rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200/70"
+  />
+          }
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[
-            { id: "a", name: "Trabajo", updatedAt: "hace 2 días" },
-            { id: "b", name: "Estudios", updatedAt: "hace 5 días" },
-            { id: "c", name: "Personal", updatedAt: "ayer" },
-          ].map((b) => (
-            <BoardCard
-              key={b.id}
-              name={b.name}
-              updatedAt={b.updatedAt}
-              onOpen={() => navigate(`/tablero/${b.id}`)}
-            />
-          ))}
-        </div>
+          {locallyFilteredBoards.length > 0 ? (
+             locallyFilteredBoards.map((b) => (
+              <BoardCard
+                key={b.id}
+                name={b.name}
+                updatedAt={b.updatedAt}
+                onOpen={() => navigate(`/tablero/${b.id}`)}
+      />
+    ))
+  ) : (
+    <p className="text-sm text-neutral-500 col-span-full">
+      No se encontraron tableros.
+    </p>
+  )}
+</div>
       </Section>
     </PageShell>
   );

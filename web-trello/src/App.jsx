@@ -15,7 +15,7 @@ export default function App() {
   return (
     <Routes>
       {/* Redirección inicial */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />

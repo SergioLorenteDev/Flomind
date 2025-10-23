@@ -25,27 +25,32 @@ export default function PageShell({ title, actions, children }) {
 }
 
 function Header() {
+  const navigate = useNavigate();
   return (
-    <header className="sticky top-0 z-40 bg-brand-600 text-white shadow-lg">
-      <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-semibold tracking-wide">
-            Nombre de mi app
-          </span>
-        </div>
-
-        <div className="hidden md:flex flex-1 justify-center">
-          <input
-            type="search"
-            placeholder="Buscar tableros, listas o tareas..."
-            className="w-full max-w-md rounded-xl bg-brand-500/40 placeholder-white/70 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/60"
-          />
-        </div>
-
-        <AvatarArea />
+  <header className="sticky top-0 z-40 bg-brand-600 text-white shadow-lg">
+    <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-lg font-semibold tracking-wide">
+          Nombre de mi app
+        </span>
       </div>
-    </header>
-  );
+
+      <div className="hidden md:flex flex-1 justify-center">
+        <input
+          type="search"
+          placeholder="Buscar tableros, listas o tareas..."
+          onChange={(e) => {
+            const q = e.target.value.trim();
+            navigate(`/dashboard?q=${encodeURIComponent(q)}`); // 👈 aquí sí va
+          }}
+          className="w-full max-w-md rounded-xl bg-brand-500/40 placeholder-white/70 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/60"
+        />
+      </div>
+
+      <AvatarArea />
+    </div>
+  </header>
+);
 }
 
 function AvatarArea() {
