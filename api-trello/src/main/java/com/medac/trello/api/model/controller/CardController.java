@@ -10,9 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-//@CrossOrigin(origins = "http://localhost:3000")
+
 @RestController
-@RequestMapping("/api/tarjetas")
+@RequestMapping("/tarjetas")
 public class CardController {
     @Autowired
     private CardService cardService;

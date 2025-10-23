@@ -79,8 +79,7 @@ import java.util.Set;
 
 // ⭐ CORRECCIÓN CLAVE 1: El mapeo debe reflejar la jerarquía: /api/tableros/{boardId}/listas
 @RestController
-@RequestMapping(TrelloApi.BASE_API_PATH + "/tableros")
-@CrossOrigin(origins = "http://localhost:3000") // Añadido para consistencia con BoardController
+@RequestMapping("/tableros")
 public class ListaController {
 
     @Autowired
