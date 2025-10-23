@@ -2,7 +2,7 @@ package com.medac.trello.api.model;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
@@ -14,24 +14,24 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_comentario")
-    private long id;
+    private Long id;
     @Column(name = "contenido", nullable = false)
     private String content;
     @Column(name = "fecha", nullable = false)
-    private LocalDateTime createdOn;
+    private Instant createdOn;
     @Column(name = "id_usuario", nullable = false)
-    private long addedById;
+    private Long addedById;
     @Column(name = "id_tarjeta", nullable = false)
-    private long owningCardId;
+    private Long owningCardId;
 
-    public Comment(String content, LocalDateTime createdOn, long addedById, long owningCardId) {
+    public Comment(String content, Instant createdOn, long addedById, long owningCardId) {
         this.content = content;
         this.createdOn = createdOn;
         this.addedById = addedById;
         this.owningCardId = owningCardId;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -39,15 +39,15 @@ public class Comment {
         return content;
     }
 
-    public LocalDateTime getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public long getAddedById() {
+    public Long getAddedById() {
         return addedById;
     }
 
-    public long getOwningCardId() {
+    public Long getOwningCardId() {
         return owningCardId;
     }
 

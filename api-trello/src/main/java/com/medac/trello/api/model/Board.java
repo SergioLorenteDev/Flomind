@@ -2,7 +2,7 @@ package com.medac.trello.api.model;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
@@ -14,31 +14,31 @@ public class Board {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_tablero")
-    private long id;
+    private Long id;
 
     @Column(name = "nombre", nullable = false)
     private String name;
     @Column(name = "descripcion")
     private String description;
     @Column(name = "fecha_creacion", nullable = false)
-    private LocalDateTime createdOn;
+    private Instant createdOn;
     @Column(name = "id_usuario_creador", nullable = false)
-    private long createdBy;
+    private Long createdBy;
 
-    public Board(String name, LocalDateTime createdOn, long createdBy) {
+    public Board(String name, Instant createdOn, Long createdBy) {
         this.name = name;
         this.createdOn = createdOn;
         this.createdBy = createdBy;
     }
 
-    public Board(String name, String description, LocalDateTime createdOn, long createdBy) {
+    public Board(String name, String description, Instant createdOn, Long createdBy) {
         this.name = name;
         this.description = description;
         this.createdOn = createdOn;
         this.createdBy = createdBy;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -50,12 +50,28 @@ public class Board {
         return description;
     }
 
-    public LocalDateTime getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public long getCreatedBy() {
+    public Long getCreatedBy() {
         return createdBy;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setCreatedOn(Instant createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 
     @Override

@@ -13,13 +13,13 @@ public class Label {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_etiqueta")
-    private long id;
+    private Long id;
     @Column(name = "nombre", nullable = false)
     private String name;
     @Column(name = "color")
     private String colour;
     @Column(name = "id_tablero", nullable = false)
-    private long owningBoardId;
+    private Long owningBoardId;
 
     public Label(String name, String colour, long owningBoardId) {
         this.name = name;
@@ -27,7 +27,7 @@ public class Label {
         this.owningBoardId = owningBoardId;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -39,7 +39,7 @@ public class Label {
         return colour;
     }
 
-    public long getOwningBoardId() {
+    public Long getOwningBoardId() {
         return owningBoardId;
     }
 

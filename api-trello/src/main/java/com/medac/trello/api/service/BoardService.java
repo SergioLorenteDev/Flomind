@@ -7,7 +7,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -21,7 +21,7 @@ public class BoardService {
     public Board guardarBoard(Board board){
 
         if (board.getCreatedOn() == null) {
-            board.setCreatedOn(LocalDateTime.now());
+            board.setCreatedOn(Instant.now());
         }
         // 2. Establecer el ID del usuario creador (si falta).
         // HARDCODEAMOS 1L TEMPORALMENTE hasta que se implemente la autenticación.

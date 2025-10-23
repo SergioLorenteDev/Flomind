@@ -13,13 +13,13 @@ public class List {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_lista")
-    private long id;
+    private Long id;
     @Column(name = "nombre", nullable = false)
     private String name;
     @Column(name = "orden", nullable = false)
     private int order;
     @Column(name = "id_tablero", nullable = false)
-    private long owningBoardId;
+    private Long owningBoardId;
 
     public List(String name, int order, long owningBoardId) {
         this.name = name;
@@ -27,7 +27,7 @@ public class List {
         this.owningBoardId = owningBoardId;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -39,7 +39,7 @@ public class List {
         return order;
     }
 
-    public long getOwningBoardId() {
+    public Long getOwningBoardId() {
         return owningBoardId;
     }
 

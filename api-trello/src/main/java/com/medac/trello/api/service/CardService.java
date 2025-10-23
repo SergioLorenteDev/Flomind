@@ -37,35 +37,18 @@ public class CardService {
             Card cardExistente = CardOptional.get();
 
             //ACTUALIZAR CAMPOS
-            cardExistente.setTitulo(cardDetails.getTitulo());
-            cardExistente.setDescripcion(cardDetails.getDescripcion());
-            //cardExistente.setFechaCreacion(cardDetails.getFechaCreacion());
+            cardExistente.setTitle(cardDetails.getTitle());
+            cardExistente.setDescription(cardDetails.getDescription());
             cardExistente.setExpiresOn(cardDetails.getExpiresOn());
-            cardExistente.setOrden(cardDetails.getOrden());
+            cardExistente.setOrder(cardDetails.getOrder());
             cardExistente.setOwningListId(cardDetails.getOwningListId());
             return cardRepository.save(cardExistente);
 
         }else {
-            //throw new RuntimeException("Tarjeta con encontrada con el id" + idTarjeta);
             throw new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta);
         }
     }
 
-    //BORRAR
-    /*public void deleteCard(Long idTarjeta) {
-        //VERIFICAR SI LA TARJETA EXISTE
-        boolean existe =  cardRepository.existsById(idTarjeta);
-        if (existe) {
-            //si existe se elimina
-            cardRepository.deleteById(idTarjeta);
-        }else {
-            //si no existe, se lanza una excepción
-            throw new RuntimeException("Tarjeta no encontrada con el id" + idTarjeta);
-
-        }
-    }
-
-     */
 // D - Eliminar
     public void eliminarTarjeta(Long idTarjeta) {
         if (!cardRepository.existsById(idTarjeta)) {

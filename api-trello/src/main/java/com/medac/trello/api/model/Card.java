@@ -2,8 +2,7 @@ package com.medac.trello.api.model;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
@@ -15,19 +14,21 @@ public class Card {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     @Column(name = "id_tarjeta")
-    private long id;
+    private Long id;
     @Column(name = "titulo", nullable = false)
     private String title;
+    @Column(name = "descripcion")
+    private String description;
     @Column(name = "fecha_creacion", nullable = false)
-    private LocalDateTime createdOn;
+    private Instant createdOn;
     @Column(name = "fecha_vencimiento", nullable = false)
-    private LocalDate expiresOn;
+    private Instant expiresOn;
     @Column(name = "orden", nullable = false)
     private int order;
     @Column(name = "id_lista", nullable = false)
-    private long owningListId;
+    private Long owningListId;
 
-    public Card(String title, LocalDateTime createdOn, LocalDate expiresOn, int order, long owningListId) {
+    public Card(String title, Instant createdOn, Instant expiresOn, int order, Long owningListId) {
         this.title = title;
         this.createdOn = createdOn;
         this.expiresOn = expiresOn;
@@ -35,7 +36,7 @@ public class Card {
         this.owningListId = owningListId;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -43,11 +44,11 @@ public class Card {
         return title;
     }
 
-    public LocalDateTime getCreatedOn() {
+    public Instant getCreatedOn() {
         return createdOn;
     }
 
-    public LocalDate getExpiresOn() {
+    public Instant getExpiresOn() {
         return expiresOn;
     }
 
@@ -55,15 +56,43 @@ public class Card {
         return order;
     }
 
-    public long getOwningListId() {
+    public Long getOwningListId() {
         return owningListId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setCreatedOn(Instant createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    public void setExpiresOn(Instant expiresOn) {
+        this.expiresOn = expiresOn;
+    }
+
+    public void setOrder(int order) {
+        this.order = order;
+    }
+
+    public void setOwningListId(Long owningListId) {
+        this.owningListId = owningListId;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Card card = (Card) o;
-        return id == card.id;
+        return id.equals(card.id);
     }
 
     @Override
