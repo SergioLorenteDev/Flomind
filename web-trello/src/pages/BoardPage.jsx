@@ -71,8 +71,13 @@ export default function BoardPage() {
 
             // 1. Fetch Board details
             const boardUrl = `${API_BASE_URL}/trello/v1/tableros/${boardId}`;
+            const token = localStorage.getItem("token");
+
             const boardRes = await fetch(boardUrl, {
-                headers: { Accept: "application/json" },
+            headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+             },
             });
 
             if (boardRes.status === 404) {
@@ -88,7 +93,10 @@ export default function BoardPage() {
             // 2. Fetch Lists for the Board (usa el endpoint anidado)
             const listsUrl = `${API_BASE_URL}/trello/v1/tableros/${boardId}/listas`;
             const listsRes = await fetch(listsUrl, {
-                headers: { Accept: "application/json" },
+             headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+             },
             });
             
             if (!listsRes.ok) {
@@ -136,13 +144,17 @@ export default function BoardPage() {
 
             const API_URL_POST = `${API_BASE_URL}/trello/v1/tableros/${boardId}/listas`;
             
+            const token = localStorage.getItem("token");
+
             const res = await fetch(API_URL_POST, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(listData),
-            });
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                 Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(listData),
+        });
+
 
             if (!res.ok) {
                 let errorMsg = `Error al crear la lista: ${res.statusText}`;
