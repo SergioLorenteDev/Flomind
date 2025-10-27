@@ -1,8 +1,7 @@
-<<<<<<< HEAD
-// src/pages/Login.jsx
-=======
+
+
 import { useState } from "react";
->>>>>>> b262b3c (Arreglo de back Cors, Logo, error log in invalido, eliminacion de codigo redundante)
+
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthCard from "../components/ui/AuthCard.jsx";
