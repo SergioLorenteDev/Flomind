@@ -35,6 +35,16 @@
 }
 
 @layer base {
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  label[for],
+  .cursor-pointer {
+  cursor: pointer;
+  }
+
   html, body {
     height: 100%;
     background: linear-gradient(to bottom right, var(--color-brand-25), #fff, var(--color-brand-50));
@@ -54,11 +64,6 @@
     color: var(--color-brand-500);
   }
 
-  a {
-    color: var(--color-brand-600);
-    font-weight: 500;
-    transition: color 0.2s;
-  }
   a:hover {
     color: var(--color-brand-500);
   }

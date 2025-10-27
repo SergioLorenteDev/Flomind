@@ -25,6 +25,8 @@ public class Board {
     @Column(name = "id_usuario_creador", nullable = false)
     private Long createdBy;
 
+    protected Board() {}
+
     public Board(String name, Instant createdOn, Long createdBy) {
         this.name = name;
         this.createdOn = createdOn;

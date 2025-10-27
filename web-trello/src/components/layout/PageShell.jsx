@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext.jsx";
+import logo from "../../assets/Logo dashboard2.png";
 
 export default function PageShell({ title, actions, children }) {
   return (
@@ -31,7 +32,7 @@ function Header() {
     <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <span className="text-lg font-semibold tracking-wide">
-          Nombre de mi app
+          <img src={logo} alt="flomind" className="h-11 w-auto" />
         </span>
       </div>
 
@@ -91,11 +92,11 @@ function AvatarArea() {
 
       <div className="relative">
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/30 border border-white/40 font-semibold"
+          className="flex h-10 w-9 items-center justify-center rounded-full bg-white/30 border border-white/40 font-semibold"
           onClick={() => setOpen((v) => !v)}
           aria-haspopup="menu"
           aria-expanded={open}
-          title={user?.email || "Mi cuenta"}
+          title={user?.email || "Mi cuentas"}
         >
           {initial}
         </button>

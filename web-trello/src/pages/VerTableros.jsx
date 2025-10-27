@@ -1,11 +1,9 @@
-// src/pages/VerTableros.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
-import Card from "../components/ui/Card.jsx"; // Importamos el componente Card
+import Card from "../components/ui/Card.jsx";
 import { Trash2, Info, Loader2 } from 'lucide-react'; // Iconos
 
-// CORRECCIÓN CLAVE: Definir la URL base de la API de Spring Boot
 const API_BASE_URL = 'http://localhost:8080';
 
 export default function VerTableros() {
@@ -18,16 +16,11 @@ export default function VerTableros() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [query, setQuery] = useState(urlQuery);
-    const [deletingId, setDeletingId] = useState(null); // Estado para rastrear el tablero en eliminación
-    // Prueba por si es el backend lo que no va
+    const [deletingId, setDeletingId] = useState(null); 
+
     useEffect(() => {
-        if (boards.length === 0) {
-    setBoards([
-      { id: 1, name: "Prueba barra de búsqueda" },
-      { id: 2, name: "Prueba2" },
-    ]);
-    setLoading(false);
-  }
+        if (boards.length === 0) { 
+    }
 }, []);
 
     useEffect(() => {

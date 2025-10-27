@@ -8,6 +8,7 @@ import Button from "../components/ui/Button.jsx";
 import NewBoardModal from "../components/modals/NewBoardModal.jsx";
 
 
+
 const TEMPLATES = [
   { id: 1, title: "Kanban básico", desc: "Pendiente / En progreso / Hecho" },
   { id: 2, title: "Proyecto simple", desc: "Ideas, Tareas, Revisar, Terminado" },
