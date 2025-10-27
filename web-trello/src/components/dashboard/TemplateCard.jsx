@@ -11,7 +11,7 @@ export default function TemplateCard({ title, desc, onUse }) {
       ].join(" ")}
     >
       <Card className="p-5">
-        <div className="h-10 w-10 rounded-lg bg-brand-100" />
+        <div className="h-10 w-10 rounded-lg bg-brand-100 template-icon" />
         <h3 className="mt-3 text-base font-semibold">{title}</h3>
         <p className="mt-1 text-sm text-neutral-600">{desc}</p>
         <Button variant="secondary" className="mt-4" onClick={onUse}>

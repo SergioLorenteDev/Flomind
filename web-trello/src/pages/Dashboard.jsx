@@ -40,7 +40,7 @@ export default function Dashboard() {
   console.log("search:", search);
   console.log("filteredBoards:", filteredBoards);
 
-   // Barra de búsqueda de "Mis trableros"
+   // Barra de búsqueda de "Mis tableros"
   const [localSearch, setLocalSearch] = React.useState("");
 
   const locallyFilteredBoards = React.useMemo(() => {
@@ -83,12 +83,15 @@ export default function Dashboard() {
         description="Accede rápidamente a tus proyectos."
         right={
           <input
-          type="search"
-          placeholder="Buscar tablero..."
-          value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
-          className="rounded-xl border border-brand-100 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200/70"
-  />
+  type="search"
+  placeholder="Buscar tablero..."
+  value={localSearch}
+  onChange={(e) => setLocalSearch(e.target.value)}
+  className="rounded-xl border border-brand-100 bg-white text-neutral-800 placeholder-neutral-400
+             dark:bg-[var(--color-brand-50)] dark:text-[var(--color-neutral-950)] dark:placeholder-neutral-300
+             px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200/70 transition-colors duration-300"
+/>
+
           }
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -12,7 +12,7 @@ export default function BoardCard({ name, updatedAt, onOpen }) {
       ].join(" ")}
     >
       <Card className="p-5">
-        <div className="h-10 w-10 rounded-lg bg-brand-100" />
+        <div className="h-10 w-10 rounded-lg bg-brand-100 board-icon" />
         <h3 className="mt-3 text-base font-semibold">{name}</h3>
         <p className="mt-1 text-xs text-neutral-600">Actualizado {updatedAt}</p>
       </Card>

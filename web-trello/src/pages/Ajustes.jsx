@@ -6,7 +6,15 @@ import Button from "../components/ui/Button.jsx";
 export default function Ajustes() {
   const navigate = useNavigate();
 
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+  const raw = localStorage.getItem("app:settings");
+  if (raw) {
+    const s = JSON.parse(raw);
+    if (typeof s.darkMode === "boolean") return s.darkMode;
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+});
+
   const [language, setLanguage] = useState("es");
   const [notifications, setNotifications] = useState(true);
 
@@ -51,26 +59,34 @@ export default function Ajustes() {
           style={{ background: "var(--card)" }}
         >
           {/* Modo oscuro */}
-          <div className="flex items-center justify-between py-3 border-b border-neutral-200/60">
-            <div>
-              <div className="font-medium">Modo oscuro (se hara mas adelante)</div>
-              <div className="text-sm text-neutral-500">
-                Activa un tema oscuro para la interfaz.
-              </div>
-            </div>
-            <label className="inline-flex items-center cursor-pointer" aria-label="Activar modo oscuro">
-              <input
-                type="checkbox"
-                checked={darkMode}
-                onChange={(e) => setDarkMode(e.target.checked)}
-              />
-            </label>
+        <div className="flex items-center justify-between py-3 border-b border-neutral-200/60">
+         <div>
+          <div className="font-medium">Modo oscuro</div>
+          <div className="text-sm text-neutral-500">
+            Activa el modo oscuro.
           </div>
+        </div>
+
+        <label className="inline-flex items-center cursor-pointer" aria-label="Activar modo oscuro">
+          <input
+            type="checkbox"
+            checked={darkMode}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              setDarkMode(enabled);
+              document.documentElement.classList.toggle("dark", enabled);
+              localStorage.setItem("theme", enabled ? "dark" : "light");
+            }}
+            className="w-5 h-5 accent-[var(--color-brand-600)] cursor-pointer"
+    />
+  </label>
+</div>
+
 
           {/* Idioma */}
           <div className="flex items-center justify-between py-3 border-b border-neutral-200/60">
             <div>
-              <div className="font-medium">Idioma (igual que el modo oscuro)</div>
+              <div className="font-medium">Idioma (más tarde)</div>
               <div className="text-sm text-neutral-500">
                 Elige el idioma preferido.
               </div>
@@ -90,7 +106,7 @@ export default function Ajustes() {
           {/* Notificaciones */}
           <div className="flex items-center justify-between py-3 border-b border-neutral-200/60">
             <div>
-              <div className="font-medium">Notificaciones (igual que el modo oscuro)</div>
+              <div className="font-medium">Notificaciones (más tarde)</div>
               <div className="text-sm text-neutral-500">
                 Permitir avisos de actividad.
               </div>
@@ -111,7 +127,7 @@ export default function Ajustes() {
               onClick={() => alert("Aquí abrirías un flujo de cambio de contraseña.")}>
               Cambiar contraseña
             </Button>
-            <Button variant="ghost" disabled title="Requiere backend">
+            <Button variant="danger" disabled title="Requiere backend">
               Eliminar cuenta
             </Button>
           </div>

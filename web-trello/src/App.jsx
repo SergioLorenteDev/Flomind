@@ -9,9 +9,23 @@ import Perfil from "./pages/Perfil.jsx";
 import VerTableros from "./pages/VerTableros.jsx";
 import NuevoTablero from "./pages/NuevoTablero.jsx";
 import Ajustes from "./pages/Ajustes.jsx";
-import BoardPage from "./pages/BoardPage.jsx"; // 👈 Import nuevo
+import BoardPage from "./pages/BoardPage.jsx";
+import { useEffect, useState } from "react";
+import "./App.css";
 
 export default function App() {
+    const [theme, setTheme] = useState(
+    localStorage.getItem("theme") ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+  );
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+
   return (
     <Routes>
       {/* Redirección inicial */}
