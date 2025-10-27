@@ -57,6 +57,11 @@ export default function NewBoardModal({ onCreated }) {
     setError(null);
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Sesion no valida. Inicia sesion nuevamente.");
+      }
+
       const payload = {
         name: boardName.trim(),
         description: "",
@@ -67,6 +72,7 @@ export default function NewBoardModal({ onCreated }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
@@ -101,6 +107,7 @@ export default function NewBoardModal({ onCreated }) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(listPayload),
           });
