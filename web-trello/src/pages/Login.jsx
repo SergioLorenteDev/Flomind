@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthCard from "../components/ui/AuthCard.jsx";
@@ -7,6 +8,7 @@ import Button from "../components/ui/Button.jsx";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
+import { motion } from "framer-motion";
 
 export default function Login() {
   const { login, loginWithGoogle } = useAuth();
@@ -16,9 +18,14 @@ export default function Login() {
     register,
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm({
-    defaultValues: { remember: true },
-  });
+  } = useForm({ defaultValues: { remember: true } });
+
+  // --- Config de animación ---
+  const LOGO_SRC = "/Logo_transparente_morado.png";
+  const duration = 2;            // velocidad del movimiento
+  const startScale = 3.0;           // tamaño inicial
+  const endScale = 0.55;            // tamaño final 
+  const endTop = -260;                // distancia de arriba
 
   // Login normal
   async function onSubmit({ email, password, remember }) {
@@ -33,76 +40,82 @@ export default function Login() {
   // Login Google
   const handleGoogleSuccess = (credentialResponse) => {
     const decoded = jwtDecode(credentialResponse.credential);
-    console.log("Usuario Google:", decoded);
     loginWithGoogle(decoded);
     navigate("/dashboard", { replace: true });
   };
-
-  const handleGoogleError = () => {
-    alert("Error al iniciar sesión");
-  };
+  const handleGoogleError = () => alert("Error al iniciar sesión");
 
   return (
-    <AuthCard
-      title="Bienvenido"
-      subtitle="Inicia sesión para continuar."
-      footer={
-        <p>
-          ¿Aún no tienes una cuenta?{" "}
-          <Link
-            to="/register"
-            className="text-violet-600 hover:underline font-medium"
-          >
-            ¡Regístrate!
-          </Link>
-        </p>
-      }
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input
-          label="Email"
-          type="email"
-          name="email"
-          placeholder="Introduce tu correo electrónico"
-          register={register}
-          required
-        />
-        <Input
-          label="Contraseña"
-          type="password"
-          name="password"
-          placeholder="Introduce tu contraseña"
-          register={register}
-          required
-        />
+    <div className="relative min-h-screen flex items-start justify-center bg-gradient-to-br from-violet-100 via-white to-violet-50 overflow-hidden pt-40">
+      <motion.img
+        src={LOGO_SRC}
+        alt="Logo"
+        className="absolute left-1/2 -translate-x-1/2 select-none drop-shadow-2xl"
+        style={{ top: `calc(50vh - 28px)` }} 
+        initial={{ scale: startScale, y: "-50vh", opacity: 1 }}
+        animate={{ scale: endScale, y: `calc(${endTop}px - 50vh)`, opacity: 1 }}
+        transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
+        draggable="false"
+      />
 
-        <div className="flex items-center justify-between">
-          <Checkbox
-            label="Recordarme"
-            name="remember"
-            register={register}
-            defaultChecked
-          />
-          <Link
-            to="/forgot"
-            className="text-sm text-violet-600 hover:underline"
-          >
-            He olvidado mi contraseña
-          </Link>
-        </div>
+      {/* Tarjeta de Login: aparece después del movimiento del logo */}
+      <motion.div
+        className="w-full max-w-md px-4"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: duration * 0.7, duration: 0.45 }}
+      >
+        <AuthCard
+          title="Bienvenido"
+          subtitle="Inicia sesión para continuar."
+          footer={
+            <p>
+              ¿Aún no tienes una cuenta?{" "}
+              <Link to="/register" className="text-violet-600 hover:underline font-medium">
+                ¡Regístrate!
+              </Link>
+            </p>
+          }
+        >
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Input
+              label="Email"
+              type="email"
+              name="email"
+              placeholder="Introduce tu correo electrónico"
+              register={register}
+              required
+            />
+            <Input
+              label="Contraseña"
+              type="password"
+              name="password"
+              placeholder="Introduce tu contraseña"
+              register={register}
+              required
+            />
 
-        <Button type="submit" variant="primary" full disabled={isSubmitting}>
-          {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
-        </Button>
-      </form>
+            <div className="flex items-center justify-between">
+              <Checkbox label="Recordarme" name="remember" register={register} defaultChecked />
+              <Link to="/forgot" className="text-sm text-violet-600 hover:underline">
+                He olvidado mi contraseña
+              </Link>
+            </div>
 
-      {/* Botón login con Google */}
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500 mb-3">O usa tu cuenta de Google</p>
-        <div className="flex justify-center">
-          <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-        </div>
-      </div>
-    </AuthCard>
+            <Button type="submit" variant="primary" full disabled={isSubmitting}>
+              {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
+            </Button>
+          </form>
+
+          {/* Botón login con Google */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500 mb-3">O usa tu cuenta de Google</p>
+            <div className="flex justify-center">
+              <GoogleLogin onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+            </div>
+          </div>
+        </AuthCard>
+      </motion.div>
+    </div>
   );
 }
