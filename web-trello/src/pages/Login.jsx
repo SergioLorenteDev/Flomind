@@ -50,24 +50,23 @@ export default function Login() {
   return (
     <div className="relative min-h-screen flex items-start justify-center bg-gradient-to-br from-violet-100 via-white to-violet-50 overflow-hidden pt-40">
       {/* Logo animado que sube */}
-      <motion.img
-        src={LOGO_SRC}
-        alt="Logo"
-        className="absolute left-1/2 -translate-x-1/2 select-none drop-shadow-2xl"
-        style={{ top: `calc(50vh - 28px)` }}
-        initial={{ scale: startScale, y: "-50vh", opacity: 1 }}
-        animate={{ scale: endScale, y: `calc(${endTop}px - 50vh)`, opacity: 1 }}
-        transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
-        draggable="false"
-      />
+ <motion.img
+  src={LOGO_SRC}
+  alt="Logo"
+  className="absolute left-1/2 -translate-x-1/2 select-none drop-shadow-2xl z-50 pointer-events-none"
+  style={{ top: `calc(50vh - 28px)` }}
+  initial={{ scale: startScale, y: "-50vh", opacity: 1 }}
+  animate={{ scale: endScale, y: `calc(${endTop}px - 50vh)`, opacity: 1 }}
+  transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
+/>
 
       {/* Tarjeta de Login */}
-      <motion.div
-        className="w-full max-w-md px-4"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: duration * 0.7, duration: 0.45 }}
-      >
+ <motion.div
+  className="w-full max-w-md px-4 relative z-10"
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: duration * 0.7, duration: 0.45 }}
+>
         <AuthCard
           title="Bienvenido"
           subtitle="Inicia sesión para continuar."
