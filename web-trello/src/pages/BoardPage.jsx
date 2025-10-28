@@ -1,47 +1,48 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
-// NOTE: Asegúrese de tener instalado este paquete: npm install lucide-react
 import { Plus } from 'lucide-react'; 
+import { apiFetch } from "../modules/apiClient";
 
-// 🚨 La API DEBE apuntar al puerto 8080 de tu backend Java
-const API_BASE_URL = 'http://localhost:8080';
 
 // Componente de Presentación para cada Lista (Columna)
-function KanbanList({ list }) {
-    return (
-        // Estructura fija de Trello: 288px (w-72) de ancho y sin scroll horizontal en el contenido
-        <div 
-            className="w-72 flex-shrink-0 bg-gray-100 rounded-xl shadow-md p-3 max-h-full flex flex-col overflow-hidden"
-            // Atributos de drag and drop se añadirán en la próxima iteración
+function KanbanList({ list, cards }) {
+  const tarjetas = Array.isArray(cards) ? cards : [];
+
+  return (
+    <div className="w-72 flex-shrink-0 bg-gray-100 rounded-xl shadow-md p-3 max-h-full flex flex-col overflow-hidden">
+      <h4 className="font-semibold text-lg text-neutral-800 border-b border-neutral-300 pb-2 mb-3 truncate">
+        {list.nombre}
+      </h4>
+
+      <div className="flex-grow overflow-y-auto space-y-2 pr-1">
+        {tarjetas.length === 0 ? (
+          <div className="h-16 flex items-center justify-center bg-white rounded-lg text-sm text-neutral-400 border border-dashed">
+            No hay tarjetas todavía
+          </div>
+        ) : (
+          tarjetas.map((card) => (
+            <div key={card.id} className="bg-white rounded-lg p-3 shadow-sm border border-neutral-200">
+              <div className="text-sm font-medium text-neutral-800">{card.title}</div>
+              {card.description && (
+                <p className="mt-1 text-xs text-neutral-500 line-clamp-2">{card.description}</p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="mt-3">
+        <Button
+          variant="link"
+          className="w-full justify-start text-sm text-neutral-500 hover:text-blue-600"
+          disabled
         >
-            <h4 className="font-semibold text-lg text-neutral-800 border-b border-neutral-300 pb-2 mb-3 truncate">
-                {list.nombre}
-            </h4>
-            
-            {/* Contenedor de Tarjetas (Scroll vertical) */}
-            <div className="flex-grow overflow-y-auto space-y-2 pr-1">
-                {/* // Aquí se renderizarán las Tarjetas (list.tarjetas) 
-                */}
-                
-                {/* Placeholder de contenido */}
-                <div className="h-16 flex items-center justify-center bg-white rounded-lg text-sm text-neutral-400 border border-dashed hover:border-blue-400 transition cursor-default">
-                    Tarjetas irán aquí...
-                </div>
-            </div>
-            
-            {/* Botón de Añadir Tarjeta (Deshabilitado por ahora) */}
-            <div className="mt-3">
-                <Button 
-                    variant="link" 
-                    className="w-full justify-start text-sm text-neutral-500 hover:text-blue-600"
-                    disabled
-                >
-                    <Plus className="w-4 h-4 mr-1" /> Añadir otra tarjeta
-                </Button>
-            </div>
-        </div>
-    );
+          <Plus className="w-4 h-4 mr-1" /> Añadir otra tarjeta
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export default function BoardPage() {
@@ -55,6 +56,9 @@ export default function BoardPage() {
     const [error, setError] = useState(null);
     const [listName, setListName] = useState("");
     const [isAddingList, setIsAddingList] = useState(false);
+    const [cardsByListId, setCardsByListId] = useState({});
+    const [isSaving, setIsSaving] = useState(false);
+
 
 
     // Función combinada para obtener el tablero y sus listas
@@ -69,54 +73,47 @@ export default function BoardPage() {
             setLoading(true);
             setError(null);
 
-            // 1. Fetch Board details
-            const boardUrl = `${API_BASE_URL}/trello/v1/tableros/${boardId}`;
-            const token = localStorage.getItem("token");
-
-            const boardRes = await fetch(boardUrl, {
-            headers: {
-                Accept: "application/json",
-                Authorization: `Bearer ${token}`,
-             },
-            });
-
-            if (boardRes.status === 404) {
-                throw new Error("Tablero no encontrado (Error 404).");
-            }
-            if (!boardRes.ok) {
-                throw new Error(`Error al cargar el tablero: ${boardRes.statusText}`);
-            }
-
-            const boardData = await boardRes.json();
+            /*
+            const [boardData, listsData, cardsData] = await Promise.all([
+                apiFetch(`/tableros/${boardId}`),
+                apiFetch(`/tableros/${boardId}/listas`),
+                //apiFetch(`/tarjetas`) // Comentado hasta que se implemente en backend
+            ]);
+            */
+            const boardData = await apiFetch(`/tableros/${boardId}`);
             setBoard(boardData);
-            
-            // 2. Fetch Lists for the Board (usa el endpoint anidado)
-            const listsUrl = `${API_BASE_URL}/trello/v1/tableros/${boardId}/listas`;
-            const listsRes = await fetch(listsUrl, {
-             headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-             },
-            });
-            
-            if (!listsRes.ok) {
-                // Si falla la carga de listas, registramos una advertencia pero continuamos
-                console.warn(`No se pudieron cargar las listas: ${listsRes.statusText}`);
-                setLists([]); 
-            } else {
-                 const listsData = await listsRes.json();
-                 // Aseguramos que es un array e inmediatamente lo ordenamos por 'orden'
-                 const sortedLists = (Array.isArray(listsData) ? listsData : Array.from(listsData || []))
-                     .sort((a, b) => (a.orden || 0) - (b.orden || 0));
-                 setLists(sortedLists);
+
+            let listsData = [];
+            try {
+                listsData = await apiFetch(`/tableros/${boardId}/listas`);
+            } catch (listError) {
+                console.warn("No se pudieron cargar las listas:", listError);
             }
 
+            const sortedLists = (Array.isArray(listsData) ? listsData : [])
+                .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+            setLists(sortedLists);
+
+            const byList = {};
+            /*
+            (Array.isArray(cardsData) ? cardsData : []).forEach(card => {
+                const listKey = card.owningListId;
+                if (!byList[listKey]) byList[listKey] = [];
+                byList[listKey].push(card);
+            });
+            Object.values(byList).forEach(listCards =>
+                listCards.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+            );
+            setCardsByListId(byList);
+            */ // Comentado hasta que se implemente en backend
+            setCardsByListId(byList);
         } catch (e) {
-            console.error("Error fetching board or lists:", e);
-            setError(e.message);
+        console.error("Error fetching board, lists or cards:", e);
+        setError(e.message);
         } finally {
-            setLoading(false);
+        setLoading(false);
         }
+
     }, [boardId]);
 
     // Ejecutar la carga al montar y si cambia el ID
@@ -126,51 +123,27 @@ export default function BoardPage() {
 
 
     // Función para crear una nueva lista
-    const handleAddList = async (e) => {
-        e.preventDefault();
+    const handleAddList = async (event) => {
+        event.preventDefault();
         if (!listName.trim()) return;
 
-        setIsAddingList(true);
-        setError(null);
-
         try {
-            const listData = {
-                nombre: listName.trim(), 
-                // Asignamos el orden en el frontend. Spring lo respeta.
-                orden: lists.length + 1, 
-                // Solo necesitamos el ID del board para que Spring lo resuelva
-                board: { id: parseInt(boardId) } 
-            };
-
-            const API_URL_POST = `${API_BASE_URL}/trello/v1/tableros/${boardId}/listas`;
-            
-            const token = localStorage.getItem("token");
-
-            const res = await fetch(API_URL_POST, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                 Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(listData),
-        });
-
-
-            if (!res.ok) {
-                let errorMsg = `Error al crear la lista: ${res.statusText}`;
-                try {
-                    const errorBody = await res.json();
-                    errorMsg = errorBody.message || errorMsg;
-                } catch { /* ignore */ }
-                throw new Error(errorMsg);
+            setIsAddingList(true);
+            const newList = await apiFetch(
+            `/tableros/${boardId}/listas`,
+            {
+                method: "POST",
+                body: JSON.stringify({
+                nombre: listName.trim(),
+                orden: lists.length
+                })
             }
-
-            const nuevaLista = await res.json();
-            
-            // Actualizar el estado local para reflejar el cambio en la UI
-            setLists(currentLists => 
-                [...currentLists, nuevaLista].sort((a, b) => (a.orden || 0) - (b.orden || 0))
             );
+
+            setLists(prev =>
+            [...prev, newList].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
+            );
+            setCardsByListId(prev => ({ ...prev, [newList.idLista]: [] }));
             setListName("");
         } catch (e) {
             console.error("Fallo al crear la lista:", e);
@@ -179,6 +152,7 @@ export default function BoardPage() {
             setIsAddingList(false);
         }
     };
+
 
 
     // Manejo de estados de carga y error (sin cambios)
@@ -232,7 +206,11 @@ export default function BoardPage() {
                     
                     {/* Renderizar Listas */}
                     {lists.map((list) => (
-                        <KanbanList key={list.id} list={list} />
+                        <KanbanList 
+                            key={list.idLista} 
+                            list={list} 
+                            cards={cardsByListId[list.idLista] || []}
+                        />
                     ))}
 
                     {/* Formulario para añadir nueva Lista */}
