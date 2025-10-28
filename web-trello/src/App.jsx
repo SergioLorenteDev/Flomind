@@ -1,4 +1,3 @@
-// src/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -14,79 +13,94 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 export default function App() {
-    const [theme, setTheme] = useState(
-    localStorage.getItem("theme") ||
-      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-  );
+  const getInitialTheme = () => {
+    const stored = localStorage.getItem("theme");
+    if (stored) return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  };
+
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
     localStorage.setItem("theme", theme);
+    console.log("🌗 Tema actual:", theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  const toggleTheme = () => setTheme(prev => (prev === "dark" ? "light" : "dark"));
 
   return (
-    <Routes>
-      {/* Redirección inicial */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+    <div>
+      <button
+        onClick={toggleTheme}
+        className="fixed bottom-4 right-4 px-4 py-2 rounded-lg
+                   bg-[var(--color-brand-500)] text-white shadow-lg
+                   hover:bg-[var(--color-brand-600)] transition"
+      >
+        {theme === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
+      </button>
 
-      {/* Rutas públicas */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot" element={<ForgotPassword />} />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/tableros/:boardId" element={<BoardPage />} />
 
-      {/* RUTA NUEVA: Ver un tablero concreto (pública para desarrollo front-only) */}
-      <Route path="/tableros/:boardId" element={<BoardPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Rutas protegidas */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/tableros"
+          element={
+            <ProtectedRoute>
+              <VerTableros />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/tableros"
-        element={
-          //<ProtectedRoute>
-            <VerTableros />
-          //</ProtectedRoute>
-        }
-      />
+        <Route
+          path="/perfil"
+          element={
+            <ProtectedRoute>
+              <Perfil />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/perfil"
-        element={
-          <ProtectedRoute>
-            <Perfil />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/tableros/nuevo"
+          element={
+            <ProtectedRoute>
+              <NuevoTablero />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/tableros/nuevo"
-        element={
-          //<ProtectedRoute>
-            <NuevoTablero />
-          //</ProtectedRoute>
-        }
-      />
+        <Route
+          path="/ajustes"
+          element={
+            <ProtectedRoute>
+              <Ajustes />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/ajustes"
-        element={
-          <ProtectedRoute>
-            <Ajustes />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Ruta por defecto */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </div>
   );
 }

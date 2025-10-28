@@ -12,12 +12,10 @@
 
   --radius-lg: 1.25rem;
   --radius-xl: 1.75rem;
-
   --shadow-lg: 0 25px 45px -25px rgba(83, 51, 170, 0.55),
                0 18px 35px -28px rgba(15, 23, 42, 0.25);
 }
 
-/* MODO CLARO POR DEFECTO */
 :root {
   --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
@@ -30,13 +28,9 @@
   --color-brand-700: #5333aa;
   --color-neutral-950: #0f172a;
 
-  /* === Bordes y sombras === */
-  --radius-lg: 1.25rem;
-  --radius-xl: 1.75rem;
-  --shadow-lg: 0 25px 45px -25px rgba(83, 51, 170, 0.15),
-               0 18px 35px -28px rgba(15, 23, 42, 0.10);
+  --color-surface: #ffffff;
+  --color-surface-hover: #f9f9fb;
 
-  /* === Botones === */
   --btn-primary-bg: #7f56d9;
   --btn-primary-bg-hover: #6b44cc;
   --btn-primary-text: #ffffff;
@@ -48,17 +42,12 @@
   --btn-ghost-text: #111827;
   --btn-ghost-bg-hover: rgba(17, 24, 39, 0.04);
 
-  /* === Botón de peligro === */
   --btn-danger-text: #b91c1c;
   --btn-danger-border: #ef4444;
   --btn-danger-hover-bg: #fee2e2;
-
-  /* === Superficies === */
-  --color-surface: #ffffff;
-  --color-surface-hover: #f9f9fb;
 }
 
-/* MODO OSCURO */
+
 .dark {
   --color-brand-25: #16131d;
   --color-brand-50: #1e1a27;
@@ -67,16 +56,11 @@
   --color-brand-500: #a084eb;
   --color-brand-600: #b197f9;
   --color-brand-700: #c8b4ff;
-
   --color-neutral-950: #f5f3ff;
-
-  background-color: var(--color-brand-25);
-  color: var(--color-neutral-950);
 
   --color-surface: #2b2138;
   --color-surface-hover: #3b2b4f;
 
-  /* === Botones === */
   --btn-primary-bg: #9b7df7;
   --btn-primary-bg-hover: #b197f9;
   --btn-primary-text: #ffffff;
@@ -88,32 +72,27 @@
   --btn-ghost-text: #e5e7eb;
   --btn-ghost-bg-hover: rgba(255, 255, 255, 0.1);
 
-  /* === Botón de peligro === */
   --btn-danger-text: #fca5a5;
   --btn-danger-border: #f87171;
   --btn-danger-hover-bg: rgba(239, 68, 68, 0.15);
 }
 
-@layer base {
-  button,
-  a,
-  [role="button"],
-  input[type="button"],
-  input[type="submit"],
-  label[for],
-  .cursor-pointer {
-    cursor: pointer;
-  }
 
+@layer base {
   html, body {
     height: 100%;
+    -webkit-font-smoothing: antialiased;
     background-color: var(--color-brand-25);
     color: var(--color-neutral-950);
-    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s, color 0.3s;
   }
 
   #root {
     min-height: 100vh;
+  }
+
+  button, a, [role="button"], input[type="button"], input[type="submit"], label[for], .cursor-pointer {
+    cursor: pointer;
   }
 
   a {
@@ -127,20 +106,17 @@
   }
 }
 
-/* === Círculos tarjetas === */
 .template-icon,
 .board-icon {
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
-/* Hovers*/
 .template-icon:hover,
 .board-icon:hover {
   transform: scale(1.05);
   box-shadow: 0 0 12px rgba(127, 86, 217, 0.35);
 }
 
-/* En modo oscuro */
 .dark .template-icon,
 .dark .board-icon {
   background-color: var(--color-brand-500);
@@ -148,8 +124,32 @@
   box-shadow: 0 0 8px rgba(160, 132, 235, 0.25);
 }
 
-/* Hover más fuerte en modo oscuro */
 .dark .template-icon:hover,
 .dark .board-icon:hover {
   box-shadow: 0 0 14px rgba(177, 151, 249, 0.45);
 }
+
+/* FIX DE COLORES DE SUBTÍTULOS PARA MEJORAR VISIBILIDAD */
+.dashboard-section-title {
+  color: var(--color-brand-700);
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.dashboard-section-subtitle {
+  color: var(--color-brand-600);
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
+
+.dark .dashboard-section-title {
+  color: #e4d3ff;
+}
+
+.dark .dashboard-section-subtitle {
+  color: #cbb8ff;
+}
+
