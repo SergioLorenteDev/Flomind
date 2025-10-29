@@ -11,7 +11,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/trello
     username: root
-    password: ***REMOVED***
+    password: //tu contraseña
     driverClassName: com.mysql.cj.jdbc.Driver
 security:
   jwt:
