@@ -21,10 +21,10 @@ SET @has_historial :=
           AND TABLE_NAME = 'historial_movimiento');
 SET @sql := IF(@has_historial = 0,
     'CREATE TABLE historial_movimiento (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        id_tarjeta BIGINT NOT NULL,
-        id_lista_origen BIGINT NULL,
-        id_lista_destino BIGINT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        id_tarjeta INT NOT NULL,
+        id_lista_origen INT NULL,
+        id_lista_destino INT NOT NULL,
         fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (id_tarjeta) REFERENCES tarjeta(id_tarjeta),
         FOREIGN KEY (id_lista_origen) REFERENCES lista(id_lista),
