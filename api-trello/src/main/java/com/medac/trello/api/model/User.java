@@ -23,6 +23,7 @@ public class User implements UserDetails {
     private String name;
     @Column(name = "nombre_usuario")
     private String username;
+    @Column(unique = true, nullable = false)
     private String email;
     private String password;
 

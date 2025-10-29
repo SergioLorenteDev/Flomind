@@ -1,0 +1,43 @@
+package com.medac.trello.api.dto;
+
+import com.medac.trello.api.model.Board;
+
+import java.time.Instant;
+import java.util.List; // Opcional, si quieres incluir un recuento de listas o una lista de ellas
+
+public class BoardResponseDTO {
+
+    private Long id;
+    private String name;
+    private String description;
+    private Long createdBy; // ID del usuario creador
+    private Instant createdOn;
+
+    public BoardResponseDTO() {}
+
+    // --- Constructor desde la Entidad (Mapeo) ---
+    public BoardResponseDTO(Board board) {
+        this.id = board.getId();
+        this.name = board.getName();
+        this.description = board.getDescription();
+        this.createdBy = board.getCreatedBy();
+        this.createdOn = board.getCreatedOn();
+        // Nota: No se incluyen las Listas directamente para evitar cargar datos innecesarios.
+    }
+
+    // --- Getters y Setters ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public Long getCreatedBy() { return createdBy; }
+    public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
+
+    public Instant getCreatedOn() { return createdOn; }
+    public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
+}

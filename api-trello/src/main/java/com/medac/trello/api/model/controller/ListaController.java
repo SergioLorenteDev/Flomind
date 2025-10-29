@@ -66,6 +66,9 @@ public class ListaController {
  */
 package com.medac.trello.api.model.controller;
 
+import com.medac.trello.api.dto.ListaRequestDTO;
+import com.medac.trello.api.dto.ListaResponseDTO;
+import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Lista;
 import com.medac.trello.api.service.ListasService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,56 +79,89 @@ import com.medac.trello.api.resources.TrelloApi; // Asegúrate de tener esta int
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 // ⭐ CORRECCIÓN CLAVE 1: El mapeo debe reflejar la jerarquía: /api/tableros/{boardId}/listas
 @RestController
-@RequestMapping("/tableros")
+@RequestMapping(value = "/tableros", produces = APPLICATION_JSON_VALUE)
 public class ListaController {
 
     @Autowired
     private ListasService listasService;
 
-    // -----------------------------------------------------------------
-    // Operaciones basadas en la jerarquía: /api/tableros/{boardId}/listas
-    // -----------------------------------------------------------------
+  //----------------------CREAR LISTA-----------------------
 
-    // CREAR - POST /api/tableros/{boardId}/listas
-    // La lista se crea asociada al tablero cuyo ID está en la PathVariable.
     @PostMapping("/{boardId}/listas")
-    public ResponseEntity<Lista> crearLista(
+    public ResponseEntity<ListaResponseDTO> crearLista(
             @PathVariable Long boardId,
-            @RequestBody Lista lista
+            @RequestBody ListaRequestDTO listaDto
     ) {
-        // ⭐ CORRECCIÓN CLAVE 2: Pasar el boardId al servicio
-        Lista nuevaLista = listasService.guardarLista(boardId, lista);
-        return new ResponseEntity<>(nuevaLista, HttpStatus.CREATED);
+        // MAPEO DTO
+        Lista listaParaGuardar = new Lista();
+        listaParaGuardar.setNombre(listaDto.getNombre());
+        listaParaGuardar.setOrden(listaDto.getOrden());
+
+        // 2. Llamada al servicio con la entidad y el ID del padre (boardId)
+        // El servicio buscará el Board y asignará la relación
+        Lista listaGuardada = listasService.guardarLista(boardId, listaParaGuardar);
+
+        // 3. Mapeo Entidad -> DTO de Respuesta
+        ListaResponseDTO responseDto = new ListaResponseDTO(listaGuardada);
+
+        return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
+
     }
 
     // LEER TODAS las listas de un tablero - GET /api/tableros/{boardId}/listas
     @GetMapping("/{boardId}/listas")
-    public Set<Lista> listarListasPorTablero(@PathVariable Long boardId) {
-        return listasService.obtenerListasPorTablero(boardId);
+    public Set<ListaResponseDTO> listarListasPorTablero(@PathVariable Long boardId) {
+
+        // 1. Llamada al servicio, que devuelve Entidades JPA
+        Set<Lista> listas = listasService.obtenerListasPorTablero(boardId);
+
+        // 2. Mapeo de la colección de Entidades a colección de DTOs de Respuesta
+        return listas.stream()
+                .map(ListaResponseDTO::new) // Usando el constructor de mapeo
+                .collect(Collectors.toSet());
     }
 
 
-    // -----------------------------------------------------------------
-    // Operaciones sobre una lista específica (no necesitan el boardId en la ruta)
-    // -----------------------------------------------------------------
 
-    // ACTUALIZAR - PUT /api/tableros/listas/{idLista}
-    // Nota: La URL es más clara si se elimina la palabra "tableros"
+    // ---------------------ACTUALIZAR - PUT /api/tableros/listas/{idLista}------------------
+
     @PutMapping("/listas/{idLista}")
-    public ResponseEntity<Lista> actualizarLista(@PathVariable Long idLista, @RequestBody Lista listaDetalles) {
-        // Si falla, el Handler Global se encarga de devolver 404
-        Lista listaActualizada = listasService.actualizarLista(idLista, listaDetalles);
-        return ResponseEntity.ok(listaActualizada);
+    public ResponseEntity<ListaResponseDTO> actualizarLista(
+            @PathVariable Long idLista,
+            @RequestBody ListaRequestDTO listaDto
+    ) {
+        // 1. Mapeo DTO -> Entidad (Crear una entidad temporal solo con los campos a actualizar)
+        Lista listaParaActualizar = new Lista();
+        listaParaActualizar.setNombre(listaDto.getNombre());
+        listaParaActualizar.setOrden(listaDto.getOrden());
+
+        // Lógica para mover a otro tablero (si se proporciona idTablero en el DTO)
+        if (listaDto.getIdTablero() != null) {
+            // Creamos una entidad Board temporal SÓLO con la ID para que el Service la pueda usar.
+            Board boardStub = new Board();
+            boardStub.setId(listaDto.getIdTablero());
+            listaParaActualizar.setBoard(boardStub);
+        }
+
+        // 2. Llamada al servicio
+        Lista listaActualizada = listasService.actualizarLista(idLista, listaParaActualizar);
+
+        // 3. Mapeo Entidad -> DTO de Respuesta
+        ListaResponseDTO responseDto = new ListaResponseDTO(listaActualizada);
+
+        return ResponseEntity.ok(responseDto);
     }
 
 
     // ELIMINAR - DELETE /api/tableros/listas/{idLista}
     @DeleteMapping("/listas/{idLista}")
     public ResponseEntity<HttpStatus> eliminarLista(@PathVariable Long idLista) {
-        // En un entorno de producción, aquí se usaría un @ControllerAdvice para el manejo de excepciones
         listasService.eliminarLista(idLista);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204
     }

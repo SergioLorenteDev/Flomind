@@ -24,6 +24,8 @@ public class Comment {
     @Column(name = "id_tarjeta", nullable = false)
     private Long owningCardId;
 
+    public Comment() {}
+
     public Comment(String content, Instant createdOn, long addedById, long owningCardId) {
         this.content = content;
         this.createdOn = createdOn;

@@ -207,9 +207,10 @@ package com.medac.trello.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-// Importamos la anotación de Jackson
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
@@ -227,7 +228,7 @@ public class Lista {
     private String nombre;
 
     @Column(name = "orden", nullable = false)
-    private int orden;
+    private Integer orden;
 
     // --- PUNTO CRÍTICO: RELACIÓN MANY-TO-ONE ---
     // Usamos @JsonIgnore para romper el bucle de serialización JSON.
@@ -235,6 +236,14 @@ public class Lista {
     @JoinColumn(name = "id_tablero", nullable = false)
     @JsonIgnoreProperties({"listas"})
     private Board board;
+
+    // 🎯 RELACIÓN ONE-TO-MANY CON CARD (TARJETAS)
+    // El "mappedBy" debe coincidir con el nombre de la propiedad en Card.java (ej: "lista")
+    @OneToMany(mappedBy = "lista", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("cardOrder ASC") // Ordena las tarjetas por su campo 'cardOrder'
+    @JsonIgnoreProperties({"lista"}) // Evita que la lista serialice de nuevo toda la tarjeta, aunque Card ya tiene @JsonIgnoreProperties({"listas"})
+    private List<Card> tarjetas = new ArrayList<>();
+
 
     // 1. CONSTRUCTOR SIN ARGUMENTOS
     public Lista() {
@@ -256,7 +265,7 @@ public class Lista {
         return nombre;
     }
 
-    public int getOrden() {
+    public Integer getOrden() {
         return orden;
     }
 
@@ -275,13 +284,15 @@ public class Lista {
         this.nombre = nombre;
     }
 
-    public void setOrden(int orden) {
+    public void setOrden(Integer orden) {
         this.orden = orden;
     }
 
     public void setBoard(Board board) {
         this.board = board;
     }
+
+    public void setIdLista(Long idLista) {this.idLista = idLista;}
 
     @Override
     public boolean equals(Object o) {

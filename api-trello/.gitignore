@@ -1,0 +1,147 @@
+# ========================================
+# IntelliJ IDEA
+# ========================================
+.idea/
+*.iml
+out/
+*.iws
+
+# ========================================
+# Build / Gradle / Maven
+# ========================================
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ========================================
+# Logs / Temp / Runtime files
+# ========================================
+*.log
+logs/
+tmp/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# ========================================
+# OS-specific
+# ========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# ========================================
+# Environment / Credentials
+# ========================================
+.env
+.env.local
+.env.*
+!example.env
+
+# ========================================
+# IDEs (otros)
+# ========================================
+.vscode/
+.eclipse/
+*.classpath
+*.project
+.settings/
+
+# ========================================
+# Misc
+# ========================================
+# Node / Frontend (si tienes parte web)
+node_modules/
+dist/# ========================================
+     # IntelliJ IDEA
+     # ========================================
+     .idea/
+     *.iml
+     out/
+     *.iws
+
+     # ========================================
+     # Build / Gradle / Maven
+     # ========================================
+     # Maven
+     target/
+     pom.xml.tag
+     pom.xml.releaseBackup
+     pom.xml.versionsBackup
+     pom.xml.next
+     release.properties
+
+     # Gradle
+     .gradle/
+     build/
+     !gradle/wrapper/gradle-wrapper.jar
+
+     # ========================================
+     # Logs / Temp / Runtime files
+     # ========================================
+     *.log
+     logs/
+     tmp/
+     *.tmp
+     *.bak
+     *.swp
+     *.swo
+
+     # ========================================
+     # OS-specific
+     # ========================================
+     # Windows
+     Thumbs.db
+     ehthumbs.db
+     Desktop.ini
+
+     # macOS
+     .DS_Store
+     .AppleDouble
+     .LSOverride
+
+     # Linux
+     *~
+
+     # ========================================
+     # Environment / Credentials
+     # ========================================
+     .env
+     .env.local
+     .env.*
+     !example.env
+
+     # ========================================
+     # IDEs (otros)
+     # ========================================
+     .vscode/
+     .eclipse/
+     *.classpath
+     *.project
+     .settings/
+
+     # ========================================
+     # Misc
+     # ========================================
+     # Node / Frontend (si tienes parte web)
+     node_modules/
+     dist/

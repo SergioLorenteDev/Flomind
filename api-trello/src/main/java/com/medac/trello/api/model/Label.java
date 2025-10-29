@@ -21,6 +21,8 @@ public class Label {
     @Column(name = "id_tablero", nullable = false)
     private Long owningBoardId;
 
+    public Label() {}
+
     public Label(String name, String colour, long owningBoardId) {
         this.name = name;
         this.colour = colour;

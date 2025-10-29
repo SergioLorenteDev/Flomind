@@ -25,7 +25,7 @@ public class Board {
     @Column(name = "id_usuario_creador", nullable = false)
     private Long createdBy;
 
-    protected Board() {}
+    public Board() {}
 
     public Board(String name, Instant createdOn, Long createdBy) {
         this.name = name;
@@ -75,6 +75,8 @@ public class Board {
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
     }
+
+    public void setId(Long id) {this.id = id;}
 
     @Override
     public boolean equals(Object o) {

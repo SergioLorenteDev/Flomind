@@ -3,9 +3,9 @@ package com.medac.trello.api.service;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.repository.BoardRepository;
 import com.medac.trello.api.exception.ResourceNotFoundException;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,8 +17,9 @@ public class BoardService {
     @Autowired
     private BoardRepository boardRepository;
 
-    //CREAR/GUARDAR
-    public Board guardarBoard(Board board){
+    //---------------------CREAR/GUARDAR-----------------------
+    @Transactional
+    public Board guardarBoard(Board board) {
 
         if (board.getCreatedOn() == null) {
             board.setCreatedOn(Instant.now());
@@ -30,8 +31,11 @@ public class BoardService {
         }
         return boardRepository.save(board);
     }
+
+    //-------------------------------LEER ------------------
+
     // LISTAR TODOS
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Board> obtenerTodosLosBoards() {
         return boardRepository.findAll();
     }
@@ -43,14 +47,29 @@ public class BoardService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
     }
 
-    //  ACTUALIZAR
+    //OBTENER POR USUARIO
+    @Transactional(readOnly = true)
+    public Set<Board> obtenerTablerosPorUsuario(Long userId) {
+        // Se asume que BoardRepository tiene el método: Set<Board> findAllByCreatedBy(Long userId);
+        return boardRepository.findAllByCreatedBy(userId);
+    }
+
+    //  ------------------------ACTUALIZAR-----------------------
     @Transactional
     public Board actualizarBoard(Long id, Board boardDetalles) {
         Board boardExistente = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
 
-        boardExistente.setName(boardDetalles.getName());
-        boardExistente.setDescription(boardDetalles.getDescription());
+        //boardExistente.setName(boardDetalles.getName());
+        //boardExistente.setDescription(boardDetalles.getDescription());
+        if (boardDetalles.getName() != null) {
+            boardExistente.setName(boardDetalles.getName());
+        }
+
+        // ✅ MEJORA: Solo actualiza la descripción si viene en el payload
+        if (boardDetalles.getDescription() != null) {
+            boardExistente.setDescription(boardDetalles.getDescription());
+        }
 
 
         return boardRepository.save(boardExistente);
@@ -66,7 +85,7 @@ public class BoardService {
 
      */
 
-    //ELIMINAR - Versión optimizada (Recomendada)
+    //---------------------------ELIMINAR----------------------------
     @Transactional
     public void eliminarBoard(Long id) {
         // 1. Obtener la entidad para verificar su existencia.
@@ -75,10 +94,5 @@ public class BoardService {
 
         // 2. Eliminar la entidad existente. (Solo una llamada DELETE)
         boardRepository.delete(boardExistente);
-    }
-    @Transactional
-    public Set<Board> obtenerTablerosPorUsuario(Long userId) {
-        // Aquí usas el método que definiste en el repositorio:
-        return boardRepository.findAllByCreatedBy(userId);
     }
 }
