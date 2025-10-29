@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class CardService {
@@ -30,17 +32,17 @@ public class CardService {
 
     @Transactional
     public Card guardarCard(Long listId, Card card) {
-        // 1. Obtener la Lista (columna)
+        // 1. Obtener la lista (columna)
         Lista lista = listaRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + listId));
 
-        // 2. Asignar propiedades de creación
+        // 2. Asignar propiedades de creacion
         card.setLista(lista);
         if (card.getCreatedOn() == null) {
             card.setCreatedOn(Instant.now());
         }
 
-        // el order se gestiona en ell front.
+        // El orden se gestiona en el front.
 
         // 3. Guardar
         return cardRepository.save(card);
@@ -48,31 +50,26 @@ public class CardService {
 
     // ---------------------- R - LEER TARJETAS ----------------------
 
-    /*// Listar todas las tarjetas (principalmente para debug)
+    /* // Listar todas las tarjetas (principalmente para debug)
     public List<Card> findAllCards() {
         return cardRepository.findAll();
     }
-
      */
+
     public List<Card> obtenerCardsPorLista(Long listaId) {
-        // Llama al método de consulta derivada que debe existir en CardRepository:
-        // List<Card> findByLista_IdListaOrderByCardOrderAsc(Long listaId);
-        return (List<Card>) cardRepository.findByLista_IdLista(listaId);
+        return cardRepository.findByLista_IdListaOrderByCardOrderAsc(listaId);
     }
+
     // Obtener por ID
     public Card obtenerCardPorId(Long idTarjeta) {
         return cardRepository.findById(idTarjeta)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta));
     }
 
-
     public List<Card> encontrarTarjetasPorTableroId(Long tableroId) {
-        // Llama al método de consulta derivada que debe existir en CardRepository:
-        // List<Card> findByLista_Tablero_Id(Long boardId);
+        // Llama al metodo de consulta derivada que debe existir en CardRepository.
         return cardRepository.findByLista_Board_Id(tableroId);
     }
-
-
 
     // ---------------------- U - ACTUALIZAR/MOVER TARJETAS ----------------------
 
@@ -82,9 +79,10 @@ public class CardService {
         // 1. Obtener la tarjeta existente
         Card cardExistente = cardRepository.findById(idTarjeta)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta));
-        Lista listaOriginal = cardExistente.getLista(); // Lista de ORIGEN
+        Lista listaOriginal = cardExistente.getLista(); // Lista de origen
+        Long listaOrigenId = listaOriginal != null ? listaOriginal.getIdLista() : null;
 
-        // 2. ACTUALIZAR CAMPOS SIMPLES
+        // 2. Actualizar campos simples
         if (cardDetails.getTitle() != null) {
             cardExistente.setTitle(cardDetails.getTitle());
         }
@@ -95,42 +93,52 @@ public class CardService {
             cardExistente.setExpiresOn(cardDetails.getExpiresOn());
         }
 
-        // 'Order' se actualiza si no es nulo
-        if (cardDetails.getCardOrder() != null) {
-            cardExistente.setCardOrder(cardDetails.getCardOrder());
-        }
-
-        // 3. MANEJAR MOVIMIENTO (Cambio de Lista/Columna)
-        Lista nuevaListaStub = cardDetails.getLista(); // ⬅️ Obtener el objeto Lista stub
-
-        // Verificar si se ha enviado una nueva ID de Lista en el stub
+        // 3. Manejar movimiento (cambio de lista/columna)
+        Long listaDestinoIdTmp = listaOrigenId;
+        Lista nuevaListaStub = cardDetails.getLista();
         if (nuevaListaStub != null && nuevaListaStub.getIdLista() != null) {
-            Long nuevoOwningListId = nuevaListaStub.getIdLista(); // ⬅️ Obtener el ID del stub
-
-            // Verificar si la tarjeta se está moviendo a una lista diferente
-            if (listaOriginal == null || !listaOriginal.getIdLista().equals(nuevoOwningListId)) {
-
-                // 3.1. Buscar la entidad Lista completa para la nueva columna (DESTINO)
-                Lista nuevaLista = listaRepository.findById(nuevoOwningListId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Lista destino no encontrada con id: " + nuevoOwningListId));
-
-                // 3.2. Asignar el objeto Lista completo (esto actualiza la FK)
-                cardExistente.setLista(nuevaLista);
-
-                // 3.3. REGISTRAR EL MOVIMIENTO EN EL BACKEND (AL MOMENTO)
-                HistorialMovimiento registro = new HistorialMovimiento(
-                        cardExistente,
-                        listaOriginal,
-                        nuevaLista,
-                        Instant.now()
-                );
-
-                historialMovimientoRepository.save(registro);
-            }
+            listaDestinoIdTmp = nuevaListaStub.getIdLista();
+        }
+        final Long listaDestinoId = listaDestinoIdTmp;
+        if (listaDestinoId == null) {
+            throw new ResourceNotFoundException("Lista destino no encontrada para la tarjeta con id: " + idTarjeta);
         }
 
-        // 4. Guardar y retornar la tarjeta actualizada
-        return cardRepository.save(cardExistente);
+        boolean cambioDeLista = !Objects.equals(listaOrigenId, listaDestinoId);
+        Lista listaDestino = listaOriginal;
+
+        if (cambioDeLista) {
+            listaDestino = listaRepository.findById(listaDestinoId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Lista destino no encontrada con id: " + listaDestinoId));
+
+            cardExistente.setLista(listaDestino);
+
+            HistorialMovimiento registro = new HistorialMovimiento(
+                    cardExistente,
+                    listaOriginal,
+                    listaDestino,
+                    Instant.now()
+            );
+
+            historialMovimientoRepository.save(registro);
+        }
+
+        // Persistimos cambios simples antes de recalcular el orden
+        cardRepository.save(cardExistente);
+
+        if (cambioDeLista && listaOrigenId != null) {
+            reindexarTarjetas(listaOrigenId);
+        }
+
+        Integer posicionObjetivo = cardDetails.getCardOrder();
+        if (posicionObjetivo == null) {
+            posicionObjetivo = cambioDeLista ? Integer.MAX_VALUE : cardExistente.getCardOrder();
+        }
+
+        reubicarTarjeta(listaDestino.getIdLista(), cardExistente.getId(), posicionObjetivo);
+
+        return cardRepository.findById(cardExistente.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + cardExistente.getId()));
     }
 
     // ---------------------- D - ELIMINAR TARJETA ----------------------
@@ -140,5 +148,51 @@ public class CardService {
             throw new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta);
         }
         cardRepository.deleteById(idTarjeta);
+    }
+
+    /**
+     * Reindexa todas las tarjetas de una lista para que sus posiciones sean consecutivas.
+     */
+    private void reindexarTarjetas(Long listaId) {
+        List<Card> tarjetas = cardRepository.findByLista_IdListaOrderByCardOrderAsc(listaId);
+        for (int index = 0; index < tarjetas.size(); index++) {
+            tarjetas.get(index).setCardOrder(index);
+        }
+        cardRepository.saveAll(tarjetas);
+    }
+
+    /**
+     * Inserta la tarjeta en la posicion solicitada dentro de la lista destino y normaliza los indices.
+     * Cuando la posicion es null o Integer.MAX_VALUE se inserta al final.
+     */
+    private void reubicarTarjeta(Long listaId, Long tarjetaId, Integer posicionDeseada) {
+        List<Card> tarjetas = cardRepository.findByLista_IdListaOrderByCardOrderAsc(listaId);
+        Card tarjetaEnMovimiento = null;
+
+        for (Iterator<Card> iterator = tarjetas.iterator(); iterator.hasNext(); ) {
+            Card tarjeta = iterator.next();
+            if (tarjeta.getId().equals(tarjetaId)) {
+                tarjetaEnMovimiento = tarjeta;
+                iterator.remove();
+                break;
+            }
+        }
+
+        if (tarjetaEnMovimiento == null) {
+            tarjetaEnMovimiento = cardRepository.findById(tarjetaId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + tarjetaId));
+        }
+
+        int indiceDestino = (posicionDeseada != null && posicionDeseada >= 0)
+                ? Math.min(posicionDeseada, tarjetas.size())
+                : tarjetas.size();
+
+        tarjetas.add(indiceDestino, tarjetaEnMovimiento);
+
+        for (int index = 0; index < tarjetas.size(); index++) {
+            tarjetas.get(index).setCardOrder(index);
+        }
+
+        cardRepository.saveAll(tarjetas);
     }
 }

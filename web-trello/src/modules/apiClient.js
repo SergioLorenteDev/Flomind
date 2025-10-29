@@ -28,3 +28,17 @@ export async function apiFetch(path, options = {}) {
 
   return response.status === 204 ? null : response.json();
 }
+
+export function createCard(listId, payload) {
+  return apiFetch(`/listas/${listId}/tarjetas`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateCard(cardId, payload) {
+  return apiFetch(`/tarjetas/${cardId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}

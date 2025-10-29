@@ -42,9 +42,10 @@ CREATE TABLE IF NOT EXISTS lista (
 CREATE TABLE IF NOT EXISTS tarjeta (
     id_tarjeta INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(100) NOT NULL,
-    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_vencimiento DATETIME,
-    orden INT NOT NULL,
+    descripcion TEXT,
+    creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expira_en DATETIME,
+    card_order INT NOT NULL,
     id_lista INT NOT NULL,
     FOREIGN KEY (id_lista) REFERENCES lista(id_lista)
 );
@@ -89,4 +90,16 @@ CREATE TABLE IF NOT EXISTS archivo (
     url TEXT NOT NULL,
     id_tarjeta INT NOT NULL,
     FOREIGN KEY (id_tarjeta) REFERENCES tarjeta(id_tarjeta)
+);
+
+-- TABLA DE HISTORIAL DE MOVIMIENTOS DE TARJETAS
+CREATE TABLE IF NOT EXISTS historial_movimiento (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_tarjeta BIGINT NOT NULL,
+    id_lista_origen BIGINT NULL,
+    id_lista_destino BIGINT NOT NULL,
+    fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_tarjeta) REFERENCES tarjeta(id_tarjeta),
+    FOREIGN KEY (id_lista_origen) REFERENCES lista(id_lista),
+    FOREIGN KEY (id_lista_destino) REFERENCES lista(id_lista)
 );

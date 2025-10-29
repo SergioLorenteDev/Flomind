@@ -1,18 +1,19 @@
 spring:
   jpa:
-    show-sql: true # Muestra las sentencias SQL que Hibernate utiliza para consultar la BDD por consola
+    show-sql: true
     hibernate:
-      ddl-auto: none # Previene que Hibernate intente crear la estructura de la BDD basandose en las anotaciones de los modelos
+      ddl-auto: none
   sql:
     init:
-      schema-locations: classpath*:database/schema.sql # Donde encontrar el fichero que contiene las sentencias SQL que se utilizan para crear las tablas de la BDD cuando arranca la aplicacion
-      mode: always # Queremos que se ejecute siempre. Las sentencias SQL del fichero ya especifican que las tablas han de crearse solo si no existen ya
+      schema-locations: classpath*:database/schema.sql
+      data-locations: classpath*:database/migrations.sql
+      mode: always
   datasource:
-    url: jdbc:mysql://localhost:3306/trello_bd # El servicio espera que haya una BDD MySQL llamada "trello" funcionando en localhost:3006
-    username: root # usuario ccreado en la BDD con acceso para consultar, actualizar y crear tablas en "trello"
-    password: # la contraseña para el usuario
-    driverClassName: com.mysql.cj.jdbc.Driver # El driver de conexion para utilizar
+    url: jdbc:mysql://localhost:3306/trello
+    username: root
+    password: ***REMOVED***
+    driverClassName: com.mysql.cj.jdbc.Driver
 security:
   jwt:
-    secret-key: ***REMOVED*** # Clave utilizada por JSW para generar los tokens, no cambiar
-    expiration-time: 3600000 #1h en milisegundos, eso es lo que dura cada token JWT.
+    secret-key: ***REMOVED***
+    expiration-time: 3600000

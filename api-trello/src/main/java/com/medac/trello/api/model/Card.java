@@ -26,7 +26,7 @@ public class Card {
     @Column(name = "expira_en")
     private Instant expiresOn;
 
-    @Column(name = "orden", nullable = false)
+    @Column(name = "card_order", nullable = false)
     private Integer cardOrder; // Cambiado a Integer
 
     @ManyToOne(fetch = FetchType.LAZY)
