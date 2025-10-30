@@ -19,7 +19,7 @@ export default function Dashboard() {
   const location = useLocation();
   const { user } = useAuth();
 
-  // leemos lo que venga en la URL
+
   const searchParams = new URLSearchParams(location.search);
   const urlQuery = searchParams.get("q") || "";
   const onlyMine = searchParams.get("mine") === "1";
@@ -29,7 +29,7 @@ export default function Dashboard() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
-  // si cambia la query de la URL, sincronizamos el input
+
   React.useEffect(() => {
     setSearch(urlQuery);
   }, [urlQuery]);
@@ -50,18 +50,18 @@ export default function Dashboard() {
     }
   }, []);
 
-  // 1) los pedimos SIEMPRE al montar
+
   React.useEffect(() => {
     fetchBoards();
   }, [fetchBoards]);
 
-  // 2) y si cambia la URL (por ejemplo /dashboard?mine=1 o /dashboard?q=demo), volvemos a pedir
+
   React.useEffect(() => {
-    // si no quieres pedir otra vez en cada tecla de q, puedes poner aquí una condición
+
     fetchBoards();
   }, [location.search, fetchBoards]);
 
-  // sacar el id del usuario
+
   const currentUserId =
     user?.id ??
     user?.idUsuario ??
@@ -69,7 +69,7 @@ export default function Dashboard() {
     user?.idUsuarioCreador ??
     null;
 
-  // primero: ¿solo los míos?
+
   const boardsByOwner = React.useMemo(() => {
     if (!onlyMine) return boards;
     if (!currentUserId) return boards;
@@ -81,7 +81,6 @@ export default function Dashboard() {
     );
   }, [boards, onlyMine, currentUserId]);
 
-  // segundo: búsqueda (miramos muchos nombres posibles)
   const boardsToShow = boardsByOwner.filter((b) => {
     const q = search.toLowerCase();
     const name =
@@ -98,7 +97,7 @@ export default function Dashboard() {
         .toLowerCase();
     const desc = (b.description || b.descripcion || "").toString().toLowerCase();
 
-    if (!q) return true; // 👈 clave: si el usuario no ha escrito nada, mostramos TODO
+    if (!q) return true; 
     return name.includes(q) || desc.includes(q);
   });
 
@@ -157,8 +156,6 @@ export default function Dashboard() {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              // opcional: sincronizar la URL si quieres
-              // navigate(`/dashboard?q=${encodeURIComponent(e.target.value)}`);
             }}
             className="rounded-xl border border-brand-100 bg-white text-neutral-800 placeholder-neutral-400
                        dark:bg-[var(--color-brand-50)] dark:text-[var(--color-neutral-950)] dark:placeholder-neutral-300

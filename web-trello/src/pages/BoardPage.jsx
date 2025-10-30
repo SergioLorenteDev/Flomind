@@ -52,10 +52,8 @@ export default function BoardPage() {
   const [completedCards, setCompletedCards] = useState(() => new Set());
   const [activeCard, setActiveCard] = useState(null);
   const [activeList, setActiveList] = useState(null);
-  // checklist
   const [selectedCard, setSelectedCard] = useState(null);
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
-  // titulo
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [isSavingTitle, setIsSavingTitle] = useState(false);
@@ -151,7 +149,7 @@ export default function BoardPage() {
     });
   };
 
-  // 👇 ahora abre el panel de checklist
+
   const handleCardMenuAction = (action, card) => {
     setSelectedCard(card);
     setIsChecklistOpen(true);
@@ -493,7 +491,7 @@ export default function BoardPage() {
               </div>
             )}
 
-            {/* 👇 aquí cambiamos el link */}
+            
         <button
   onClick={() => navigate("/dashboard")}
   className="self-start md:self-auto"
@@ -557,7 +555,7 @@ export default function BoardPage() {
           </DndContext>
         </main>
 
-        {/* panel lateral de checklist */}
+       
         {isChecklistOpen && selectedCard ? (
           <div className="fixed right-0 top-0 z-[999] h-full w-80 bg-white border-l border-neutral-200 shadow-xl p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
@@ -782,7 +780,7 @@ function NewListColumn({ listName, setListName, isAddingList, onSubmit }) {
   );
 }
 
-/* checklist inline sin archivo nuevo */
+
 function InlineChecklist({ cardId }) {
   const STORAGE_KEY = "trello-checklist-" + cardId;
 
