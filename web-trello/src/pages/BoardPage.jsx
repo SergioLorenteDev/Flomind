@@ -52,6 +52,10 @@ export default function BoardPage() {
   const [completedCards, setCompletedCards] = useState(() => new Set());
   const [activeCard, setActiveCard] = useState(null);
   const [activeList, setActiveList] = useState(null);
+  // checklist
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [isChecklistOpen, setIsChecklistOpen] = useState(false);
+  // titulo
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [isSavingTitle, setIsSavingTitle] = useState(false);
@@ -147,8 +151,10 @@ export default function BoardPage() {
     });
   };
 
+  // 👇 ahora abre el panel de checklist
   const handleCardMenuAction = (action, card) => {
-    console.log(`Accion '${action}' seleccionada`, card);
+    setSelectedCard(card);
+    setIsChecklistOpen(true);
   };
 
   const reorderLists = (activeId, overId) => {
@@ -251,11 +257,13 @@ export default function BoardPage() {
     const activeData = active.data.current;
     const overData = over.data.current;
 
+    // mover listas
     if (activeData?.type === "list" && (overData?.type === "list" || !overData)) {
       reorderLists(active.id, over.id);
       return;
     }
 
+    // mover tarjetas
     if (activeData?.type !== "card") return;
 
     const activeId = toKey(active.id);
@@ -415,7 +423,7 @@ export default function BoardPage() {
           <p className="mb-4">No se pudo cargar el tablero con ID: {boardId}.</p>
           <p className="font-mono text-sm">{error}</p>
           <div className="mt-4 flex justify-end">
-            <Button onClick={() => navigate("/tableros")} variant="secondary">
+            <Button onClick={() => navigate("/dashboard?mine=1")} variant="secondary">
               Volver a tableros
             </Button>
           </div>
@@ -430,73 +438,77 @@ export default function BoardPage() {
     <>
       <style>{SCROLLBAR_STYLE}</style>
       <div className="min-h-screen bg-white text-slate-900">
-      <BoardTopNav />
+        <BoardTopNav />
 
-      <section className="border-b border-[#dfd5ff] bg-[#f1eaff]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
-          {isEditingTitle ? (
-            <form
-              onSubmit={handleSubmitTitle}
-              className="flex items-center gap-2"
-            >
-              <input
-                value={titleDraft}
-                onChange={(event) => setTitleDraft(event.target.value)}
-                className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-[#4632c5] shadow-sm placeholder:text-[#a192ff] focus:outline-none focus:ring-2 focus:ring-[#846bff]"
-                placeholder="Nombre del tablero"
-                autoFocus
-                disabled={isSavingTitle}
-              />
-              <button
-                type="submit"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-600 disabled:opacity-60"
-                disabled={isSavingTitle || !titleDraft.trim()}
-                aria-label="Guardar nombre del tablero"
+        <section className="border-b border-[#dfd5ff] bg-[#f1eaff]">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+            {isEditingTitle ? (
+              <form
+                onSubmit={handleSubmitTitle}
+                className="flex items-center gap-2"
               >
-                {isSavingTitle ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancelEditingTitle}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#4b3acd] transition hover:bg-white"
-                disabled={isSavingTitle}
-                aria-label="Cancelar edicion"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </form>
-          ) : (
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-[#2d1b8a]">
-                {board.name}
-              </h1>
-              <button
-                type="button"
-                onClick={handleStartEditingTitle}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#2d1b8a] transition hover:bg-white"
-                aria-label="Editar nombre del tablero"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+                <input
+                  value={titleDraft}
+                  onChange={(event) => setTitleDraft(event.target.value)}
+                  className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-[#4632c5] shadow-sm placeholder:text-[#a192ff] focus:outline-none focus:ring-2 focus:ring-[#846bff]"
+                  placeholder="Nombre del tablero"
+                  autoFocus
+                  disabled={isSavingTitle}
+                />
+                <button
+                  type="submit"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-600 disabled:opacity-60"
+                  disabled={isSavingTitle || !titleDraft.trim()}
+                  aria-label="Guardar nombre del tablero"
+                >
+                  {isSavingTitle ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEditingTitle}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#4b3acd] transition hover:bg-white"
+                  disabled={isSavingTitle}
+                  aria-label="Cancelar edicion"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-semibold text-[#2d1b8a]">
+                  {board.name}
+                </h1>
+                <button
+                  type="button"
+                  onClick={handleStartEditingTitle}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#2d1b8a] transition hover:bg-white"
+                  aria-label="Editar nombre del tablero"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
-          <Link to="/tableros" className="self-start md:self-auto">
-            <Button
-              variant="secondary"
-              className="rounded-full bg-[#4b2fc8] px-5 text-white shadow-md hover:bg-[#3a23a3]"
-            >
-              Volver a tableros
-            </Button>
-          </Link>
-        </div>
-      </section>
+            {/* 👇 aquí cambiamos el link */}
+        <button
+  onClick={() => navigate("/dashboard")}
+  className="self-start md:self-auto"
+>
+  <Button
+    variant="secondary"
+    className="rounded-full bg-[#4b2fc8] px-5 text-white shadow-md hover:bg-[#3a23a3]"
+  >
+    Volver a tableros
+  </Button>
+</button>
+          </div>
+        </section>
 
-      <main className="mx-auto max-w-7xl px-6 py-6">
+        <main className="mx-auto max-w-7xl px-6 py-6">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
@@ -543,8 +555,27 @@ export default function BoardPage() {
               document.body
             )}
           </DndContext>
-      </main>
-    </div>
+        </main>
+
+        {/* panel lateral de checklist */}
+        {isChecklistOpen && selectedCard ? (
+          <div className="fixed right-0 top-0 z-[999] h-full w-80 bg-white border-l border-neutral-200 shadow-xl p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-neutral-800">
+                Checklist – {selectedCard.title || selectedCard.nombre || `Tarjeta ${selectedCard.id}`}
+              </h2>
+              <button
+                onClick={() => setIsChecklistOpen(false)}
+                className="text-neutral-400 hover:text-neutral-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <InlineChecklist cardId={selectedCard.id} />
+          </div>
+        ) : null}
+      </div>
     </>
   );
 }
@@ -747,6 +778,106 @@ function NewListColumn({ listName, setListName, isAddingList, onSubmit }) {
           Cancelar
         </button>
       </form>
+    </div>
+  );
+}
+
+/* checklist inline sin archivo nuevo */
+function InlineChecklist({ cardId }) {
+  const STORAGE_KEY = "trello-checklist-" + cardId;
+
+  const [items, setItems] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  }, [STORAGE_KEY, items]);
+
+  const addItem = () => {
+    const t = text.trim();
+    if (!t) return;
+    setItems((prev) => [
+      ...prev,
+      { id: Date.now(), text: t, done: false },
+    ]);
+    setText("");
+  };
+
+  const toggleItem = (id) => {
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, done: !it.done } : it
+      )
+    );
+  };
+
+  const removeItem = (id) => {
+    setItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const doneCount = items.filter((i) => i.done).length;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">
+          Ítems {items.length ? `(${doneCount}/${items.length})` : ""}
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addItem()}
+          placeholder="Añadir ítem..."
+          className="flex-1 border rounded-md px-2 py-1 text-sm"
+        />
+        <button
+          onClick={addItem}
+          className="px-3 py-1 bg-[#4b2fc8] text-white text-sm rounded-md"
+        >
+          +
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {items.length === 0 ? (
+          <p className="text-xs text-neutral-400">Sin ítems.</p>
+        ) : (
+          items.map((it) => (
+            <div key={it.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={it.done}
+                onChange={() => toggleItem(it.id)}
+              />
+              <span
+                className={
+                  "flex-1 text-sm " +
+                  (it.done ? "line-through text-neutral-400" : "")
+                }
+              >
+                {it.text}
+              </span>
+              <button
+                onClick={() => removeItem(it.id)}
+                className="text-xs text-red-400"
+              >
+                borrar
+              </button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
