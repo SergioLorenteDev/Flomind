@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
 import Card from "../components/ui/Card.jsx";
 import { Trash2, Info, Loader2 } from 'lucide-react'; // Iconos
+import MainHeader from "../components/layout/MainHeader.jsx";
+
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -104,7 +106,14 @@ export default function VerTableros() {
     }
 
     return (
-        <section className="min-h-screen bg-gradient-to-b from-neutral-50 to-white px-4 py-8">
+    <>
+      {/* Header global unificado */}
+      <MainHeader />
+        <section
+  data-theme={document.documentElement.getAttribute("data-theme")}
+  className="min-h-screen board-scroll board-page px-4 py-8 mt-20">
+
+
             <div className="mx-auto w-full max-w-5xl">
                 <div className="mb-4 flex items-center justify-between">
                     <h1 className="text-3xl font-bold text-neutral-800">Tus Tableros</h1>
@@ -180,6 +189,7 @@ export default function VerTableros() {
                 </div>
             </div>
         </section>
+        </>
     );
 }
 

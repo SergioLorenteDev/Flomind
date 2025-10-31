@@ -20,9 +20,8 @@ export default function Perfil() {
     <section
       className="
         min-h-screen px-4 py-8 transition-colors duration-300
-        bg-[var(--color-surface)] text-[var(--color-neutral-950)]
-        [data-theme=dark]:bg-[var(--color-brand-25)]
-        [data-theme=dark]:text-[var(--color-neutral-950)]
+        bg-[var(--color-surface)] 
+        text-[var(--text-base-color)]
       "
     >
       <div className="mx-auto w-full max-w-3xl">
@@ -34,68 +33,75 @@ export default function Perfil() {
         </div>
 
         {/* Tarjeta del perfil */}
-        <div
-          className="
-            rounded-2xl border border-black/10
-            [data-theme=dark]:border-[rgba(255,255,255,0.08)]
-            bg-[var(--color-surface)] [data-theme=dark]:bg-[var(--color-surface)]
-            p-6 shadow-sm transition-all duration-300
-          "
-        >
+        <div className="profile-card p-6">
+
           <div className="flex items-center gap-4">
-            {/* Inicial */}
+            {/* Inicial redonda */}
             <div
               className="
                 flex h-14 w-14 items-center justify-center
                 rounded-full
-                bg-[var(--color-brand-100)]
-                [data-theme=dark]:bg-[var(--color-brand-500)]
-                text-[var(--color-brand-700)]
-                [data-theme=dark]:text-white
-                text-xl font-semibold shadow-sm
+                text-white text-xl font-semibold shadow-sm
               "
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-brand-600) 0%, var(--color-brand-500) 100%)",
+              }}
             >
               {initial}
             </div>
 
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 [data-theme=dark]:text-white">
+            <div className="flex flex-col">
+              <h1
+                className="text-xl font-bold leading-tight"
+                style={{ color: "var(--text-heading-color)" }}
+              >
                 Perfil
               </h1>
-              <p className="text-sm text-gray-600 [data-theme=dark]:text-neutral-300">
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-dim-color)" }}
+              >
                 Información de tu cuenta
               </p>
             </div>
           </div>
 
           {/* Datos del usuario */}
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[
-              { label: "Nombre", value: displayName },
-              { label: "Correo", value: user?.email || "—" },
-              { label: "Inicial", value: initial },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                className="
-                  rounded-xl border border-black/10 
-                  [data-theme=dark]:border-[rgba(255,255,255,0.08)] 
-                  bg-[var(--color-brand-25)] 
-                  [data-theme=dark]:bg-[var(--color-surface-hover)] 
-                  p-4 transition-colors duration-300 
-                  hover:shadow-[0_0_10px_rgba(127,86,217,0.15)] 
-                  [data-theme=dark]:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
-                "
-              >
-                <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 [data-theme=dark]:text-neutral-300">
-                  {label}
-                </div>
-                <div className="mt-1 text-sm font-medium text-gray-900 [data-theme=dark]:text-white">
-                  {value}
-                </div>
-              </div>
-            ))}
-          </div>
+<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+  {[
+    { label: "Nombre", value: displayName },
+    { label: "Correo", value: user?.email || "—" },
+    { label: "Inicial", value: initial },
+  ].map(({ label, value }) => (
+    <div
+      key={label}
+      className="
+        profile-field rounded-xl border p-4
+        transition-all duration-300
+        shadow-[0_0_6px_rgba(0,0,0,0.04)]
+        hover:shadow-[0_0_10px_rgba(127,86,217,0.15)]
+      "
+      style={{
+        backgroundColor: "var(--card-bg-color)",
+      }}
+    >
+      <div
+        className="text-xs uppercase tracking-wide font-semibold"
+        style={{ color: "var(--text-dim-color)" }}
+      >
+        {label}
+      </div>
+      <div
+        className="mt-1 text-sm font-semibold"
+        style={{ color: "var(--text-base-color)" }}
+      >
+        {value}
+      </div>
+    </div>
+  ))}
+</div>
+
         </div>
       </div>
     </section>

@@ -12,11 +12,27 @@ export default function TemplateCard({ title, desc, onUse }) {
     >
       <Card className="p-5">
         <div className="h-10 w-10 rounded-lg bg-brand-100 template-icon" />
-        <h3 className="mt-3 text-base font-semibold">{title}</h3>
-        <p className="mt-1 text-sm text-neutral-600">{desc}</p>
-        <Button variant="secondary" className="mt-4" onClick={onUse}>
-          Usar plantilla
-        </Button>
+        <h3
+  className="mt-3 text-base font-semibold"
+  style={{
+    color: "color-mix(in srgb, var(--color-brand-700) 85%, black 15%)",
+  }}
+>
+  {title}
+</h3>
+<p
+  className="mt-1 text-sm"
+  style={{
+    color: "color-mix(in srgb, var(--color-neutral-800) 80%, black 20%)",
+  }}
+>
+  {desc}
+</p>
+
+        <Button variant="secondary" className="mt-4 template-button" onClick={onUse}>
+  Usar plantilla
+</Button>
+
       </Card>
     </div>
   );

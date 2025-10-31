@@ -65,67 +65,68 @@ export default function CrearTablero() {
     };
 
     return (
-        <section className="min-h-screen bg-neutral-50 p-8">
-            <div className="mx-auto w-full max-w-lg bg-white p-8 rounded-xl shadow-2xl">
-                <h1 className="text-3xl font-bold text-neutral-800 mb-6 border-b pb-2">
-                    Crear Nuevo Tablero
-                </h1>
-                
-                {error && (
-                    <div className="p-3 mb-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                        <p>{error}</p>
-                    </div>
-                )}
+  <section className="min-h-screen bg-neutral-50 dark:bg-neutral-900 p-8 transition-colors duration-300">
+    <div className="mx-auto w-full max-w-lg bg-white dark:bg-neutral-800 p-8 rounded-xl shadow-2xl transition-colors duration-300">
+      <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-6 border-b border-neutral-200 dark:border-neutral-700 pb-2">
+        Crear Nuevo Tablero
+      </h1>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-neutral-700">
-                            Nombre del Tablero <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                            className="mt-1 block w-full border border-neutral-300 rounded-md shadow-sm p-2"
-                            disabled={loading}
-                        />
-                    </div>
-                    
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-neutral-700">
-                            Descripción (Opcional)
-                        </label>
-                        <textarea
-                            id="description"
-                            rows="3"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="mt-1 block w-full border border-neutral-300 rounded-md shadow-sm p-2"
-                            disabled={loading}
-                        />
-                    </div>
+      {error && (
+        <div className="p-3 mb-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded">
+          <p>{error}</p>
+        </div>
+      )}
 
-                    <div className="flex justify-end space-x-3 pt-4">
-                        <Button 
-                            variant="secondary" 
-                            type="button" 
-                            onClick={() => navigate(-1)}
-                            disabled={loading}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={loading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                            {loading ? 'Creando...' : 'Crear Tablero'}
-                        </Button>
-                    </div>
-                </form>
-            </div>
-        </section>
-    );
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Nombre del Tablero <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="mt-1 block w-full border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-2 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            disabled={loading}
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            Descripción (Opcional)
+          </label>
+          <textarea
+            id="description"
+            rows="3"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="mt-1 block w-full border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-2 bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100"
+            disabled={loading}
+          />
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button 
+            variant="secondary" 
+            type="button" 
+            onClick={() => navigate(-1)}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800"
+          >
+            {loading ? 'Creando...' : 'Crear Tablero'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  </section>
+);
+
 }
