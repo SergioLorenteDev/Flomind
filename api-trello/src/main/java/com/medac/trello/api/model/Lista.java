@@ -279,6 +279,14 @@ public class Lista {
         return (board != null) ? board.getId() : null;
     }
 
+    public List<Card> getTarjetas() {
+        return tarjetas;
+    }
+
+    public void setTarjetas(List<Card> tarjetas) {
+        this.tarjetas = tarjetas;
+    }
+
     // Setters
     public void setNombre(String nombre) {
         this.nombre = nombre;

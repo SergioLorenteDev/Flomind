@@ -1,15 +1,17 @@
 const API_URL = "http://localhost:8080/trello/v1";
 const TOKEN_STORAGE_KEY = "token";
+const REFRESH_TOKEN_STORAGE_KEY = "refreshToken";
 const SESSION_STORAGE_KEY = "trello_auth_session";
 const LEGACY_SESSION_KEY = "demo_auth_session";
 
-function persistSession(token, user) {
-  if (!token || !user) {
+function persistSession(token, refreshToken, user) {
+  if (!token || !refreshToken || !user) {
     throw new Error("Invalid authentication payload received.");
   }
 
-  const session = JSON.stringify({ token, user, storedAt: Date.now() });
+  const session = JSON.stringify({ token, refreshToken, user, storedAt: Date.now() });
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
   localStorage.setItem(SESSION_STORAGE_KEY, session);
   localStorage.removeItem(LEGACY_SESSION_KEY);
   return user;
@@ -17,6 +19,7 @@ function persistSession(token, user) {
 
 function clearSession() {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
   localStorage.removeItem(SESSION_STORAGE_KEY);
   localStorage.removeItem(LEGACY_SESSION_KEY);
 }
@@ -88,9 +91,9 @@ export async function login(email, password, _remember) {
     }
 
     const data = parseJson(bodyText) || {};
-    const { accessToken, user } = data;
+    const { accessToken, refreshToken, user } = data;
 
-    return persistSession(accessToken, user);
+    return persistSession(accessToken, refreshToken, user);
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     clearSession();
@@ -103,8 +106,9 @@ export function getCurrentUser() {
   if (storedSession) {
     try {
       const session = JSON.parse(storedSession);
-      if (session?.token && session?.user) {
+      if (session?.token && session?.refreshToken && session?.user) {
         localStorage.setItem(TOKEN_STORAGE_KEY, session.token);
+        localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, session.refreshToken);
         return session.user;
       }
     } catch (err) {
@@ -125,7 +129,23 @@ export function getCurrentUser() {
   return null;
 }
 
-export function signOut() {
+export async function signOut() {
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+  if (token && refreshToken) {
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch (err) {
+      console.warn("Error during sign out request:", err);
+    }
+  }
   clearSession();
 }
 

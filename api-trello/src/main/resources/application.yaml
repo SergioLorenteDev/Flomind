@@ -10,8 +10,8 @@ spring:
       mode: always
   datasource:
     url: jdbc:mysql://localhost:3306/trello # El servicio espera que haya una BDD MySQL llamada "trello" funcionando en localhost:3006
-    username: sa # usuario ccreado en la BDD con acceso para consultar, actualizar y crear tablas en "trello"
-    password: password # la contraseña para el usuario
+    username: # usuario ccreado en la BDD con acceso para consultar, actualizar y crear tablas en "trello"
+    password: # la contraseña para el usuario
     driverClassName: com.mysql.cj.jdbc.Driver # El driver de conexion para utilizar
 security:
   jwt:

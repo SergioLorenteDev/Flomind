@@ -90,7 +90,19 @@ export default function BoardPage() {
                 <button onClick={()=>setIsEditingTitle(true)} className={`h-9 w-9 flex items-center justify-center rounded-lg transition ${dark?"bg-[#2a2450] text-white/70 hover:bg-[#3a2e65]":"bg-[#eae3ff] text-[#4b2fc8] hover:bg-[#d7c8ff]"}`}><Pencil className="h-4 w-4"/></button>
               </div>
             )}
-            <Button onClick={()=>navigate("/dashboard")} className={`rounded-full px-4 py-2 text-sm shadow-md transition ${dark?"bg-[#6b4dff] text-white hover:bg-[#5c3be5]":"bg-[#7b61ff] text-white hover:bg-[#6949f8]"}`}>Volver a tableros</Button>
+
+            
+        <button
+  onClick={() => navigate("/dashboard")}
+  className="self-start md:self-auto"
+>
+              <Button
+                variant="secondary"
+                className="rounded-full bg-[var(--color-brand-600)] px-5 text-white shadow-md hover:bg-[var(--color-brand-700)]"
+              >
+    Volver a tableros
+  </Button>
+</button>
           </div>
         </section>
 
@@ -120,7 +132,7 @@ function BoardTopNav() {
   useEffect(()=>{const c=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false)};document.addEventListener("click",c);return()=>document.removeEventListener("click",c)},[]);
   const logout=async()=>{setOpen(false);await signOut();navigate("/login",{replace:true})};
   return (
-    <header className="sticky top-0 z-40 bg-[#4b2fc8] text-white shadow-lg">
+    <header className="sticky top-0 z-40 bg-[var(--color-brand-600)] text-white shadow-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <button onClick={()=>navigate("/dashboard")} className="flex items-center gap-2 text-lg font-semibold"><img src={logo} alt="Flomind" className="h-9"/></button>
         <input type="search" placeholder="Buscar tableros, listas o tareas..." className="hidden md:block w-72 rounded-xl bg-white/20 px-3 py-2 text-sm text-white placeholder-white/70 focus:ring-2 focus:ring-white/50 outline-none"/>

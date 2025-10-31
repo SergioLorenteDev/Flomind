@@ -1,29 +1,31 @@
-import { useState, useEffect } from "react";
-
-export default function Button({ children, type = "button", full, disabled, ...props }) {
-  const [theme, setTheme] = useState(document.documentElement.getAttribute("data-theme") || "light");
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setTheme(document.documentElement.getAttribute("data-theme"));
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  const baseStyles = `py-2 px-4 rounded-lg font-semibold transition-all duration-300 ${full ? "w-full" : ""}`;
-  const variantStyles =
-    theme === "dark"
-      ? "bg-[#9b5cff] text-white hover:bg-[#b07cff] shadow-[0_0_15px_rgba(155,92,255,0.4)]"
-      : "bg-[#ece8ff] text-[#5a3ea6] hover:bg-[#e0d6ff] shadow-[0_0_8px_rgba(90,62,166,0.2)]";
+export default function Button({
+  children,
+  type = "button",
+  variant = "primary",
+  full,
+  className = "",
+  ...props
+}) {
+  const variants = {
+    primary:
+      "bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-bg-hover)] text-[var(--btn-primary-text)]",
+    secondary:
+      "bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-bg-hover)] text-[var(--btn-secondary-text)]",
+    ghost:
+      "bg-transparent hover:bg-[var(--btn-ghost-bg-hover)] text-[var(--btn-ghost-text)]",
+       danger:
+      "bg-transparent border border-[var(--btn-danger-border)] text-[var(--btn-danger-text)] " +
+      "hover:bg-[var(--btn-danger-hover-bg)] hover:border-[var(--btn-danger-border)] transition-colors duration-200",
+  };
 
   return (
-    <button type={type} className={`${baseStyles} ${variantStyles}`} disabled={disabled} {...props}>
+    <button
+      type={type}
+      className={`rounded-xl px-4 py-3 font-medium transition-colors duration-200 ${variants[variant]} ${
+        full ? "w-full" : ""
+      } ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );

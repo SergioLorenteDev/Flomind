@@ -1,21 +1,37 @@
 package com.medac.trello.api.service;
 
-import com.medac.trello.api.model.Board;
-import com.medac.trello.api.model.repository.BoardRepository;
 import com.medac.trello.api.exception.ResourceNotFoundException;
+import com.medac.trello.api.model.Board;
+import com.medac.trello.api.model.Lista;
+import com.medac.trello.api.model.repository.BoardRepository;
+import com.medac.trello.api.model.repository.HistorialMovimientoRepository;
+import com.medac.trello.api.model.repository.ListaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class BoardService {
 
+    private final BoardRepository boardRepository;
+    private final ListaRepository listaRepository;
+    private final HistorialMovimientoRepository historialMovimientoRepository;
+
     @Autowired
-    private BoardRepository boardRepository;
+    public BoardService(
+            BoardRepository boardRepository,
+            ListaRepository listaRepository,
+            HistorialMovimientoRepository historialMovimientoRepository
+    ) {
+        this.boardRepository = boardRepository;
+        this.listaRepository = listaRepository;
+        this.historialMovimientoRepository = historialMovimientoRepository;
+    }
 
     //---------------------CREAR/GUARDAR-----------------------
     @Transactional
@@ -41,7 +57,7 @@ public class BoardService {
     }
 
     // OBTENER POR ID
-    @Transactional
+    @Transactional(readOnly = true)
     public Board obtenerBoardPorId(Long id) {
         return boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
@@ -60,30 +76,16 @@ public class BoardService {
         Board boardExistente = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
 
-        //boardExistente.setName(boardDetalles.getName());
-        //boardExistente.setDescription(boardDetalles.getDescription());
         if (boardDetalles.getName() != null) {
             boardExistente.setName(boardDetalles.getName());
         }
 
-        // ✅ MEJORA: Solo actualiza la descripción si viene en el payload
         if (boardDetalles.getDescription() != null) {
             boardExistente.setDescription(boardDetalles.getDescription());
         }
 
-
         return boardRepository.save(boardExistente);
     }
-
-    //ELIMINAR
-    /*public void eliminarBoard(Long id) {
-        if (!boardRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Tablero no encontrado con id: " + id);
-        }
-        boardRepository.deleteById(id);
-    }
-
-     */
 
     //---------------------------ELIMINAR----------------------------
     @Transactional
@@ -92,7 +94,29 @@ public class BoardService {
         Board boardExistente = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
 
-        // 2. Eliminar la entidad existente. (Solo una llamada DELETE)
+        // 2. Recolectar los IDs de las tarjetas asociadas al tablero.
+        Set<Lista> listas = listaRepository.findAllByBoard_Id(id);
+        List<Long> cardIds = new ArrayList<>();
+        if (listas != null) {
+            for (Lista lista : listas) {
+                if (lista != null && lista.getTarjetas() != null) {
+                    lista.getTarjetas().forEach(card -> {
+                        if (card != null && card.getId() != null) {
+                            cardIds.add(card.getId());
+                        }
+                    });
+                }
+            }
+        }
+
+        if (!cardIds.isEmpty()) {
+            historialMovimientoRepository.deleteAllByTarjeta_IdIn(cardIds);
+        }
+
+        // 3. Eliminar primero las listas asociadas para evitar violaciones de FK.
+        listaRepository.deleteAllByBoard_Id(id);
+
+        // 4. Eliminar el tablero.
         boardRepository.delete(boardExistente);
     }
 }

@@ -1,5 +1,4 @@
-// src/components/modals/NewBoardModal.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Button from "../ui/Button.jsx";
 import { useNavigate } from "react-router-dom";
 
@@ -11,8 +10,8 @@ const TEMPLATES = {
     description: "Empieza desde cero, sin listas iniciales.",
     lists: [],
   },
-  "Plantilla básica": {
-    description: "3 listas para arrancar rápido.",
+  "Plantilla basica": {
+    description: "3 listas para arrancar rapido.",
     lists: [
       { name: "Pendiente", tasks: ["Tarea 1", "Tarea 2"] },
       { name: "En progreso", tasks: [] },
@@ -20,35 +19,86 @@ const TEMPLATES = {
     ],
   },
   "Proyecto simple": {
-    description: "Flujo compacto para proyectos pequeños.",
+    description: "Flujo compacto para proyectos pequenos.",
     lists: [
       { name: "Backlog", tasks: [] },
       { name: "En progreso", tasks: [] },
-      { name: "Revisión", tasks: [] },
+      { name: "Revision", tasks: [] },
       { name: "Hecho", tasks: [] },
     ],
   },
   Estudios: {
-    description: "Organiza clases, tareas y exámenes.",
+    description: "Organiza clases, tareas y examenes.",
     lists: [
       { name: "Asignaturas", tasks: [] },
       { name: "Tareas", tasks: [] },
-      { name: "Exámenes", tasks: [] },
+      { name: "Examenes", tasks: [] },
       { name: "Hecho", tasks: [] },
     ],
   },
 };
 
-export default function NewBoardModal({ onCreated }) {
-  const [open, setOpen] = useState(false);
+export default function NewBoardModal({
+  onCreated,
+  open,
+  onOpenChange,
+  initialTemplate = "Sin plantilla",
+  showTriggerButton = true,
+}) {
+  const navigate = useNavigate();
+
+  const isControlled = typeof open === "boolean";
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = isControlled ? open : internalOpen;
+
   const [boardName, setBoardName] = useState("");
-  const [template, setTemplate] = useState("Plantilla básica");
+  const [template, setTemplate] = useState(initialTemplate);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const navigate = useNavigate();
+  const setOpenState = (value) => {
+    if (!isControlled) {
+      setInternalOpen(value);
+    }
+    onOpenChange?.(value);
+  };
 
-  const selected = useMemo(() => TEMPLATES[template], [template]);
+  useEffect(() => {
+    if (isOpen) {
+      setTemplate(initialTemplate);
+      setBoardName("");
+      setError(null);
+      setLoading(false);
+    }
+  }, [initialTemplate, isOpen]);
+
+  const resetForm = (nextTemplate = initialTemplate) => {
+    setBoardName("");
+    setTemplate(nextTemplate);
+    setError(null);
+    setLoading(false);
+  };
+
+  const openModal = () => {
+    resetForm(initialTemplate);
+    setOpenState(true);
+  };
+
+  const forceClose = () => {
+    resetForm(initialTemplate);
+    setOpenState(false);
+  };
+
+  const handleCancel = () => {
+    if (!loading) {
+      forceClose();
+    }
+  };
+
+  const selected = useMemo(
+    () => TEMPLATES[template] || TEMPLATES["Sin plantilla"],
+    [template],
+  );
   const canCreate = boardName.trim().length > 0 && !loading;
 
   async function handleCreate() {
@@ -83,7 +133,7 @@ export default function NewBoardModal({ onCreated }) {
           const errorBody = await res.json();
           message = errorBody.message || message;
         } catch {
-          // ignore parse error
+          /* ignore parse error */
         }
         throw new Error(message);
       }
@@ -95,7 +145,7 @@ export default function NewBoardModal({ onCreated }) {
         const boardNumericId = Number(boardId);
         const boardRefId = Number.isNaN(boardNumericId) ? boardId : boardNumericId;
 
-        for (let index = 0; index < selected.lists.length; index++) {
+        for (let index = 0; index < selected.lists.length; index += 1) {
           const listDefinition = selected.lists[index];
           const listPayload = {
             nombre: listDefinition.name,
@@ -118,7 +168,7 @@ export default function NewBoardModal({ onCreated }) {
               const errorBody = await listRes.json();
               message = errorBody.message || message;
             } catch {
-              // ignore parse error
+              /* ignore parse error */
             }
             throw new Error(message);
           }
@@ -126,11 +176,7 @@ export default function NewBoardModal({ onCreated }) {
       }
 
       onCreated?.(created);
-
-      setOpen(false);
-      setBoardName("");
-      setTemplate("Plantilla básica");
-
+      forceClose();
       navigate(`/tableros/${created.id}`);
     } catch (err) {
       console.error("No se pudo crear el tablero:", err);
@@ -158,30 +204,34 @@ export default function NewBoardModal({ onCreated }) {
 
   return (
     <div>
-      <Button variant="primary" onClick={() => setOpen(true)}>
-        + Nuevo tablero
-      </Button>
+      {showTriggerButton ? (
+        <Button
+          variant="primary"
+          onClick={openModal}
+          className="self-start sm:self-auto"
+        >
+          + Nuevo tablero
+        </Button>
+      ) : null}
 
-      {open ? (
+      {isOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           aria-modal="true"
           role="dialog"
           aria-labelledby="new-board-title"
-          onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+          onKeyDown={(event) => event.key === "Escape" && handleCancel()}
         >
           {/* FONDO OSCURO */}
           <div
-            className="absolute inset-0 bg-black/20 dark:bg-black/70 backdrop-blur-md transition-opacity"
-            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity"
+            onClick={handleCancel}
           />
 
           {/* CONTENEDOR DEL MODAL */}
           <div
-            className={`relative z-10 w-full max-w-xl rounded-2xl shadow-2xl transition-colors duration-300 ${
-              isDark ? "bg-neutral-900 text-neutral-100" : "bg-white text-neutral-900"
-            }`}
-            onClick={(e) => e.stopPropagation()}
+            className="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
           >
             {/* HEADER */}
             <div
@@ -190,37 +240,21 @@ export default function NewBoardModal({ onCreated }) {
               }`}
             >
               <div>
-  <h2
-    id="new-board-title"
-    className={`text-lg font-semibold transition-colors ${
-      isDark ? "text-[#bca5ff]" : "text-[#7e3ff2]"
-    }`}
-  >
-    Creación de tableros
-  </h2>
-  <p
-  className={`text-sm font-medium transition-colors ${
-    isDark ? "text-[#a78bfa]" : "text-[#6d28d9]"
-  }`}
->
-  Configura un tablero nuevo
-</p>
-
-</div>
-
-<button
-  className={`rounded-lg px-2 py-1 transition-colors ${
-    isDark
-      ? "text-neutral-300 hover:bg-[#3c2a70] hover:text-[#d5bfff]"
-      : "text-neutral-600 hover:bg-[#ede9fe] hover:text-[#6b21a8]"
-  }`}
-  onClick={() => setOpen(false)}
-  aria-label="Cerrar"
->
-  ✕
-</button>
-
-
+                <h2 id="new-board-title" className="text-lg font-semibold">
+                  Creacion de tableros
+                </h2>
+                <p className="text-sm text-neutral-600">
+                  Configura un tablero nuevo
+                </p>
+              </div>
+              <button
+                className="rounded-lg px-2 py-1 text-neutral-600 hover:bg-neutral-100"
+                onClick={handleCancel}
+                aria-label="Cerrar"
+                disabled={loading}
+              >
+                X
+              </button>
             </div>
 
             {/* CUERPO */}
@@ -238,97 +272,52 @@ export default function NewBoardModal({ onCreated }) {
               ) : null}
 
               <label className="flex flex-col gap-2 text-sm">
-  <span
-    className={`font-semibold transition-colors ${
-      isDark ? "text-[#a78bfa]" : "text-[#5b21b6]"
-    }`}
-  >
-    Nombre de tablero
-  </span>
-  <input
-    value={boardName}
-    onChange={(e) => setBoardName(e.target.value)}
-    placeholder="Ej. Campaña Q4 / Estudio DAW / Personal"
-    className={`rounded-xl border px-3 py-2 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all ${
-      isDark
-        ? "border-neutral-600 bg-neutral-800 text-neutral-100"
-        : "border-neutral-300 bg-white text-neutral-900"
-    }`}
-    disabled={loading}
-  />
-</label>
+                <span className="font-medium text-neutral-900">
+                  Nombre de tablero
+                </span>
+                <input
+                  value={boardName}
+                  onChange={(event) => setBoardName(event.target.value)}
+                  placeholder="Ej. Campana Q4 / Estudio DAW / Personal"
+                  className="rounded-xl border px-3 py-2 outline-none focus:border-neutral-400"
+                  disabled={loading}
+                />
+              </label>
 
-<label className="flex flex-col gap-2 text-sm">
-  <span
-    className={`font-semibold transition-colors ${
-      isDark ? "text-[#a78bfa]" : "text-[#5b21b6]"
-    }`}
-  >
-    Plantilla seleccionada
-  </span>
-  <select
-    value={template}
-    onChange={(e) => setTemplate(e.target.value)}
-    className={`rounded-xl border px-3 py-2 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all ${
-      isDark
-        ? "border-neutral-600 bg-neutral-800 text-neutral-100"
-        : "border-neutral-300 bg-white text-neutral-900"
-    }`}
-    disabled={loading}
-  >
-    {Object.keys(TEMPLATES).map((key) => (
-      <option key={key} value={key}>
-        {key}
-      </option>
-    ))}
-  </select>
-  <span
-    className={`text-xs ${
-      isDark ? "text-neutral-400" : "text-neutral-600"
-    }`}
-  >
-    {selected?.description}
-  </span>
-</label>
+              <label className="flex flex-col gap-2 text-sm">
+                <span className="font-medium text-neutral-900">
+                  Plantilla seleccionada
+                </span>
+                <select
+                  value={template}
+                  onChange={(event) => setTemplate(event.target.value)}
+                  className="rounded-xl border px-3 py-2 outline-none focus:border-neutral-400"
+                  disabled={loading}
+                >
+                  {Object.keys(TEMPLATES).map((key) => (
+                    <option key={key} value={key}>
+                      {key}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-neutral-600">
+                  {selected?.description}
+                </span>
+              </label>
 
-<div className="space-y-3">
-  <p
-    className={`text-sm font-semibold transition-colors ${
-      isDark ? "text-[#c4b5fd]" : "text-[#4c1d95]"
-    }`}
-  >
-    Se crearán estas listas:
-  </p>
-
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Se crearan estas listas:</p>
 
                 {selected?.lists?.length ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {selected.lists.map((list, index) => (
-                      <div
-                        key={index}
-                        className={`rounded-xl p-3 shadow-sm transition-colors ${
-                          isDark ? "bg-neutral-800" : "bg-white"
-                        }`}
-                      >
+                      <div key={`${list.name}-${index}`} className="rounded-xl bg-white p-3 shadow-sm">
                         <p className="mb-2 text-sm font-semibold">{list.name}</p>
                         {list.tasks?.length ? (
-                          <ul
-                            className={`space-y-1 text-xs ${
-                              isDark ? "text-neutral-400" : "text-neutral-600"
-                            }`}
-                          >
-                            {list.tasks.map((task, taskIndex) => (
-                              <li
-                                key={taskIndex}
-                                className="flex items-center gap-2"
-                              >
-                                <span
-                                  className={`inline-block h-1.5 w-1.5 rounded-full ${
-                                    isDark
-                                      ? "bg-neutral-500"
-                                      : "bg-neutral-400"
-                                  }`}
-                                />
+                          <ul className="space-y-1 text-xs text-neutral-600">
+                            {list.tasks.map((task) => (
+                              <li key={task} className="flex items-center gap-2">
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" />
                                 {task}
                               </li>
                             ))}
@@ -348,27 +337,26 @@ export default function NewBoardModal({ onCreated }) {
                     ))}
                   </div>
                 ) : (
-                  <p
-                    className={`text-xs ${
-                      isDark ? "text-neutral-500" : "text-neutral-500"
-                    }`}
-                  >
-                    (No se crearán listas automáticamente)
+                  <p className="text-xs text-neutral-500">
+                    (No se crearan listas automaticamente)
                   </p>
                 )}
               </div>
             </div>
 
-            {/* FOOTER */}
-            <div
-              className={`flex items-center justify-between border-t px-5 py-4 ${
-                isDark ? "border-neutral-700" : "border-neutral-200"
-              }`}
-            >
-              <Button variant="secondary" onClick={() => setOpen(false)} disabled={loading}>
+            <div className="flex items-center justify-between border-t px-5 py-4">
+              <Button
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={loading}
+              >
                 Cancelar
               </Button>
-              <Button variant="primary" onClick={handleCreate} disabled={!canCreate}>
+              <Button
+                variant="primary"
+                onClick={handleCreate}
+                disabled={!canCreate}
+              >
                 {loading ? "Creando..." : "Crear tablero"}
               </Button>
             </div>
