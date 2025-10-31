@@ -13,9 +13,11 @@ export default function Button({
       "bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-bg-hover)] text-[var(--btn-secondary-text)]",
     ghost:
       "bg-transparent hover:bg-[var(--btn-ghost-bg-hover)] text-[var(--btn-ghost-text)]",
-       danger:
+    danger:
       "bg-transparent border border-[var(--btn-danger-border)] text-[var(--btn-danger-text)] " +
       "hover:bg-[var(--btn-danger-hover-bg)] hover:border-[var(--btn-danger-border)] transition-colors duration-200",
+    confirm:
+      "bg-purple-600 hover:bg-purple-700 text-white transition-colors duration-200",
   };
 
   return (

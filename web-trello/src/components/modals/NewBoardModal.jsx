@@ -11,7 +11,7 @@ const TEMPLATES = {
     lists: [],
   },
   "Plantilla basica": {
-    description: "3 listas para arrancar rapido.",
+    description: "3 listas para arrancar rápido.",
     lists: [
       { name: "Pendiente", tasks: ["Tarea 1", "Tarea 2"] },
       { name: "En progreso", tasks: [] },
@@ -19,26 +19,26 @@ const TEMPLATES = {
     ],
   },
   "Proyecto simple": {
-    description: "Flujo compacto para proyectos pequenos.",
+    description: "Flujo compacto para proyectos pequeños.",
     lists: [
       { name: "Backlog", tasks: [] },
       { name: "En progreso", tasks: [] },
-      { name: "Revision", tasks: [] },
+      { name: "Revisión", tasks: [] },
       { name: "Hecho", tasks: [] },
     ],
   },
   Estudios: {
-    description: "Organiza clases, tareas y examenes.",
+    description: "Organiza clases, tareas y exámenes.",
     lists: [
       { name: "Asignaturas", tasks: [] },
       { name: "Tareas", tasks: [] },
-      { name: "Examenes", tasks: [] },
+      { name: "Exámenes", tasks: [] },
       { name: "Hecho", tasks: [] },
     ],
   },
 };
 
-export default function NewBoardModal({
+function NewBoardModal({
   onCreated,
   open,
   onOpenChange,
@@ -57,9 +57,7 @@ export default function NewBoardModal({
   const [error, setError] = useState(null);
 
   const setOpenState = (value) => {
-    if (!isControlled) {
-      setInternalOpen(value);
-    }
+    if (!isControlled) setInternalOpen(value);
     onOpenChange?.(value);
   };
 
@@ -90,9 +88,7 @@ export default function NewBoardModal({
   };
 
   const handleCancel = () => {
-    if (!loading) {
-      forceClose();
-    }
+    if (!loading) forceClose();
   };
 
   const selected = useMemo(
@@ -108,9 +104,7 @@ export default function NewBoardModal({
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Sesion no valida. Inicia sesion nuevamente.");
-      }
+      if (!token) throw new Error("Sesión no válida. Inicia sesión nuevamente.");
 
       const payload = {
         name: boardName.trim(),
@@ -140,10 +134,13 @@ export default function NewBoardModal({
 
       const created = await res.json();
 
+      // Crear listas según la plantilla seleccionada
       if (selected?.lists?.length) {
         const boardId = created.id;
         const boardNumericId = Number(boardId);
-        const boardRefId = Number.isNaN(boardNumericId) ? boardId : boardNumericId;
+        const boardRefId = Number.isNaN(boardNumericId)
+          ? boardId
+          : boardNumericId;
 
         for (let index = 0; index < selected.lists.length; index += 1) {
           const listDefinition = selected.lists[index];
@@ -186,9 +183,12 @@ export default function NewBoardModal({
     }
   }
 
-    const [isDark, setIsDark] = useState(document.documentElement.classList.contains("dark"));
+  // 🔦 Detección del modo oscuro
+  const [isDark, setIsDark] = useState(
+    document.documentElement.classList.contains("dark")
+  );
 
-  React.useEffect(() => {
+  useEffect(() => {
     const observer = new MutationObserver(() => {
       const darkActive = document.documentElement.classList.contains("dark");
       setIsDark(darkActive);
@@ -202,6 +202,7 @@ export default function NewBoardModal({
     return () => observer.disconnect();
   }, []);
 
+  // 🌙 Render
   return (
     <div>
       {showTriggerButton ? (
@@ -224,42 +225,62 @@ export default function NewBoardModal({
         >
           {/* FONDO OSCURO */}
           <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={handleCancel}
           />
 
           {/* CONTENEDOR DEL MODAL */}
           <div
-            className="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-2xl"
+            className={`relative z-10 w-full max-w-xl rounded-2xl shadow-2xl border transition-colors duration-300 ${
+              isDark
+                ? "bg-gray-900 border-gray-700 text-gray-100"
+                : "bg-white border-gray-200 text-gray-900"
+            }`}
             onClick={(event) => event.stopPropagation()}
           >
             {/* HEADER */}
             <div
               className={`flex items-start justify-between gap-3 border-b px-5 py-4 ${
-                isDark ? "border-neutral-700" : "border-neutral-200"
+                isDark ? "border-gray-700" : "border-gray-200"
               }`}
             >
               <div>
-                <h2 id="new-board-title" className="text-lg font-semibold">
-                  Creacion de tableros
-                </h2>
-                <p className="text-sm text-neutral-600">
-                  Configura un tablero nuevo
-                </p>
+                <h2
+  id="new-board-title"
+  className={`text-lg font-semibold ${
+    isDark ? "text-purple-400" : "text-purple-800"
+  }`}
+>
+  Creación de tableros
+</h2>
+
+<p
+  className={`text-sm ${
+    isDark ? "text-purple-300" : "text-purple-700"
+  }`}
+>
+  Configura un tablero nuevo
+</p>
+
+
               </div>
               <button
-                className="rounded-lg px-2 py-1 text-neutral-600 hover:bg-neutral-100"
+                className={`rounded-lg px-2 py-1 transition-colors ${
+                  isDark
+                    ? "text-gray-400 hover:bg-gray-800"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
                 onClick={handleCancel}
                 aria-label="Cerrar"
                 disabled={loading}
               >
-                X
+                ✕
               </button>
             </div>
 
             {/* CUERPO */}
             <div className="space-y-5 p-5">
-              {error ? (
+              {error && (
                 <div
                   className={`rounded-lg border px-3 py-2 text-sm ${
                     isDark
@@ -269,29 +290,51 @@ export default function NewBoardModal({
                 >
                   {error}
                 </div>
-              ) : null}
+              )}
 
+              {/* Campo nombre */}
               <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium text-neutral-900">
-                  Nombre de tablero
-                </span>
+                <span
+  className={`font-medium ${
+    isDark ? "text-purple-400" : "text-purple-800"
+  }`}
+>
+  Nombre de tablero
+</span>
+
+
                 <input
                   value={boardName}
                   onChange={(event) => setBoardName(event.target.value)}
-                  placeholder="Ej. Campana Q4 / Estudio DAW / Personal"
-                  className="rounded-xl border px-3 py-2 outline-none focus:border-neutral-400"
+                  placeholder="Ej. Campaña Q4 / Estudio DAW / Personal"
+                  className={`rounded-xl border px-3 py-2 outline-none transition-colors ${
+                    isDark
+                      ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-gray-500"
+                      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-gray-400"
+                  }`}
                   disabled={loading}
                 />
               </label>
 
+              {/* Plantilla */}
               <label className="flex flex-col gap-2 text-sm">
-                <span className="font-medium text-neutral-900">
-                  Plantilla seleccionada
-                </span>
+                <span
+  className={`font-medium ${
+    isDark ? "text-purple-400" : "text-purple-800"
+  }`}
+>
+  Plantilla seleccionada
+</span>
+
+
                 <select
                   value={template}
                   onChange={(event) => setTemplate(event.target.value)}
-                  className="rounded-xl border px-3 py-2 outline-none focus:border-neutral-400"
+                  className={`rounded-xl border px-3 py-2 outline-none transition-colors ${
+                    isDark
+                      ? "bg-gray-800 border-gray-700 text-white focus:border-gray-500"
+                      : "bg-white border-gray-300 text-gray-900 focus:border-gray-400"
+                  }`}
                   disabled={loading}
                 >
                   {Object.keys(TEMPLATES).map((key) => (
@@ -300,24 +343,54 @@ export default function NewBoardModal({
                     </option>
                   ))}
                 </select>
-                <span className="text-xs text-neutral-600">
+                <span
+                  className={`text-xs ${
+                    isDark ? "text-gray-500" : "text-gray-600"
+                  }`}
+                >
                   {selected?.description}
                 </span>
               </label>
 
+              {/* Listas */}
               <div className="space-y-3">
-                <p className="text-sm font-medium">Se crearan estas listas:</p>
+                <p
+  className={`text-sm font-medium ${
+    isDark ? "text-purple-400" : "text-purple-800"
+  }`}
+>
+  Se crearán estas listas:
+</p>
+
+
 
                 {selected?.lists?.length ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {selected.lists.map((list, index) => (
-                      <div key={`${list.name}-${index}`} className="rounded-xl bg-white p-3 shadow-sm">
-                        <p className="mb-2 text-sm font-semibold">{list.name}</p>
+                      <div
+                        key={`${list.name}-${index}`}
+                        className={`rounded-xl p-3 shadow-sm transition-colors ${
+                          isDark
+                            ? "bg-gray-800 border border-gray-700"
+                            : "bg-white border border-gray-200"
+                        }`}
+                      >
+                        <p className="mb-2 text-sm font-semibold">
+                          {list.name}
+                        </p>
                         {list.tasks?.length ? (
-                          <ul className="space-y-1 text-xs text-neutral-600">
+                          <ul
+                            className={`space-y-1 text-xs ${
+                              isDark ? "text-gray-400" : "text-gray-600"
+                            }`}
+                          >
                             {list.tasks.map((task) => (
                               <li key={task} className="flex items-center gap-2">
-                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                                <span
+                                  className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                    isDark ? "bg-gray-500" : "bg-gray-400"
+                                  }`}
+                                />
                                 {task}
                               </li>
                             ))}
@@ -325,9 +398,7 @@ export default function NewBoardModal({
                         ) : (
                           <p
                             className={`text-xs ${
-                              isDark
-                                ? "text-neutral-500"
-                                : "text-neutral-500"
+                              isDark ? "text-gray-500" : "text-gray-500"
                             }`}
                           >
                             (Sin tareas iniciales)
@@ -337,28 +408,39 @@ export default function NewBoardModal({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-neutral-500">
-                    (No se crearan listas automaticamente)
+                  <p
+                    className={`text-xs ${
+                      isDark ? "text-gray-500" : "text-gray-500"
+                    }`}
+                  >
+                    (No se crearán listas automáticamente)
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t px-5 py-4">
+            {/* FOOTER */}
+            <div
+              className={`flex items-center justify-between border-t px-5 py-4 ${
+                isDark ? "border-gray-700" : "border-gray-200"
+              }`}
+            >
               <Button
                 variant="secondary"
                 onClick={handleCancel}
                 disabled={loading}
+                className={isDark ? "bg-gray-700 text-white hover:bg-gray-600" : ""}
               >
                 Cancelar
               </Button>
               <Button
-                variant="primary"
-                onClick={handleCreate}
-                disabled={!canCreate}
-              >
-                {loading ? "Creando..." : "Crear tablero"}
-              </Button>
+  variant="confirm"
+  onClick={handleCreate}
+  disabled={!canCreate}
+>
+  {loading ? "Creando..." : "Crear tablero"}
+</Button>
+
             </div>
           </div>
         </div>
@@ -366,3 +448,5 @@ export default function NewBoardModal({
     </div>
   );
 }
+
+export default NewBoardModal;
