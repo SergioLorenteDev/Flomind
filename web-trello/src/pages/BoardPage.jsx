@@ -496,10 +496,10 @@ export default function BoardPage() {
   onClick={() => navigate("/dashboard")}
   className="self-start md:self-auto"
 >
-  <Button
-    variant="secondary"
-    className="rounded-full bg-[#4b2fc8] px-5 text-white shadow-md hover:bg-[#3a23a3]"
-  >
+              <Button
+                variant="secondary"
+                className="rounded-full bg-[var(--color-brand-600)] px-5 text-white shadow-md hover:bg-[var(--color-brand-700)]"
+              >
     Volver a tableros
   </Button>
 </button>
@@ -581,7 +581,7 @@ export default function BoardPage() {
 function BoardTopNav() {
   const navigate = useNavigate();
   return (
-    <header className="sticky top-0 z-40 bg-[#4b2fc8] text-white shadow-lg">
+    <header className="sticky top-0 z-40 bg-[var(--color-brand-600)] text-white shadow-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <div className="flex items-center gap-3">
           <button

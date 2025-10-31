@@ -8,7 +8,7 @@ export default function PageShell({ title, actions, children }) {
   return (
     <div className="min-h-screen bg-[var(--color-brand-25)] text-[var(--color-neutral-950)] dark:bg-[var(--color-brand-25)] dark:text-[var(--color-neutral-950)]">
       <Header />
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-6 pt-2 pb-5">
         <div className="flex items-center justify-between gap-4">
           {title ? (
             <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-neutral-950)] dark:text-[var(--color-brand-500)]">  
@@ -19,7 +19,7 @@ export default function PageShell({ title, actions, children }) {
           )}
           {actions}
         </div>
-        <div className="mt-6">{children}</div>
+        <div className="mt-3">{children}</div>
       </main>
     </div>
   );

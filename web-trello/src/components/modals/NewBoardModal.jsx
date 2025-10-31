@@ -1,5 +1,4 @@
-// src/components/modals/NewBoardModal.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Button from "../ui/Button.jsx";
 import { useNavigate } from "react-router-dom";
 
@@ -11,8 +10,8 @@ const TEMPLATES = {
     description: "Empieza desde cero, sin listas iniciales.",
     lists: [],
   },
-  "Plantilla básica": {
-    description: "3 listas para arrancar rápido.",
+  "Plantilla basica": {
+    description: "3 listas para arrancar rapido.",
     lists: [
       { name: "Pendiente", tasks: ["Tarea 1", "Tarea 2"] },
       { name: "En progreso", tasks: [] },
@@ -20,35 +19,86 @@ const TEMPLATES = {
     ],
   },
   "Proyecto simple": {
-    description: "Flujo compacto para proyectos pequeños.",
+    description: "Flujo compacto para proyectos pequenos.",
     lists: [
       { name: "Backlog", tasks: [] },
       { name: "En progreso", tasks: [] },
-      { name: "Revisión", tasks: [] },
+      { name: "Revision", tasks: [] },
       { name: "Hecho", tasks: [] },
     ],
   },
   Estudios: {
-    description: "Organiza clases, tareas y exámenes.",
+    description: "Organiza clases, tareas y examenes.",
     lists: [
       { name: "Asignaturas", tasks: [] },
       { name: "Tareas", tasks: [] },
-      { name: "Exámenes", tasks: [] },
+      { name: "Examenes", tasks: [] },
       { name: "Hecho", tasks: [] },
     ],
   },
 };
 
-export default function NewBoardModal({ onCreated }) {
-  const [open, setOpen] = useState(false);
+export default function NewBoardModal({
+  onCreated,
+  open,
+  onOpenChange,
+  initialTemplate = "Sin plantilla",
+  showTriggerButton = true,
+}) {
+  const navigate = useNavigate();
+
+  const isControlled = typeof open === "boolean";
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = isControlled ? open : internalOpen;
+
   const [boardName, setBoardName] = useState("");
-  const [template, setTemplate] = useState("Plantilla básica");
+  const [template, setTemplate] = useState(initialTemplate);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const navigate = useNavigate();
+  const setOpenState = (value) => {
+    if (!isControlled) {
+      setInternalOpen(value);
+    }
+    onOpenChange?.(value);
+  };
 
-  const selected = useMemo(() => TEMPLATES[template], [template]);
+  useEffect(() => {
+    if (isOpen) {
+      setTemplate(initialTemplate);
+      setBoardName("");
+      setError(null);
+      setLoading(false);
+    }
+  }, [initialTemplate, isOpen]);
+
+  const resetForm = (nextTemplate = initialTemplate) => {
+    setBoardName("");
+    setTemplate(nextTemplate);
+    setError(null);
+    setLoading(false);
+  };
+
+  const openModal = () => {
+    resetForm(initialTemplate);
+    setOpenState(true);
+  };
+
+  const forceClose = () => {
+    resetForm(initialTemplate);
+    setOpenState(false);
+  };
+
+  const handleCancel = () => {
+    if (!loading) {
+      forceClose();
+    }
+  };
+
+  const selected = useMemo(
+    () => TEMPLATES[template] || TEMPLATES["Sin plantilla"],
+    [template],
+  );
   const canCreate = boardName.trim().length > 0 && !loading;
 
   async function handleCreate() {
@@ -83,7 +133,7 @@ export default function NewBoardModal({ onCreated }) {
           const errorBody = await res.json();
           message = errorBody.message || message;
         } catch {
-          // ignore parse error
+          /* ignore parse error */
         }
         throw new Error(message);
       }
@@ -95,7 +145,7 @@ export default function NewBoardModal({ onCreated }) {
         const boardNumericId = Number(boardId);
         const boardRefId = Number.isNaN(boardNumericId) ? boardId : boardNumericId;
 
-        for (let index = 0; index < selected.lists.length; index++) {
+        for (let index = 0; index < selected.lists.length; index += 1) {
           const listDefinition = selected.lists[index];
           const listPayload = {
             nombre: listDefinition.name,
@@ -118,7 +168,7 @@ export default function NewBoardModal({ onCreated }) {
               const errorBody = await listRes.json();
               message = errorBody.message || message;
             } catch {
-              // ignore parse error
+              /* ignore parse error */
             }
             throw new Error(message);
           }
@@ -126,11 +176,7 @@ export default function NewBoardModal({ onCreated }) {
       }
 
       onCreated?.(created);
-
-      setOpen(false);
-      setBoardName("");
-      setTemplate("Plantilla básica");
-
+      forceClose();
       navigate(`/tableros/${created.id}`);
     } catch (err) {
       console.error("No se pudo crear el tablero:", err);
@@ -142,31 +188,37 @@ export default function NewBoardModal({ onCreated }) {
 
   return (
     <div>
-      <Button variant="primary" onClick={() => setOpen(true)}>
-        + Nuevo tablero
-      </Button>
+      {showTriggerButton ? (
+        <Button
+          variant="primary"
+          onClick={openModal}
+          className="self-start sm:self-auto"
+        >
+          + Nuevo tablero
+        </Button>
+      ) : null}
 
-      {open ? (
+      {isOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           aria-modal="true"
           role="dialog"
           aria-labelledby="new-board-title"
-          onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
+          onKeyDown={(event) => event.key === "Escape" && handleCancel()}
         >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity"
-            onClick={() => setOpen(false)}
+            onClick={handleCancel}
           />
 
           <div
             className="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
               <div>
                 <h2 id="new-board-title" className="text-lg font-semibold">
-                  Creación de tableros
+                  Creacion de tableros
                 </h2>
                 <p className="text-sm text-neutral-600">
                   Configura un tablero nuevo
@@ -174,8 +226,9 @@ export default function NewBoardModal({ onCreated }) {
               </div>
               <button
                 className="rounded-lg px-2 py-1 text-neutral-600 hover:bg-neutral-100"
-                onClick={() => setOpen(false)}
+                onClick={handleCancel}
                 aria-label="Cerrar"
+                disabled={loading}
               >
                 X
               </button>
@@ -194,8 +247,8 @@ export default function NewBoardModal({ onCreated }) {
                 </span>
                 <input
                   value={boardName}
-                  onChange={(e) => setBoardName(e.target.value)}
-                  placeholder="Ej. Campaña Q4 / Estudio DAW / Personal"
+                  onChange={(event) => setBoardName(event.target.value)}
+                  placeholder="Ej. Campana Q4 / Estudio DAW / Personal"
                   className="rounded-xl border px-3 py-2 outline-none focus:border-neutral-400"
                   disabled={loading}
                 />
@@ -207,7 +260,7 @@ export default function NewBoardModal({ onCreated }) {
                 </span>
                 <select
                   value={template}
-                  onChange={(e) => setTemplate(e.target.value)}
+                  onChange={(event) => setTemplate(event.target.value)}
                   className="rounded-xl border px-3 py-2 outline-none focus:border-neutral-400"
                   disabled={loading}
                 >
@@ -223,17 +276,17 @@ export default function NewBoardModal({ onCreated }) {
               </label>
 
               <div className="space-y-3">
-                <p className="text-sm font-medium">Se crearán estas listas:</p>
+                <p className="text-sm font-medium">Se crearan estas listas:</p>
 
                 {selected?.lists?.length ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {selected.lists.map((list, index) => (
-                      <div key={index} className="rounded-xl bg-white p-3 shadow-sm">
+                      <div key={`${list.name}-${index}`} className="rounded-xl bg-white p-3 shadow-sm">
                         <p className="mb-2 text-sm font-semibold">{list.name}</p>
                         {list.tasks?.length ? (
                           <ul className="space-y-1 text-xs text-neutral-600">
-                            {list.tasks.map((task, taskIndex) => (
-                              <li key={taskIndex} className="flex items-center gap-2">
+                            {list.tasks.map((task) => (
+                              <li key={task} className="flex items-center gap-2">
                                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-neutral-400" />
                                 {task}
                               </li>
@@ -249,17 +302,25 @@ export default function NewBoardModal({ onCreated }) {
                   </div>
                 ) : (
                   <p className="text-xs text-neutral-500">
-                    (No se crearán listas automáticamente)
+                    (No se crearan listas automaticamente)
                   </p>
                 )}
               </div>
             </div>
 
             <div className="flex items-center justify-between border-t px-5 py-4">
-              <Button variant="secondary" onClick={() => setOpen(false)} disabled={loading}>
+              <Button
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={loading}
+              >
                 Cancelar
               </Button>
-              <Button variant="primary" onClick={handleCreate} disabled={!canCreate}>
+              <Button
+                variant="primary"
+                onClick={handleCreate}
+                disabled={!canCreate}
+              >
                 {loading ? "Creando..." : "Crear tablero"}
               </Button>
             </div>

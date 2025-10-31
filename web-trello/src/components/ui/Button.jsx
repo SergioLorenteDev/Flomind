@@ -3,6 +3,7 @@ export default function Button({
   type = "button",
   variant = "primary",
   full,
+  className = "",
   ...props
 }) {
   const variants = {
@@ -22,7 +23,7 @@ export default function Button({
       type={type}
       className={`rounded-xl px-4 py-3 font-medium transition-colors duration-200 ${variants[variant]} ${
         full ? "w-full" : ""
-      }`}
+      } ${className}`}
       {...props}
     >
       {children}
