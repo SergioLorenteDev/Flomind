@@ -85,7 +85,11 @@ export default function Dashboard() {
   }, [location.search, fetchBoards]);
 
  
-  const currentUserId = user?.id ?? null;
+  const currentUserId = React.useMemo(() => {
+    if (user?.id == null) return null;
+    const parsed = Number(user.id);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [user?.id]);
 
   const resolveBoardId = React.useCallback(
     (board) => board?.id ?? board?.idTablero ?? board?.id_tablero ?? null,
@@ -103,7 +107,19 @@ export default function Dashboard() {
     if (!onlyMine) return boards;
     if (!currentUserId) return boards;
 
-    return boards.filter((b) => b.createdBy === currentUserId);
+    return boards.filter((b) => {
+      const ownerRaw = b?.createdBy ?? b?.ownerId ?? b?.idUsuarioCreador;
+      if (ownerRaw == null) {
+        // datos antiguos sin owner asignado: los mostramos por compatibilidad
+        return true;
+      }
+      const ownerId = Number(ownerRaw);
+      if (Number.isNaN(ownerId)) {
+        // valores no numéricos, asumimos que el tablero es accesible
+        return true;
+      }
+      return ownerId === currentUserId;
+    });
   }, [boards, onlyMine, currentUserId]);
 
 
@@ -234,6 +250,7 @@ export default function Dashboard() {
                       key={key}
                       name={resolveBoardName(board)}
                       updatedAt={board.createdOn || board.updatedAt || ""}
+                      background={board.background}
                       onOpen={
                         boardId
                           ? () => navigate(`/tableros/${boardId}`) 

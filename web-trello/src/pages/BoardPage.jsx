@@ -25,6 +25,11 @@ import ListColumn from "../components/board/ListColumn.jsx";
 import { apiFetch } from "../modules/apiClient";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import logo from "../assets/Logo dashboard2.png";
+import {
+  BOARD_BACKGROUND_OPTIONS,
+  boardBackgroundToStyle,
+  resolveBoardBackground,
+} from "../constants/boardBackgrounds.js";
 
 const SCROLLBAR_STYLE = `
 .board-scroll::-webkit-scrollbar { display: none; }
@@ -57,6 +62,24 @@ export default function BoardPage() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
+  const [isSavingBackground, setIsSavingBackground] = useState(false);
+  const [backgroundError, setBackgroundError] = useState(null);
+
+  const backgroundOption = resolveBoardBackground(board?.background);
+  const hasImageBackground = backgroundOption.type === "image";
+  const pageBackgroundStyle = boardBackgroundToStyle(
+    board?.background ?? backgroundOption.value,
+  );
+  const boardSurfaceClass = hasImageBackground
+    ? "bg-transparent"
+    : "bg-white/90";
+  const boardTextClass = hasImageBackground ? "text-white" : "text-slate-900";
+  const boardHeaderClass = hasImageBackground
+    ? "border-transparent bg-black/35 backdrop-blur-sm"
+    : "border-white/50 bg-white/40 backdrop-blur-sm";
+  const titleTextClass = hasImageBackground ? "text-white" : "text-neutral-900";
+  const titleButtonTextClass = hasImageBackground ? "text-white" : "text-neutral-900";
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -411,6 +434,42 @@ export default function BoardPage() {
     }
   };
 
+  const handleSelectBackground = async (nextBackground) => {
+    if (!boardId || !nextBackground || isSavingBackground) {
+      return;
+    }
+
+    const resolved = resolveBoardBackground(nextBackground).value;
+    if (board?.background === resolved) {
+      setIsBackgroundPickerOpen(false);
+      return;
+    }
+
+    const previousBackground = board?.background ?? null;
+    setBackgroundError(null);
+    setBoard((prev) =>
+      prev ? { ...prev, background: resolved } : prev,
+    );
+
+    try {
+      setIsSavingBackground(true);
+      const updatedBoard = await apiFetch(`/tableros/${boardId}`, {
+        method: "PUT",
+        body: JSON.stringify({ background: resolved }),
+      });
+      setBoard(updatedBoard);
+      setIsBackgroundPickerOpen(false);
+    } catch (e) {
+      console.error("Error al actualizar el fondo del tablero:", e);
+      setBackgroundError("No se pudo guardar el nuevo fondo. Intentalo de nuevo.");
+      setBoard((prev) =>
+        prev ? { ...prev, background: previousBackground } : prev,
+      );
+    } finally {
+      setIsSavingBackground(false);
+    }
+  };
+
   if (loading) return <div className="p-6">Cargando tablero...</div>;
 
   if (error) {
@@ -421,7 +480,7 @@ export default function BoardPage() {
           <p className="mb-4">No se pudo cargar el tablero con ID: {boardId}.</p>
           <p className="font-mono text-sm">{error}</p>
           <div className="mt-4 flex justify-end">
-            <Button onClick={() => navigate("/dashboard?mine=1")} variant="secondary">
+            <Button onClick={() => navigate("/dashboard")} variant="secondary">
               Volver a tableros
             </Button>
           </div>
@@ -435,76 +494,107 @@ export default function BoardPage() {
   return (
     <>
       <style>{SCROLLBAR_STYLE}</style>
-      <div className="min-h-screen bg-white text-slate-900">
-        <BoardTopNav />
+      <div className="min-h-screen" style={pageBackgroundStyle}>
+        <div
+          className={["min-h-screen", boardTextClass, boardSurfaceClass].join(" ")}
+        >
+          <BoardTopNav />
 
-        <section className="border-b border-[#dfd5ff] bg-[#f1eaff]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
-            {isEditingTitle ? (
-              <form
-                onSubmit={handleSubmitTitle}
-                className="flex items-center gap-2"
-              >
-                <input
-                  value={titleDraft}
-                  onChange={(event) => setTitleDraft(event.target.value)}
-                  className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-[#4632c5] shadow-sm placeholder:text-[#a192ff] focus:outline-none focus:ring-2 focus:ring-[#846bff]"
-                  placeholder="Nombre del tablero"
-                  autoFocus
-                  disabled={isSavingTitle}
-                />
-                <button
-                  type="submit"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-600 disabled:opacity-60"
-                  disabled={isSavingTitle || !titleDraft.trim()}
-                  aria-label="Guardar nombre del tablero"
+          <section className={["border-b", boardHeaderClass].join(" ")}>
+            <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+              {isEditingTitle ? (
+                <form
+                  onSubmit={handleSubmitTitle}
+                  className="flex items-center gap-2"
                 >
-                  {isSavingTitle ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <input
+                    value={titleDraft}
+                    onChange={(event) => setTitleDraft(event.target.value)}
+                    className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-[#4632c5] shadow-sm placeholder:text-[#a192ff] focus:outline-none focus:ring-2 focus:ring-[#846bff]"
+                    placeholder="Nombre del tablero"
+                    autoFocus
+                    disabled={isSavingTitle}
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-600 disabled:opacity-60"
+                    disabled={isSavingTitle || !titleDraft.trim()}
+                    aria-label="Guardar nombre del tablero"
+                  >
+                    {isSavingTitle ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEditingTitle}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#4b3acd] transition hover:bg-white"
+                    disabled={isSavingTitle}
+                    aria-label="Cancelar edicion"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <h1 className={["text-2xl font-semibold", titleTextClass].join(" ")}>
+                    {board.name}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={handleStartEditingTitle}
+                    className={["inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 transition hover:bg-white", titleButtonTextClass].join(" ")}
+                    aria-label="Editar nombre del tablero"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 self-start md:self-auto">
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    setIsBackgroundPickerOpen((value) => !value)
+                  }
+                  disabled={isSavingBackground}
+                  className="rounded-full px-5 py-2 text-sm text-[#2d1b8a]"
+                >
+                  {isSavingBackground ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Guardando...
+                    </span>
                   ) : (
-                    <Check className="h-4 w-4" />
+                    "Cambiar fondo"
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelEditingTitle}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#4b3acd] transition hover:bg-white"
-                  disabled={isSavingTitle}
-                  aria-label="Cancelar edicion"
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate("/dashboard")}
+                  className="rounded-full px-5 py-2 text-sm shadow-md"
                 >
-                  <X className="h-4 w-4" />
-                </button>
-              </form>
-            ) : (
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-semibold text-[#2d1b8a]">
-                  {board.name}
-                </h1>
-                <button
-                  type="button"
-                  onClick={handleStartEditingTitle}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 text-[#2d1b8a] transition hover:bg-white"
-                  aria-label="Editar nombre del tablero"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
+                  Volver a tableros
+                </Button>
               </div>
-            )}
-
-            
-        <button
-  onClick={() => navigate("/dashboard")}
-  className="self-start md:self-auto"
->
-              <Button
-                variant="secondary"
-                className="rounded-full bg-[var(--color-brand-600)] px-5 text-white shadow-md hover:bg-[var(--color-brand-700)]"
-              >
-    Volver a tableros
-  </Button>
-</button>
-          </div>
-        </section>
+            </div>
+            {isBackgroundPickerOpen ? (
+              <div className="mx-auto mb-4 max-w-7xl px-6">
+                <BackgroundPicker
+                  currentValue={board?.background ?? backgroundOption.value}
+                  onSelect={handleSelectBackground}
+                  onClose={() => {
+                    setIsBackgroundPickerOpen(false);
+                    setBackgroundError(null);
+                  }}
+                  isSaving={isSavingBackground}
+                  errorMessage={backgroundError}
+                />
+              </div>
+            ) : null}
+          </section>
 
         <main className="mx-auto max-w-7xl px-6 py-6">
           <DndContext
@@ -574,7 +664,77 @@ export default function BoardPage() {
           </div>
         ) : null}
       </div>
+    </div>
     </>
+  );
+}
+
+function BackgroundPicker({
+  currentValue,
+  onSelect,
+  onClose,
+  isSaving,
+  errorMessage,
+}) {
+  const normalizedCurrent = resolveBoardBackground(currentValue).value;
+
+  return (
+    <div className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-lg backdrop-blur-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-semibold text-neutral-800">
+          Selecciona un nuevo fondo
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isSaving}
+          className="text-xs font-semibold text-neutral-500 transition hover:text-neutral-800 disabled:opacity-60"
+        >
+          Cerrar
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {BOARD_BACKGROUND_OPTIONS.map((option) => {
+          const isActive = option.value === normalizedCurrent;
+          return (
+            <button
+              type="button"
+              key={option.id}
+              onClick={() => onSelect(option.value)}
+              disabled={isSaving}
+              aria-pressed={isActive}
+              className={[
+                "rounded-2xl border-2 p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d41e7]",
+                isActive
+                  ? "border-[var(--color-brand-500)] shadow-md"
+                  : "border-transparent hover:border-white hover:shadow"
+              ].join(" ")}
+            >
+              <div
+                className="h-20 w-full rounded-xl"
+                style={boardBackgroundToStyle(option.value)}
+              />
+              <div className="mt-2 flex items-center justify-between text-xs font-semibold text-neutral-700">
+                <span>{option.label}</span>
+                {isActive ? (
+                  <Check className="h-3 w-3 text-[var(--color-brand-600)]" />
+                ) : null}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {errorMessage ? (
+        <p className="mt-3 text-xs font-medium text-red-500">
+          {errorMessage}
+        </p>
+      ) : null}
+      {isSaving ? (
+        <p className="mt-3 text-xs font-medium text-[var(--color-brand-600)]">
+          Guardando cambios...
+        </p>
+      ) : null}
+    </div>
   );
 }
 

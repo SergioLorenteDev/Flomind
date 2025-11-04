@@ -1,8 +1,16 @@
 import { Trash2 } from "lucide-react";
 import Card from "../ui/Card.jsx";
+import { boardBackgroundToStyle } from "../../constants/boardBackgrounds.js";
 
-export default function BoardCard({ name, updatedAt, onOpen, onDelete }) {
+export default function BoardCard({
+  name,
+  updatedAt,
+  background,
+  onOpen,
+  onDelete,
+}) {
   const isInteractive = typeof onOpen === "function";
+  const coverStyle = boardBackgroundToStyle(background);
 
   const handleKeyDown = (event) => {
     if (!isInteractive) return;
@@ -39,12 +47,23 @@ export default function BoardCard({ name, updatedAt, onOpen, onDelete }) {
           <Trash2 className="h-4 w-4" />
         </button>
       ) : null}
-      <Card className={`p-5${isInteractive ? " cursor-pointer" : ""}`}>
-        <div className="h-10 w-10 rounded-lg bg-brand-100 board-icon" />
-        <h3 className="mt-3 text-base font-semibold">{name}</h3>
-        <p className="mt-1 text-xs text-neutral-600">
-          Actualizado {updatedAt}
-        </p>
+      <Card
+        className={[
+          "overflow-hidden p-0",
+          isInteractive ? "cursor-pointer" : "",
+        ].join(" ")}
+      >
+        <div
+          className="h-24 w-full bg-brand-200"
+          style={coverStyle}
+          aria-hidden="true"
+        />
+        <div className="p-5">
+          <h3 className="text-base font-semibold">{name}</h3>
+          <p className="mt-1 text-xs text-neutral-600">
+            Actualizado {updatedAt}
+          </p>
+        </div>
       </Card>
     </div>
   );

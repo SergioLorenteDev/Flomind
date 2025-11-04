@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Button from "../ui/Button.jsx";
+import {
+  BOARD_BACKGROUND_OPTIONS,
+  resolveBoardBackground,
+} from "../../constants/boardBackgrounds.js";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../modules/auth/AuthContext.jsx";
 
 const API_BASE_URL = "http://localhost:8080";
 const API_URL = `${API_BASE_URL}/trello/v1/tableros`;
@@ -46,6 +51,7 @@ export default function NewBoardModal({
   showTriggerButton = true,
 }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const isControlled = typeof open === "boolean";
   const [internalOpen, setInternalOpen] = useState(false);
@@ -55,6 +61,11 @@ export default function NewBoardModal({
   const [template, setTemplate] = useState(initialTemplate);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [background, setBackground] = useState(
+    BOARD_BACKGROUND_OPTIONS[0].value,
+  );
+
+  const selectedBackground = resolveBoardBackground(background);
 
   const setOpenState = (value) => {
     if (!isControlled) {
@@ -69,6 +80,7 @@ export default function NewBoardModal({
       setBoardName("");
       setError(null);
       setLoading(false);
+      setBackground(BOARD_BACKGROUND_OPTIONS[0].value);
     }
   }, [initialTemplate, isOpen]);
 
@@ -77,6 +89,7 @@ export default function NewBoardModal({
     setTemplate(nextTemplate);
     setError(null);
     setLoading(false);
+    setBackground(BOARD_BACKGROUND_OPTIONS[0].value);
   };
 
   const openModal = () => {
@@ -115,8 +128,12 @@ export default function NewBoardModal({
       const payload = {
         name: boardName.trim(),
         description: "",
-        createdBy: 1,
+        background,
       };
+      const creatorId = Number(user?.id);
+      if (!Number.isNaN(creatorId)) {
+        payload.createdBy = creatorId;
+      }
 
       const res = await fetch(API_URL, {
         method: "POST",
@@ -274,6 +291,47 @@ export default function NewBoardModal({
                   {selected?.description}
                 </span>
               </label>
+
+              <div className="space-y-2">
+                <span className="text-sm font-medium text-neutral-900">
+                  Fondo del tablero
+                </span>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {BOARD_BACKGROUND_OPTIONS.map((option) => {
+                    const isActive =
+                      option.value === background || option.id === background;
+                    const isColor = option.type === "color";
+                    const previewStyle = isColor
+                      ? { background: option.value }
+                      : {
+                          backgroundImage: `url(${option.value})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        };
+                    return (
+                      <button
+                        type="button"
+                        key={option.id}
+                        onClick={() => setBackground(option.value)}
+                        className={[
+                          "flex h-16 items-end rounded-xl border p-2 text-xs font-semibold text-white transition",
+                          isActive
+                            ? "border-[var(--color-brand-500)] shadow-lg"
+                            : "border-transparent opacity-85 hover:opacity-100",
+                        ].join(" ")}
+                        style={previewStyle}
+                        disabled={loading}
+                        aria-pressed={isActive}
+                      >
+                        <span className="drop-shadow-md">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-neutral-600">
+                  Seleccion actual: {selectedBackground.label}
+                </p>
+              </div>
 
               <div className="space-y-3">
                 <p className="text-sm font-medium">Se crearan estas listas:</p>
