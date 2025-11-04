@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+// src/pages/Perfil.jsx
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -7,6 +8,7 @@ export default function Perfil() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Nombre "bonito" por defecto
   const displayName = useMemo(() => {
     if (user?.name && user.name.trim()) return user.name;
     const email = user?.email || "";
@@ -15,6 +17,50 @@ export default function Perfil() {
   }, [user]);
 
   const initial = (user?.email || "U").charAt(0).toUpperCase();
+
+  // Foto de perfil guardada en localStorage por id de usuario
+  const storageKey = user ? `profilePhoto:${user.id}` : null;
+  const [profilePhoto, setProfilePhoto] = useState(null);
+
+  // Cargar foto del localStorage al entrar
+  useEffect(() => {
+    if (!storageKey) {
+      setProfilePhoto(null);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) setProfilePhoto(saved);
+      else setProfilePhoto(null);
+    } catch {
+      /* ignore */
+    }
+  }, [storageKey]);
+
+  // Subir foto de perfil (solo frontend: se guarda en localStorage)
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !storageKey) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result; // base64
+      setProfilePhoto(result);
+      try {
+        localStorage.setItem(storageKey, result);
+      } catch {
+        /* ignore */
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setProfilePhoto(null);
+    if (storageKey) {
+      localStorage.removeItem(storageKey);
+    }
+  };
 
   return (
     <section
@@ -42,59 +88,113 @@ export default function Perfil() {
             p-6 shadow-sm transition-all duration-300
           "
         >
-          <div className="flex items-center gap-4">
-            {/* Inicial */}
-            <div
-              className="
-                flex h-14 w-14 items-center justify-center
-                rounded-full
-                bg-[var(--color-brand-100)]
-                [data-theme=dark]:bg-[var(--color-brand-500)]
-                text-[var(--color-brand-700)]
-                [data-theme=dark]:text-white
-                text-xl font-semibold shadow-sm
-              "
-            >
-              {initial}
+          {/* Cabecera: avatar + título */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              {/* Foto de perfil */}
+              <div
+                className="
+                  h-16 w-16 rounded-full overflow-hidden
+                  bg-[var(--color-brand-100)]
+                  [data-theme=dark]:bg-[var(--color-brand-500)]
+                  flex items-center justify-center shadow-sm
+                "
+              >
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span
+                    className="
+                      text-2xl font-semibold
+                      text-[var(--color-brand-700)]
+                      [data-theme=dark]:text-white
+                    "
+                  >
+                    {initial}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 [data-theme=dark]:text-white">
+                  Perfil
+                </h1>
+                <p className="text-sm text-gray-600 [data-theme=dark]:text-neutral-300">
+                  Información de tu cuenta
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 [data-theme=dark]:text-white">
-                Perfil
-              </h1>
-              <p className="text-sm text-gray-600 [data-theme=dark]:text-neutral-300">
-                Información de tu cuenta
-              </p>
+            {/* Controles foto */}
+            <div className="flex flex-col gap-2 text-sm">
+              <label className="inline-flex cursor-pointer items-center gap-2">
+                <span className="rounded-full bg-[var(--color-brand-600)] px-3 py-1 text-xs font-semibold text-white shadow hover:bg-[var(--color-brand-700)]">
+                  Cambiar foto
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+              {profilePhoto && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="self-start text-xs text-red-500 hover:underline"
+                >
+                  Quitar foto
+                </button>
+              )}
             </div>
           </div>
 
           {/* Datos del usuario */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {[
-              { label: "Nombre", value: displayName },
-              { label: "Correo", value: user?.email || "—" },
-              { label: "Inicial", value: initial },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                className="
-                  rounded-xl border border-black/10 
-                  [data-theme=dark]:border-[rgba(255,255,255,0.08)] 
-                  bg-[var(--color-brand-25)] 
-                  [data-theme=dark]:bg-[var(--color-surface-hover)] 
-                  p-4 transition-colors duration-300 
-                  hover:shadow-[0_0_10px_rgba(127,86,217,0.15)] 
-                  [data-theme=dark]:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
-                "
-              >
-                <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 [data-theme=dark]:text-neutral-300">
-                  {label}
-                </div>
-                <div className="mt-1 text-sm font-medium text-gray-900 [data-theme=dark]:text-white">
-                  {value}
-                </div>
+            {/* Nombre (solo lectura) */}
+            <div
+              className="
+                rounded-xl border border-black/10 
+                [data-theme=dark]:border-[rgba(255,255,255,0.08)] 
+                bg-[var(--color-brand-25)] 
+                [data-theme=dark]:bg-[var(--color-surface-hover)] 
+                p-4 transition-colors duration-300 
+                hover:shadow-[0_0_10px_rgba(127,86,217,0.15)] 
+                [data-theme=dark]:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
+              "
+            >
+              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 [data-theme=dark]:text-neutral-300">
+                Nombre
               </div>
-            ))}
+              <div className="mt-1 text-sm font-medium text-gray-900 [data-theme=dark]:text-white break-words">
+                {displayName}
+              </div>
+            </div>
+
+            {/* Correo */}
+            <div
+              className="
+                rounded-xl border border-black/10 
+                [data-theme=dark]:border-[rgba(255,255,255,0.08)] 
+                bg-[var(--color-brand-25)] 
+                [data-theme=dark]:bg-[var(--color-surface-hover)] 
+                p-4 transition-colors duration-300 
+                hover:shadow-[0_0_10px_rgba(127,86,217,0.15)] 
+                [data-theme=dark]:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
+              "
+            >
+              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 [data-theme=dark]:text-neutral-300">
+                Correo
+              </div>
+              <div className="mt-1 text-sm font-medium text-gray-900 [data-theme=dark]:text-white break-words">
+                {user?.email || "—"}
+              </div>
+            </div>
           </div>
         </div>
       </div>

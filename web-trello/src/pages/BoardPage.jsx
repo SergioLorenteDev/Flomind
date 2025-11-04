@@ -779,6 +779,26 @@ function AvatarArea() {
 
   const initial = (user?.email || "U").charAt(0).toUpperCase();
 
+
+  const storageKey = user ? `profilePhoto:${user.id}` : null;
+  const [profilePhoto, setProfilePhoto] = useState(null);
+
+
+  useEffect(() => {
+    if (!storageKey) {
+      setProfilePhoto(null);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) setProfilePhoto(saved);
+      else setProfilePhoto(null);
+    } catch {
+      setProfilePhoto(null);
+    }
+  }, [storageKey]);
+
+ 
   useEffect(() => {
     function onDocClick(e) {
       if (!ref.current) return;
@@ -811,13 +831,21 @@ function AvatarArea() {
 
       <div className="relative">
         <button
-          className="flex h-10 w-9 items-center justify-center rounded-full border border-white/40 bg-white/25 font-semibold"
+          className="flex h-10 w-9 items-center justify-center rounded-full border border-white/40 bg-white/25 font-semibold overflow-hidden"
           onClick={() => setOpen((v) => !v)}
           aria-haspopup="menu"
           aria-expanded={open}
           title={user?.email || "Mi cuenta"}
         >
-          {initial}
+          {profilePhoto ? (
+            <img
+              src={profilePhoto}
+              alt={user?.email || "Foto de perfil"}
+              className="h-full w-full object-cover rounded-full"
+            />
+          ) : (
+            initial
+          )}
         </button>
 
         {open && (
@@ -834,6 +862,7 @@ function AvatarArea() {
     </div>
   );
 }
+
 
 function MenuItem({ children, onClick, danger }) {
   return (

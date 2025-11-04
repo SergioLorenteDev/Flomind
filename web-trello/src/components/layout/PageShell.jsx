@@ -61,6 +61,22 @@ function AvatarArea() {
   const ref = useRef(null);
 
   const initial = (user?.email || "U").charAt(0).toUpperCase();
+  const storageKey = user ? `profilePhoto:${user.id}` : null;
+  const [profilePhoto, setProfilePhoto] = useState(null);
+
+  useEffect(() => {
+    if (!storageKey) {
+      setProfilePhoto(null);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) setProfilePhoto(saved);
+      else setProfilePhoto(null);
+    } catch {
+      setProfilePhoto(null);
+    }
+  }, [storageKey]);
 
   useEffect(() => {
     function onDocClick(e) {
@@ -91,15 +107,23 @@ function AvatarArea() {
       </span>
 
       <div className="relative">
-        <button
-          className="flex h-10 w-9 items-center justify-center rounded-full bg-white/30 border border-white/40 font-semibold"
-          onClick={() => setOpen((v) => !v)}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          title={user?.email || "Mi cuentas"}
-        >
-          {initial}
-        </button>
+  <button
+  className="flex h-10 w-9 items-center justify-center rounded-full bg-white/30 border border-white/40 font-semibold overflow-hidden"
+  onClick={() => setOpen((v) => !v)}
+  aria-haspopup="menu"
+  aria-expanded={open}
+  title={user?.email || "Mi cuenta"}
+>
+  {profilePhoto ? (
+    <img
+      src={profilePhoto}
+      alt={user?.email || "Foto de perfil"}
+      className="h-full w-full object-cover rounded-full"
+    />
+  ) : (
+    initial
+  )}
+</button>
 
         {open && (
           <div
