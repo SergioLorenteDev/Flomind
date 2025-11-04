@@ -34,7 +34,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  console.log("USER:", user);
+  console.log("USER DEL CONTEXTO:", user);
 
   const searchParams = new URLSearchParams(location.search);
   const urlQuery = searchParams.get("q") || "";
@@ -49,19 +49,19 @@ export default function Dashboard() {
   const [boardPendingDeletion, setBoardPendingDeletion] = React.useState(null);
   const [isDeletingBoard, setIsDeletingBoard] = React.useState(false);
 
-
+  // sincroniza el input con la URL
   React.useEffect(() => {
     setSearch(urlQuery);
   }, [urlQuery]);
 
- 
+  // pedir tableros
   const fetchBoards = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await apiFetch("/tableros");
       console.log("TABLEROS QUE VIENEN DEL BACK:", data);
       if (Array.isArray(data) && data.length > 0) {
-        console.log("TABLERO:", data[0]);
+        console.log("PRIMER TABLERO:", data[0]);
         console.log("CLAVES:", Object.keys(data[0]));
       }
       setBoards(Array.isArray(data) ? data : []);
@@ -79,12 +79,12 @@ export default function Dashboard() {
     fetchBoards();
   }, [fetchBoards]);
 
-
+  // si cambia la query (?mine=1, ?q=...), puedes volver a pedir
   React.useEffect(() => {
     fetchBoards();
   }, [location.search, fetchBoards]);
 
- 
+  // 👇 ya sabemos que el user tiene 'id'
   const currentUserId = user?.id ?? null;
 
   const resolveBoardId = React.useCallback(
@@ -92,13 +92,13 @@ export default function Dashboard() {
     [],
   );
 
- 
+  // 👇 ya sabemos que el tablero tiene 'name'
   const resolveBoardName = React.useCallback(
     (board) => board?.name || "Este tablero",
     [],
   );
 
-
+  // 👇 aquí simplificamos: el back manda 'createdBy'
   const boardsByOwner = React.useMemo(() => {
     if (!onlyMine) return boards;
     if (!currentUserId) return boards;
@@ -106,13 +106,13 @@ export default function Dashboard() {
     return boards.filter((b) => b.createdBy === currentUserId);
   }, [boards, onlyMine, currentUserId]);
 
-
+  // 👇 búsqueda: ya sabemos que el nombre es 'name'
   const boardsToShow = boardsByOwner.filter((b) => {
     const q = search.toLowerCase();
     const name = (b.name || "").toLowerCase();
     const desc = (b.description || "").toLowerCase();
 
-    if (!q) return true; 
+    if (!q) return true; // si no escribes nada, muestra todo
     return name.includes(q) || desc.includes(q);
   });
 
@@ -236,7 +236,7 @@ export default function Dashboard() {
                       updatedAt={board.createdOn || board.updatedAt || ""}
                       onOpen={
                         boardId
-                          ? () => navigate(`/tablero/${boardId}`) 
+                          ? () => navigate(`/tablero/${boardId}`) // 👈 en singular
                           : undefined
                       }
                       onDelete={
