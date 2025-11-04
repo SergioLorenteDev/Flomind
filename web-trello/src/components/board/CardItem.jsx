@@ -18,11 +18,17 @@ export default function CardItem({
   const [anchorRect, setAnchorRect] = useState(null);
   const itemRef = useRef(null);
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id: cardId,
-      data: { type: "card", listId: listKey },
-    });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: cardId,
+    data: { type: "card", listId: listKey },
+  });
 
   const setRefs = useCallback(
     (node) => {
@@ -32,49 +38,51 @@ export default function CardItem({
     [setNodeRef]
   );
 
-  const theme = document.documentElement.getAttribute("data-theme");
-  const dark = theme === "dark";
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 60 : undefined,
-    opacity: isDragging ? 0.8 : 1,
+    opacity: isDragging ? 0 : 1,
   };
 
-  const handleMenuToggle = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const handleMenuToggle = (event) => {
+    event.stopPropagation();
+    event.preventDefault();
     if (!menuOpen && itemRef.current) {
       const rect = itemRef.current.getBoundingClientRect();
-      setAnchorRect(rect);
+      setAnchorRect({
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
     }
-    setMenuOpen((v) => !v);
+    setMenuOpen((value) => !value);
   };
 
   return (
     <div
       ref={setRefs}
       style={style}
-      className={`group relative rounded-2xl border px-3 py-3 text-sm font-medium shadow-md transition-all
-        ${dark
-          ? "border-[#2a2a35] bg-[#1f1f2b] text-white hover:border-[#6f5fff] hover:shadow-lg"
-          : "border-[#e2d6ff] bg-white text-[#1a1235] hover:border-[#8f7bff] hover:shadow-md"}
-        ${isDragging ? "scale-[1.02] ring-2 ring-[#7f6dff]/50" : ""}`}
+      className={`group relative rounded-2xl border border-transparent bg-[#22222c] px-3 py-3 shadow-md transition hover:border-[#4b3acd]/40 hover:shadow-lg ${
+        isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""
+      }`}
       {...attributes}
       {...listeners}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 text-white">
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={(event) => {
+            event.stopPropagation();
             onToggleComplete();
           }}
-          aria-label={isComplete ? "Marcar como pendiente" : "Marcar como completada"}
-          className={`rounded-full transition ${
-            dark ? "text-[#a99aff] hover:text-[#cfc3ff]" : "text-[#7b61ff] hover:text-[#5c43e0]"
-          }`}
+          aria-label={
+            isComplete ? "Marcar como pendiente" : "Marcar como completada"
+          }
+          className="rounded-full text-[#9b8cff] transition hover:text-[#cdbfff]"
         >
           {isComplete ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -83,18 +91,10 @@ export default function CardItem({
           )}
         </button>
 
-        <div className="flex-1 pr-6">
-          <p
-            className={`break-words ${isComplete ? "line-through opacity-60" : ""}`}
-          >
-            {card.title}
-          </p>
+        <div className="flex-1 pr-6 text-sm font-medium text-white">
+          {card.title}
           {card.description && (
-            <p
-              className={`mt-1 text-xs ${
-                dark ? "text-neutral-400" : "text-neutral-600"
-              } line-clamp-2`}
-            >
+            <p className="mt-1 text-xs font-normal text-neutral-300 line-clamp-2">
               {card.description}
             </p>
           )}
@@ -102,13 +102,10 @@ export default function CardItem({
 
         <button
           type="button"
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
           onClick={handleMenuToggle}
-          className={`rounded-full border border-transparent p-1.5 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100
-            ${dark
-              ? "bg-[#2d2d38] text-neutral-300 hover:border-[#4b3acd]/40 hover:bg-[#383846]"
-              : "bg-[#f2ecff] text-[#4632c5] hover:border-[#8a78ff]/40 hover:bg-[#ebe3ff]"}`}
-          aria-label="Abrir menú de tarjeta"
+          className="rounded-full border border-transparent bg-[#2d2d38] p-1.5 text-neutral-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100 hover:border-[#4b3acd]/40 hover:bg-[#383846]"
+          aria-label="Abrir menu de tarjeta"
         >
           <MoreHorizontal className="h-3.5 w-3.5" />
         </button>

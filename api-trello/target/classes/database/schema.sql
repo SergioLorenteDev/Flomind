@@ -94,10 +94,10 @@ CREATE TABLE IF NOT EXISTS archivo (
 
 -- TABLA DE HISTORIAL DE MOVIMIENTOS DE TARJETAS
 CREATE TABLE IF NOT EXISTS historial_movimiento (
-    id int AUTO_INCREMENT PRIMARY KEY,
-    id_tarjeta INT NOT NULL,
-    id_lista_origen INT NULL,
-    id_lista_destino INT NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_tarjeta BIGINT NOT NULL,
+    id_lista_origen BIGINT NULL,
+    id_lista_destino BIGINT NOT NULL,
     fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_tarjeta) REFERENCES tarjeta(id_tarjeta),
     FOREIGN KEY (id_lista_origen) REFERENCES lista(id_lista),

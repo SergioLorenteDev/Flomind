@@ -186,22 +186,6 @@ export default function NewBoardModal({
     }
   }
 
-    const [isDark, setIsDark] = useState(document.documentElement.classList.contains("dark"));
-
-  React.useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const darkActive = document.documentElement.classList.contains("dark");
-      setIsDark(darkActive);
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <div>
       {showTriggerButton ? (
@@ -222,23 +206,16 @@ export default function NewBoardModal({
           aria-labelledby="new-board-title"
           onKeyDown={(event) => event.key === "Escape" && handleCancel()}
         >
-          {/* FONDO OSCURO */}
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity"
             onClick={handleCancel}
           />
 
-          {/* CONTENEDOR DEL MODAL */}
           <div
             className="relative z-10 w-full max-w-xl rounded-2xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            {/* HEADER */}
-            <div
-              className={`flex items-start justify-between gap-3 border-b px-5 py-4 ${
-                isDark ? "border-neutral-700" : "border-neutral-200"
-              }`}
-            >
+            <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
               <div>
                 <h2 id="new-board-title" className="text-lg font-semibold">
                   Creacion de tableros
@@ -257,16 +234,9 @@ export default function NewBoardModal({
               </button>
             </div>
 
-            {/* CUERPO */}
             <div className="space-y-5 p-5">
               {error ? (
-                <div
-                  className={`rounded-lg border px-3 py-2 text-sm ${
-                    isDark
-                      ? "border-red-600 bg-red-900/40 text-red-300"
-                      : "border-red-300 bg-red-50 text-red-700"
-                  }`}
-                >
+                <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
                   {error}
                 </div>
               ) : null}
@@ -323,13 +293,7 @@ export default function NewBoardModal({
                             ))}
                           </ul>
                         ) : (
-                          <p
-                            className={`text-xs ${
-                              isDark
-                                ? "text-neutral-500"
-                                : "text-neutral-500"
-                            }`}
-                          >
+                          <p className="text-xs text-neutral-500">
                             (Sin tareas iniciales)
                           </p>
                         )}

@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
@@ -10,10 +9,10 @@ import VerTableros from "./pages/VerTableros.jsx";
 import NuevoTablero from "./pages/NuevoTablero.jsx";
 import Ajustes from "./pages/Ajustes.jsx";
 import BoardPage from "./pages/BoardPage.jsx";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 export default function App() {
-  // === Obtener tema inicial ===
   const getInitialTheme = () => {
     const stored = localStorage.getItem("theme");
     if (stored) return stored;
@@ -25,35 +24,29 @@ export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    const html = document.documentElement;
-    html.setAttribute("data-theme", theme);
-
+    const root = document.documentElement;
     if (theme === "dark") {
-      html.classList.add("dark");
+      root.classList.add("dark");
     } else {
-      html.classList.remove("dark");
+      root.classList.remove("dark");
     }
-
     localStorage.setItem("theme", theme);
-    console.log("Tema actual:", theme);
+    console.log("🌗 Tema actual:", theme);
   }, [theme]);
 
-  // === Alternar tema ===
-  const toggleTheme = () =>
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  const toggleTheme = () => setTheme(prev => (prev === "dark" ? "light" : "dark"));
 
-  // === Render ===
   return (
     <div>
-      {/* Botón para cambiar modo */}
       <button
         onClick={toggleTheme}
-        className="fixed bottom-4 right-4 z-[9999] bg-purple-600 text-white px-3 py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+        className="fixed bottom-4 right-4 px-4 py-2 rounded-lg
+                   bg-[var(--color-brand-500)] text-white shadow-lg
+                   hover:bg-[var(--color-brand-600)] transition"
       >
-        Cambiar a modo {theme === "dark" ? "claro" : "oscuro"}
+        {theme === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
       </button>
 
-      {/* Rutas principales */}
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
@@ -106,7 +99,6 @@ export default function App() {
           }
         />
 
-        {/* Cualquier otra ruta redirige al login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>
