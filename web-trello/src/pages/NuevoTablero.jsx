@@ -116,18 +116,13 @@ export default function CrearTablero() {
           >
             Cancelar
           </Button>
-          <button
-  onClick={handleCreate}
-  disabled={!canCreate}
-  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors
-    bg-purple-600 hover:bg-purple-700 text-white
-    disabled:opacity-50 disabled:cursor-not-allowed
-  `}
->
-  {loading ? "Creando..." : "Crear tablero"}
-</button>
-
-
+          <Button 
+            type="submit" 
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800"
+          >
+            {loading ? 'Creando...' : 'Crear Tablero'}
+          </Button>
         </div>
       </form>
     </div>
