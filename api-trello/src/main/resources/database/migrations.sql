@@ -73,3 +73,16 @@ SET @sql := IF(@has_descripcion = 0,
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Add background column to tablero if missing
+SET @has_background :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'tablero'
+          AND COLUMN_NAME = 'background');
+SET @sql := IF(@has_background = 0,
+    'ALTER TABLE tablero ADD COLUMN background VARCHAR(255);',
+    'SELECT ''background already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

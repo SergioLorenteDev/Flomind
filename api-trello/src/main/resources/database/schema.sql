@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS tablero (
     id_tablero BIGINT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT,
+    background VARCHAR(255),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     id_usuario_creador BIGINT NOT NULL,
     FOREIGN KEY (id_usuario_creador) REFERENCES usuario (id_usuario)

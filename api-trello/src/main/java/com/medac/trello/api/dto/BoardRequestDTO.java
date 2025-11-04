@@ -6,7 +6,8 @@ public class BoardRequestDTO {
 
     private String name;
     private String description;
-    private Long createdBy; // Opcional: si el cliente puede especificar el creador (en un entorno real, vendría del token de seguridad)
+    private String background;
+    private Long createdBy; // Opcional: si el cliente puede especificar el creador (en un entorno real, vendra del token de seguridad)
 
     // --- Getters y Setters (simplicidad) ---
     public String getName() { return name; }
@@ -14,6 +15,9 @@ public class BoardRequestDTO {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getBackground() { return background; }
+    public void setBackground(String background) { this.background = background; }
 
     public Long getCreatedBy() { return createdBy; }
     public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }

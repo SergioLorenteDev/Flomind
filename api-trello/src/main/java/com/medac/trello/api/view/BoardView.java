@@ -6,6 +6,7 @@ public record BoardView(
         Long id,
         String name,
         String description,
+        String background,
         Instant createdOn
 ) {
 }

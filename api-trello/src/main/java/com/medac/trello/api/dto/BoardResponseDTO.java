@@ -10,6 +10,7 @@ public class BoardResponseDTO {
     private Long id;
     private String name;
     private String description;
+    private String background;
     private Long createdBy; // ID del usuario creador
     private Instant createdOn;
 
@@ -20,6 +21,7 @@ public class BoardResponseDTO {
         this.id = board.getId();
         this.name = board.getName();
         this.description = board.getDescription();
+        this.background = board.getBackground();
         this.createdBy = board.getCreatedBy();
         this.createdOn = board.getCreatedOn();
         // Nota: No se incluyen las Listas directamente para evitar cargar datos innecesarios.
@@ -34,6 +36,9 @@ public class BoardResponseDTO {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public String getBackground() { return background; }
+    public void setBackground(String background) { this.background = background; }
 
     public Long getCreatedBy() { return createdBy; }
     public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }

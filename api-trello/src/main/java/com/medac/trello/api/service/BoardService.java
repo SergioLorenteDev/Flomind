@@ -40,6 +40,9 @@ public class BoardService {
         if (board.getCreatedOn() == null) {
             board.setCreatedOn(Instant.now());
         }
+        if (board.getBackground() != null && board.getBackground().isBlank()) {
+            board.setBackground(null);
+        }
         // 2. Establecer el ID del usuario creador (si falta).
         // HARDCODEAMOS 1L TEMPORALMENTE hasta que se implemente la autenticación.
         if (board.getCreatedBy() == null || board.getCreatedBy().equals(0L)) {
@@ -82,6 +85,12 @@ public class BoardService {
 
         if (boardDetalles.getDescription() != null) {
             boardExistente.setDescription(boardDetalles.getDescription());
+        }
+
+        if (boardDetalles.getBackground() != null) {
+            boardExistente.setBackground(
+                    boardDetalles.getBackground().isBlank() ? null : boardDetalles.getBackground()
+            );
         }
 
         return boardRepository.save(boardExistente);

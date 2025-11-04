@@ -20,6 +20,8 @@ public class Board {
     private String name;
     @Column(name = "descripcion")
     private String description;
+    @Column(name = "background")
+    private String background;
     @Column(name = "fecha_creacion", nullable = false)
     private Instant createdOn;
     @Column(name = "id_usuario_creador", nullable = false)
@@ -40,6 +42,14 @@ public class Board {
         this.createdBy = createdBy;
     }
 
+    public Board(String name, String description, String background, Instant createdOn, Long createdBy) {
+        this.name = name;
+        this.description = description;
+        this.background = background;
+        this.createdOn = createdOn;
+        this.createdBy = createdBy;
+    }
+
     public Long getId() {
         return id;
     }
@@ -50,6 +60,10 @@ public class Board {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getBackground() {
+        return background;
     }
 
     public Instant getCreatedOn() {
@@ -68,6 +82,10 @@ public class Board {
         this.description = description;
     }
 
+    public void setBackground(String background) {
+        this.background = background;
+    }
+
     public void setCreatedOn(Instant createdOn) {
         this.createdOn = createdOn;
     }
@@ -82,7 +100,7 @@ public class Board {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Board board = (Board) o;
-        return id == board.id;
+        return Objects.equals(id, board.id);
     }
 
     @Override

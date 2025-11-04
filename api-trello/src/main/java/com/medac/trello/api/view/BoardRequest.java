@@ -6,6 +6,7 @@ public class BoardRequest {
 
     private String name;
     private String description;
+    private String background;
     private Long createdBy; // Usamos Long, ya que representa un 'id' de usuario
 
     // 1. CONSTRUCTOR VACÍO (Obligatorio para Spring Boot/Jackson al deserializar el JSON)
@@ -25,6 +26,10 @@ public class BoardRequest {
         return createdBy;
     }
 
+    public String getBackground() {
+        return background;
+    }
+
     // 3. Setters (Necesarios para que Jackson inyecte los valores del JSON)
     public void setName(String name) {
         this.name = name;
@@ -32,6 +37,10 @@ public class BoardRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setBackground(String background) {
+        this.background = background;
     }
 
     public void setCreatedBy(Long createdBy) {
@@ -45,11 +54,11 @@ public class BoardRequest {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BoardRequest that = (BoardRequest) o;
-        return Objects.equals(name, that.name) && Objects.equals(createdBy, that.createdBy);
+        return Objects.equals(name, that.name) && Objects.equals(createdBy, that.createdBy) && Objects.equals(background, that.background);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, createdBy);
+        return Objects.hash(name, background, createdBy);
     }
 }
