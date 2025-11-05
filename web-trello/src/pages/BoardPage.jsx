@@ -674,7 +674,7 @@ export default function BoardPage() {
             </div>
           ) : null}
 
-          {/* Modal de invitación al tablero */}
+    
           <InviteModal
             open={isInviteOpen}
             onClose={() => setIsInviteOpen(false)}

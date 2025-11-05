@@ -80,7 +80,7 @@ export default function Dashboard() {
     fetchBoards();
   }, [location.search, fetchBoards]);
 
-  // ID del usuario logueado, siempre como número
+ 
   const currentUserId = React.useMemo(() => {
     if (user?.id == null) return null;
     const parsed = Number(user.id);
@@ -97,15 +97,14 @@ export default function Dashboard() {
     []
   );
 
-  // 🔥 AQUÍ FILTRAMOS SIEMPRE POR EL USUARIO ACTUAL
+
   const boardsByOwner = React.useMemo(() => {
     if (!currentUserId) return boards;
 
     return boards.filter((b) => {
-      // Ajusta aquí según cómo venga del back.
-      // Por lo que hemos visto, seguramente sea idUsuarioCreador.
+  
       const ownerRaw = b?.idUsuarioCreador ?? b?.ownerId ?? b?.createdBy;
-      if (ownerRaw == null) return false; // si no tiene dueño, no lo mostramos
+      if (ownerRaw == null) return false; 
 
       const ownerId = Number(ownerRaw);
       if (Number.isNaN(ownerId)) return false;
