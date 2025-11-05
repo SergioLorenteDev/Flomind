@@ -12,9 +12,9 @@ import { apiFetch } from "../modules/apiClient";
 const TEMPLATES = [
   {
     id: 1,
-    title: "Kanban basico",
+    title: "Kanban básico",
     desc: "Pendiente / En progreso / Hecho",
-    templateKey: "Plantilla basica",
+    templateKey: "Plantilla básica",
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const TEMPLATES = [
   {
     id: 3,
     title: "Estudios",
-    desc: "Temas, Practicas, Examenes",
+    desc: "Temas, Prácticas, Exámenes",
     templateKey: "Estudios",
   },
 ];
@@ -209,7 +209,7 @@ export default function Dashboard() {
             <div>
               <h2 className="dashboard-section-title">Tus tableros</h2>
               <p className="dashboard-section-subtitle">
-                Accede rapidamente a tus proyectos.
+                Accede rápidamente a tus proyectos.
               </p>
             </div>
           }
@@ -283,7 +283,7 @@ export default function Dashboard() {
               <span className="font-semibold text-[var(--color-brand-600)]">
                 {resolveBoardName(boardPendingDeletion)}
               </span>
-              ? Esta accion no se puede deshacer.
+              ? Esta acción no se puede deshacer.
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button

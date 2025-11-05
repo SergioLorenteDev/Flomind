@@ -25,6 +25,7 @@ import {
   boardBackgroundToStyle,
   resolveBoardBackground,
 } from "../constants/boardBackgrounds.js";
+import BotonModo from "../components/ui/BotonModo.jsx";
 
 const SCROLLBAR_STYLE = `
 .board-scroll::-webkit-scrollbar { display: none; }
@@ -688,6 +689,7 @@ export default function BoardPage() {
             onClose={() => setIsInviteOpen(false)}
             boardId={boardId}
           />
+          
         </div>
       </div>
     </>
@@ -867,17 +869,22 @@ function AvatarArea() {
         </button>
 
         {open && (
-          <div
-            role="menu"
-            className="absolute right-0 mt-2 w-44 rounded-xl border border-white/20 bg-white/95 p-1 text-neutral-900 shadow-lg"
-          >
-            <MenuItem onClick={() => go("/perfil")}>Mi cuenta</MenuItem>
-            <MenuItem onClick={() => go("/ajustes")}>Ajustes</MenuItem>
-            <MenuItem danger onClick={logout}>
-              Cerrar sesion
-            </MenuItem>
-          </div>
-        )}
+  <div
+    role="menu"
+    className="
+      absolute right-0 mt-2 w-44 rounded-xl border
+      border-neutral-300 dark:border-neutral-700
+      bg-white dark:bg-neutral-900
+      text-neutral-900 dark:text-neutral-100
+      shadow-xl backdrop-blur-md
+      p-1 transition-colors duration-300
+    "
+  >
+    <MenuItem onClick={() => go('/perfil')}>Mi cuenta</MenuItem>
+    <MenuItem onClick={() => go('/ajustes')}>Ajustes</MenuItem>
+    <MenuItem danger onClick={logout}>Cerrar sesión</MenuItem>
+  </div>
+)}
       </div>
     </div>
   );
@@ -888,22 +895,34 @@ function MenuItem({ children, onClick, danger }) {
     <button
       role="menuitem"
       onClick={onClick}
-      className={`w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-neutral-100 ${
-        danger ? "text-red-600 hover:bg-red-50" : ""
-      }`}
+      className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors
+        ${danger
+          ? "text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+          : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        }`}
     >
       {children}
     </button>
   );
 }
 
+
 function CardDragPreview({ card }) {
   if (!card) return null;
   return (
-    <div className="w-72 max-w-xs rounded-2xl border border-[#4b3acd]/40 bg-[#22222c] px-4 py-3 text-white shadow-2xl shadow-[#1a132f]/70">
+    <div
+      className="
+        w-72 max-w-xs rounded-2xl border px-4 py-3 shadow-2xl transition-all duration-300
+        border-[var(--color-brand-200)] bg-[var(--color-surface)] text-[var(--color-neutral-900)]
+        shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)]
+
+        dark:border-[var(--color-brand-700)] dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
+        dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)]
+      "
+    >
       <div className="text-sm font-semibold">{card.title}</div>
       {card.description ? (
-        <p className="mt-1 text-xs text-neutral-300 line-clamp-2">
+        <p className="mt-1 text-xs opacity-80 line-clamp-2">
           {card.description}
         </p>
       ) : null}
@@ -914,11 +933,21 @@ function CardDragPreview({ card }) {
 function ListDragPreview({ list }) {
   if (!list) return null;
   return (
-    <div className="w-72 rounded-2xl border border-[#4b3acd]/35 bg-[#181820] px-5 py-4 text-white shadow-2xl shadow-[#1a132f]/70">
-      <div className="text-sm font-semibold">{list.nombre}</div>
+    <div
+      className="
+        w-72 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-2xl transition-all duration-300
+        border-[var(--color-brand-200)] bg-[var(--color-surface)] text-[var(--color-neutral-900)]
+        shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)]
+
+        dark:border-[var(--color-brand-700)] dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
+        dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)]
+      "
+    >
+      {list.nombre}
     </div>
   );
 }
+
 
 function NewListColumn({ listName, setListName, isAddingList, onSubmit }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -935,57 +964,103 @@ function NewListColumn({ listName, setListName, isAddingList, onSubmit }) {
   };
 
   if (!isOpen) {
-    return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="flex w-72 flex-shrink-0 items-center justify-center rounded-2xl border border-dashed border-[#2d2d38] bg-[#181820] px-4 py-5 text-[#8f7bff] shadow-[0_12px_45px_-20px_rgba(0,0,0,0.75)] transition hover:border-[#4b3acd]/50 hover:text-[#b7a9ff]"
-      >
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Plus className="h-4 w-4" />
-          <span>Agregar lista</span>
-        </div>
-      </button>
-    );
-  }
+  return (
+    <button
+      type="button"
+      onClick={() => setIsOpen(true)}
+      className="
+        flex w-72 flex-shrink-0 items-center justify-center
+        rounded-2xl border border-dashed
+        px-4 py-5 text-sm font-semibold transition-all duration-300
+        shadow-[0_12px_45px_-20px_rgba(0,0,0,0.4)]
+        bg-[var(--color-surface)] text-[var(--color-brand-600)] border-[var(--color-brand-200)]
+        hover:bg-[var(--color-brand-50)] hover:border-[var(--color-brand-300)] hover:text-[var(--color-brand-700)]
+        dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-brand-300)] dark:border-[var(--color-brand-700)]
+        dark:hover:bg-[var(--color-brand-800)] dark:hover:border-[var(--color-brand-500)] dark:hover:text-[var(--color-brand-100)]
+      "
+    >
+      <div className="flex items-center gap-2">
+        <Plus className="h-4 w-4" />
+        <span>Agregar lista</span>
+      </div>
+    </button>
+  );
+}
 
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col rounded-2xl border border-[#2d2d38] bg-[#181820] px-4 py-5 text-white shadow-[0_12px_45px_-20px_rgba(0,0,0,0.75)]">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          type="text"
-          value={listName}
-          onChange={(event) => setListName(event.target.value)}
-          placeholder="Introduce el titulo de la lista"
-          className="w-full rounded-xl border border-[#343447] bg-[#1f1f2b] px-3 py-2 text-sm text-white placeholder:text-neutral-400 focus:border-[#7f6dff] focus:outline-none focus:ring-2 focus:ring-[#7f6dff]/40"
-          required
-          disabled={isAddingList}
-        />
-        <button
-          type="submit"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#6b4dff] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#5d41e7] disabled:opacity-60"
-          disabled={!listName.trim() || isAddingList}
-        >
-          {isAddingList ? (
-            "Anadiendo..."
-          ) : (
-            <>
-              <Plus className="h-4 w-4" />
-              Anadir lista
-            </>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-transparent bg-[#2a2a35] px-4 py-2 text-sm font-semibold text-neutral-300 transition hover:border-[#4b3acd]/40 hover:bg-[#333342]"
-          disabled={isAddingList}
-        >
-          Cancelar
-        </button>
-      </form>
-    </div>
-  );
+  <div
+    className="
+      flex w-72 flex-shrink-0 flex-col rounded-2xl border px-4 py-5
+      shadow-[0_12px_45px_-20px_rgba(0,0,0,0.4)] transition-all duration-300
+
+      /* ----- Modo claro ----- */
+      bg-[var(--color-surface)] border-[var(--color-brand-200)] text-[var(--color-neutral-900)]
+      
+      /* ----- Modo oscuro ----- */
+      dark:bg-[var(--color-surface-hover)] dark:border-[var(--color-brand-700)] dark:text-[var(--color-neutral-100)]
+    "
+  >
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={listName}
+        onChange={(event) => setListName(event.target.value)}
+        placeholder="Introduce el título de la lista"
+        className="
+          w-full rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-200
+          bg-[var(--color-surface)] text-[var(--color-neutral-900)] border-[var(--color-neutral-300)]
+          placeholder-[var(--color-neutral-500)]
+          focus:ring-2 focus:ring-[var(--color-brand-400)] focus:outline-none
+          
+          dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
+          dark:border-[var(--color-neutral-700)] dark:placeholder-[var(--color-neutral-400)]
+          dark:focus:ring-[var(--color-brand-500)]
+        "
+        required
+        disabled={isAddingList}
+      />
+
+      <button
+        type="submit"
+        className="
+          inline-flex w-full items-center justify-center gap-2 rounded-full border
+          px-4 py-2 text-sm font-semibold transition-all duration-300
+          
+          text-[var(--color-brand-700)] bg-[var(--color-brand-100)] border-[var(--color-brand-200)]
+          hover:bg-[var(--color-brand-200)] hover:shadow-md
+
+          dark:text-[var(--color-neutral-50)] dark:bg-[var(--color-brand-700)] dark:border-[var(--color-brand-600)]
+          dark:hover:bg-[var(--color-brand-600)] dark:hover:shadow-lg
+        "
+        disabled={!listName.trim() || isAddingList}
+      >
+        {isAddingList ? (
+          "Añadiendo..."
+        ) : (
+          <>
+            <Plus className="h-4 w-4" />
+            Añadir lista
+          </>
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={handleCancel}
+        className="
+          inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium
+          text-[var(--color-neutral-600)] hover:text-[var(--color-neutral-800)]
+          dark:text-[var(--color-neutral-400)] dark:hover:text-[var(--color-neutral-200)]
+          transition-all duration-200
+        "
+        disabled={isAddingList}
+      >
+        Cancelar
+      </button>
+    </form>
+  </div>
+);
+
 }
 
 function InlineChecklist({ cardId }) {
@@ -1107,32 +1182,60 @@ function InviteModal({ open, onClose, boardId }) {
   };
 
   return (
+  <div
+    className="
+      fixed inset-0 z-[998] flex items-center justify-center
+      bg-black/40 backdrop-blur-md px-4
+    "
+    onClick={handleBackdropClick}
+  >
     <div
-      className="fixed inset-0 z-[998] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-      onClick={handleBackdropClick}
+      className="
+        w-full max-w-md rounded-2xl border shadow-xl transition-colors duration-300
+        bg-[var(--color-surface)] text-[var(--color-neutral-950)]
+        dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
+        border-[var(--color-neutral-200)] dark:border-[var(--color-neutral-700)]
+        p-6 backdrop-blur-md
+      "
+      onClick={(e) => e.stopPropagation()}
     >
-      <div
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Invitar a este tablero
-            </h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Comparte este enlace con la persona que quieras invitar.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label="Cerrar"
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2
+            className="
+              text-lg font-bold tracking-tight
+              text-[var(--color-brand-700)] dark:text-[var(--color-brand-300)]
+              transition-colors duration-300
+            "
           >
-            ✕
-          </button>
+            Invitar a este tablero
+          </h2>
+
+          <p
+            className="
+              mt-1 text-sm font-medium
+              text-[var(--color-brand-500)] dark:text-[var(--color-brand-400)]
+              transition-colors duration-300
+            "
+          >
+            Comparte este enlace con la persona que quieras invitar.
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="
+            rounded-full p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800
+            dark:text-neutral-300 dark:hover:bg-[var(--color-surface)] dark:hover:text-white
+            transition-colors duration-300
+          "
+          aria-label="Cerrar"
+        >
+          ✕
+        </button>
+      </div>
+
 
         <div className="mt-4">
           <label className="text-xs font-semibold uppercase text-neutral-500">
@@ -1156,5 +1259,6 @@ function InviteModal({ open, onClose, boardId }) {
         </div>
       </div>
     </div>
+    
   );
 }

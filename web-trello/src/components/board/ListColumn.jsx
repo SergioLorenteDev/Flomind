@@ -75,18 +75,30 @@ export default function ListColumn({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex w-72 flex-shrink-0 flex-col rounded-2xl border border-[#242430] bg-[#181820] text-white shadow-[0_12px_45px_-20px_rgba(0,0,0,0.75)]"
-    >
+   <div
+  ref={setNodeRef}
+  style={style}
+  className={[
+    "flex w-72 flex-shrink-0 flex-col rounded-2xl border transition-all duration-300",
+    "bg-[var(--color-surface)] text-[var(--color-neutral-950)] border-[rgba(0,0,0,0.08)] shadow-[0_4px_14px_-4px_rgba(0,0,0,0.15)]",
+    "dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-950)] dark:border-[rgba(255,255,255,0.1)] dark:shadow-[0_4px_18px_-6px_rgba(255,255,255,0.08)]",
+  ].join(" ")}
+>
+
       <header
-        className="mb-3 flex cursor-grab items-start justify-between px-4 pt-3 text-[#e4e3ff] active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-      >
-        <h4 className="text-sm font-semibold tracking-wide">{list.nombre}</h4>
-      </header>
+  className="mb-3 flex cursor-grab items-start justify-between px-4 pt-3 active:cursor-grabbing"
+  {...attributes}
+  {...listeners}
+>
+  <h4
+    className="text-sm font-semibold tracking-wide transition-colors"
+    style={{
+      color: "var(--color-brand-700)",
+    }}
+  >
+    {list.nombre}
+  </h4>
+</header>
 
       <SortableContext
         id={listKey}
@@ -95,10 +107,18 @@ export default function ListColumn({
       >
         <div ref={setDroppableRef} className="space-y-3 px-4 pb-1">
           {tarjetas.length === 0 ? (
-            <div className="flex h-16 items-center justify-center rounded-xl border border-dashed border-[#343447] bg-[#1f1f2b] text-sm font-medium text-neutral-300">
-              No hay tarjetas todavia
-            </div>
-          ) : (
+  <div
+    className="flex h-16 items-center justify-center rounded-xl border border-dashed text-sm font-medium transition-colors"
+    style={{
+      background: "var(--color-surface)",
+      color: "var(--color-neutral-950)",
+      borderColor: "rgba(0,0,0,0.2)",
+    }}
+  >
+    No hay tarjetas todavía
+  </div>
+) : (
+
             tarjetas.map((card) => (
               <CardItem
                 key={card.id}
@@ -121,13 +141,19 @@ export default function ListColumn({
               rows={3}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Introduce un titulo o pega un enlace"
-              className="w-full resize-none rounded-xl border border-[#343447] bg-[#1f1f2b] px-3 py-2 text-sm text-white placeholder:text-neutral-400 focus:border-[#7f6dff] focus:outline-none focus:ring-2 focus:ring-[#7f6dff]/40"
+              placeholder="Introduce un título o pega un enlace"
+              className={[
+                "w-full resize-none rounded-xl border px-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-colors duration-300",
+                "bg-[var(--color-surface-hover)] text-[var(--color-neutral-950)] border-[rgba(0,0,0,0.1)]",
+                "focus:border-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)]/40",
+                "dark:bg-[var(--color-brand-50)] dark:text-[var(--color-neutral-950)] dark:border-[rgba(255,255,255,0.15)]",
+                "dark:focus:border-[var(--color-brand-500)] dark:focus:ring-[var(--color-brand-500)]/40",
+              ].join(" ")}
               disabled={isSavingCard}
             />
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={!title.trim() || isSavingCard}>
-                Anadir tarjeta
+                Añadir tarjeta
               </Button>
               <Button
                 type="button"
@@ -143,10 +169,10 @@ export default function ListColumn({
           <button
             type="button"
             onClick={() => setIsComposing(true)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-[#8f7bff] transition hover:text-[#b7a9ff]"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-brand-600)] transition hover:text-[var(--color-brand-500)] dark:text-[var(--color-brand-400)] dark:hover:text-[var(--color-brand-200)]"
           >
             <Plus className="h-4 w-4" />
-            <span>Anade una tarjeta</span>
+            <span>Añade una tarjeta</span>
           </button>
         )}
       </div>

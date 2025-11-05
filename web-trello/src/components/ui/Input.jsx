@@ -1,24 +1,22 @@
-export default function Input({
-  label,
-  name,
-  type = "text",
-  register,
-  error,
-  className = "",
-  ...props
-}) {
-  const registration = register ? register(name) : {};
+export default function Input({ label, type = "text", name, placeholder, register, required }) {
   return (
-    <label className={`flex flex-col gap-2 text-sm ${className}`.trim()}>
-      {label ? <span className="font-semibold text-neutral-900">{label}</span> : null}
+    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+      {label}
       <input
-        name={name}
         type={type}
-        className="rounded-xl border border-brand-100 bg-white/90 px-4 py-3 text-sm text-neutral-900 shadow-inner shadow-brand-700/5 placeholder:text-neutral-400 transition focus:border-brand-200 focus:outline-none focus:ring-[3px] focus:ring-brand-200/70 focus:ring-offset-1 focus:ring-offset-white"
-        {...props}
-        {...registration}
+        {...(register ? register(name, { required }) : {})}
+        placeholder={placeholder}
+        className="
+          mt-1 w-full rounded-xl border border-neutral-300 dark:border-neutral-700
+          bg-white dark:bg-[#2a2435]
+          text-neutral-900 dark:text-neutral-100
+          placeholder-neutral-400 dark:placeholder-neutral-500
+          px-3 py-2 outline-none
+          focus:border-violet-500 dark:focus:border-violet-400
+          focus:ring-4 focus:ring-violet-100 dark:focus:ring-violet-900
+          transition-colors duration-300
+        "
       />
-      {error ? <span className="text-xs text-brand-600">{error}</span> : null}
     </label>
   );
 }

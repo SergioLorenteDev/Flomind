@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -9,8 +10,8 @@ import VerTableros from "./pages/VerTableros.jsx";
 import NuevoTablero from "./pages/NuevoTablero.jsx";
 import Ajustes from "./pages/Ajustes.jsx";
 import BoardPage from "./pages/BoardPage.jsx";
-import { useEffect, useState } from "react";
 import "./App.css";
+import BotonModo from "./components/ui/BotonModo.jsx";
 
 export default function App() {
   const getInitialTheme = () => {
@@ -31,21 +32,23 @@ export default function App() {
       root.classList.remove("dark");
     }
     localStorage.setItem("theme", theme);
-    console.log("🌗 Tema actual:", theme);
+    console.log("Tema actual:", theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme(prev => (prev === "dark" ? "light" : "dark"));
+  const toggleTheme = () => {
+    const root = document.documentElement;
+    root.setAttribute("data-theme-transition", "true");
+
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+
+    setTimeout(() => {
+      root.removeAttribute("data-theme-transition");
+    }, 400);
+  };
 
   return (
     <div>
-      <button
-        onClick={toggleTheme}
-        className="fixed bottom-4 right-4 px-4 py-2 rounded-lg
-                   bg-[var(--color-brand-500)] text-white shadow-lg
-                   hover:bg-[var(--color-brand-600)] transition"
-      >
-        {theme === "dark" ? "☀️ Claro" : "🌙 Oscuro"}
-      </button>
+      <BotonModo />
 
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -101,6 +104,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      
     </div>
   );
 }

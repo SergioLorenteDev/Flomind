@@ -1,4 +1,3 @@
-// src/pages/Perfil.jsx
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
@@ -37,14 +36,14 @@ export default function Perfil() {
     }
   }, [storageKey]);
 
-  // Subir foto de perfil (solo frontend: se guarda en localStorage)
+  // Subir foto de perfil (solo frontend)
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (!file || !storageKey) return;
 
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result; // base64
+      const result = reader.result;
       setProfilePhoto(result);
       try {
         localStorage.setItem(storageKey, result);
@@ -57,18 +56,15 @@ export default function Perfil() {
 
   const handleRemovePhoto = () => {
     setProfilePhoto(null);
-    if (storageKey) {
-      localStorage.removeItem(storageKey);
-    }
+    if (storageKey) localStorage.removeItem(storageKey);
   };
 
   return (
     <section
       className="
         min-h-screen px-4 py-8 transition-colors duration-300
-        bg-[var(--color-surface)] text-[var(--color-neutral-950)]
-        [data-theme=dark]:bg-[var(--color-brand-25)]
-        [data-theme=dark]:text-[var(--color-neutral-950)]
+        bg-[var(--color-brand-25)] text-[var(--color-neutral-950)]
+        dark:bg-[var(--color-surface)] dark:text-[var(--color-neutral-50)]
       "
     >
       <div className="mx-auto w-full max-w-3xl">
@@ -83,20 +79,22 @@ export default function Perfil() {
         <div
           className="
             rounded-2xl border border-black/10
-            [data-theme=dark]:border-[rgba(255,255,255,0.08)]
-            bg-[var(--color-surface)] [data-theme=dark]:bg-[var(--color-surface)]
-            p-6 shadow-sm transition-all duration-300
+            dark:border-[rgba(255,255,255,0.08)]
+            bg-[var(--color-surface)]
+            dark:bg-[var(--color-surface-hover)]
+            shadow-[0_0_6px_rgba(0,0,0,0.05)]
+            dark:shadow-[0_0_8px_rgba(255,255,255,0.05)]
+            p-6 transition-all duration-300
           "
         >
-          {/* Cabecera: avatar + título */}
+          {/* Cabecera */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               {/* Foto de perfil */}
               <div
                 className="
                   h-16 w-16 rounded-full overflow-hidden
-                  bg-[var(--color-brand-100)]
-                  [data-theme=dark]:bg-[var(--color-brand-500)]
+                  bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-500)]
                   flex items-center justify-center shadow-sm
                 "
               >
@@ -110,8 +108,7 @@ export default function Perfil() {
                   <span
                     className="
                       text-2xl font-semibold
-                      text-[var(--color-brand-700)]
-                      [data-theme=dark]:text-white
+                      text-[var(--color-brand-700)] dark:text-white
                     "
                   >
                     {initial}
@@ -120,10 +117,10 @@ export default function Perfil() {
               </div>
 
               <div>
-                <h1 className="text-xl font-bold text-gray-900 [data-theme=dark]:text-white">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   Perfil
                 </h1>
-                <p className="text-sm text-gray-600 [data-theme=dark]:text-neutral-300">
+                <p className="text-sm text-gray-600 dark:text-neutral-300">
                   Información de tu cuenta
                 </p>
               </div>
@@ -132,9 +129,17 @@ export default function Perfil() {
             {/* Controles foto */}
             <div className="flex flex-col gap-2 text-sm">
               <label className="inline-flex cursor-pointer items-center gap-2">
-                <span className="rounded-full bg-[var(--color-brand-600)] px-3 py-1 text-xs font-semibold text-white shadow hover:bg-[var(--color-brand-700)]">
+                <span
+                  className="
+                    rounded-full px-3 py-1 text-xs font-semibold shadow-md hover:shadow-lg
+                    bg-[var(--color-brand-100)] text-[var(--color-brand-700)] hover:bg-[var(--color-brand-200)]
+                    dark:bg-[var(--color-brand-600)] dark:text-white dark:hover:bg-[var(--color-brand-700)]
+                    transition-all duration-200
+                  "
+                >
                   Cambiar foto
                 </span>
+
                 <input
                   type="file"
                   accept="image/*"
@@ -142,6 +147,7 @@ export default function Perfil() {
                   className="hidden"
                 />
               </label>
+
               {profilePhoto && (
                 <button
                   type="button"
@@ -156,22 +162,22 @@ export default function Perfil() {
 
           {/* Datos del usuario */}
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Nombre (solo lectura) */}
+            {/* Nombre */}
             <div
               className="
                 rounded-xl border border-black/10 
-                [data-theme=dark]:border-[rgba(255,255,255,0.08)] 
-                bg-[var(--color-brand-25)] 
-                [data-theme=dark]:bg-[var(--color-surface-hover)] 
+                dark:border-[rgba(255,255,255,0.08)]
+                bg-[var(--color-brand-25)]
+                dark:bg-[var(--color-surface-hover)]
                 p-4 transition-colors duration-300 
-                hover:shadow-[0_0_10px_rgba(127,86,217,0.15)] 
-                [data-theme=dark]:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
+                hover:shadow-[0_0_10px_rgba(127,86,217,0.15)]
+                dark:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
               "
             >
-              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 [data-theme=dark]:text-neutral-300">
+              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-neutral-300">
                 Nombre
               </div>
-              <div className="mt-1 text-sm font-medium text-gray-900 [data-theme=dark]:text-white break-words">
+              <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white break-words">
                 {displayName}
               </div>
             </div>
@@ -180,18 +186,18 @@ export default function Perfil() {
             <div
               className="
                 rounded-xl border border-black/10 
-                [data-theme=dark]:border-[rgba(255,255,255,0.08)] 
-                bg-[var(--color-brand-25)] 
-                [data-theme=dark]:bg-[var(--color-surface-hover)] 
+                dark:border-[rgba(255,255,255,0.08)]
+                bg-[var(--color-brand-25)]
+                dark:bg-[var(--color-surface-hover)]
                 p-4 transition-colors duration-300 
-                hover:shadow-[0_0_10px_rgba(127,86,217,0.15)] 
-                [data-theme=dark]:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
+                hover:shadow-[0_0_10px_rgba(127,86,217,0.15)]
+                dark:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
               "
             >
-              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 [data-theme=dark]:text-neutral-300">
+              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-neutral-300">
                 Correo
               </div>
-              <div className="mt-1 text-sm font-medium text-gray-900 [data-theme=dark]:text-white break-words">
+              <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white break-words">
                 {user?.email || "—"}
               </div>
             </div>

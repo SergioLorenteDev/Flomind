@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext.jsx";
 import logo from "../../assets/Logo dashboard2.png";
+import BotonModo from "../ui/BotonModo.jsx";
+
 
 export default function PageShell({ title, actions, children }) {
   return (
@@ -42,7 +44,7 @@ function Header() {
           placeholder="Buscar tableros, listas o tareas..."
           onChange={(e) => {
             const q = e.target.value.trim();
-            navigate(`/dashboard?q=${encodeURIComponent(q)}`); // 👈 aquí sí va
+            navigate(`/dashboard?q=${encodeURIComponent(q)}`);
           }}
           className="w-full max-w-md rounded-xl bg-brand-500/40 placeholder-white/70 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/60"
         />
@@ -126,15 +128,30 @@ function AvatarArea() {
 </button>
 
         {open && (
-          <div
-            role="menu"
-            className="absolute right-0 mt-2 w-44 rounded-xl border border-white/20 bg-white text-neutral-900 p-1 shadow-lg"
-          >
-            <MenuItem onClick={() => go("/perfil")}>Mi cuenta</MenuItem>
-            <MenuItem onClick={() => go("/ajustes")}>Ajustes</MenuItem>
-            <MenuItem danger onClick={logout}>Cerrar sesión</MenuItem>
-          </div>
-        )}
+  <div
+    role="menu"
+    className={[
+      "absolute right-0 mt-2 w-44 rounded-xl border p-1 shadow-lg transition-colors duration-300",
+      "bg-white/95 text-neutral-900 border-white/20",
+      "dark:bg-[#1c1429]/95 dark:text-white dark:border-white/10",
+    ].join(" ")}
+  >
+    <MenuItem onClick={() => go('/perfil')}>
+      Mi cuenta
+    </MenuItem>
+
+    <MenuItem onClick={() => go('/ajustes')}>
+      Ajustes
+    </MenuItem>
+
+    <MenuItem danger onClick={logout}>
+      Cerrar sesión
+    </MenuItem>
+  </div>
+)}
+<BotonModo />
+
+
       </div>
     </div>
   );
@@ -145,11 +162,24 @@ function MenuItem({ children, onClick, danger }) {
     <button
       role="menuitem"
       onClick={onClick}
-      className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-100 ${
-        danger ? "text-red-600 hover:bg-red-50" : ""
-      }`}
+      className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors
+        ${
+          danger
+            ? `
+              text-[var(--btn-danger-text)] 
+              hover:bg-[var(--btn-danger-hover-bg)]
+            `
+            : `
+              text-[var(--color-neutral-950)] 
+              dark:text-[var(--color-neutral-950)] 
+              hover:bg-[var(--color-surface-hover)] 
+              hover:text-[var(--color-brand-500)]
+              dark:hover:text-[var(--color-brand-500)]
+            `
+        }`}
     >
       {children}
     </button>
   );
 }
+

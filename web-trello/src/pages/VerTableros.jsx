@@ -102,6 +102,7 @@ export default function VerTableros() {
         else params.delete("q");
         navigate({ pathname: "/tableros", search: params.toString() ? `?${params}` : "" }, { replace: true });
     }
+    
 
     return (
         <section className="min-h-screen bg-gradient-to-b from-neutral-50 to-white px-4 py-8">

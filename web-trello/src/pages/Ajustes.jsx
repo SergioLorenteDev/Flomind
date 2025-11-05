@@ -1,4 +1,3 @@
-// src/pages/Ajustes.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
