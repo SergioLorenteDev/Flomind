@@ -1,6 +1,7 @@
 package com.medac.trello.api.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,31 @@ public class EmailService {
 
         } catch (Exception e) {
             System.out.println("❌ Error enviando correo: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void sendBoardInvitation(String toEmail, String boardName, String acceptanceLink) {
+        System.out.println("📬 Entrando a EmailService.sendBoardInvitation()");
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(toEmail);
+            message.setSubject("¡Has sido invitado al tablero de Trello: " + boardName + "!");
+
+            String emailContent = String.format(
+                    "¡Hola! Te han invitado a colaborar en el tablero '%s'.\n\n" +
+                            "Haz clic en el enlace para aceptar la invitación y unirte:\n%s",
+                    boardName, acceptanceLink
+            );
+
+            message.setText(emailContent);
+
+            System.out.println("📨 Enviando invitación a " + toEmail);
+            mailSender.send(message);
+            System.out.println("✅ Correo de invitación enviado correctamente");
+
+        } catch (MailException e) {
+            System.err.println("❌ ERROR AL ENVIAR CORREO DE INVITACIÓN:");
             e.printStackTrace();
         }
     }

@@ -47,9 +47,10 @@ public class AuthResource implements TrelloApi {
                 request.email(),
                 request.password()));
 
-        return ok(userRepository.findByEmail(request.email())
+        return ResponseEntity.ok(userRepository.findByEmail(request.email())
                 .map(user -> new AuthenticatedUserView(
                         jwtManager.generateToken(user),
+                        "Bearer", // ⬅️ ¡ARGUMENTO FALTANTE AÑADIDO!
                         new UserView(user.getId(), user.getUsername(), user.getEmail(), user.getName())))
                 .orElseThrow(InvalidLoginCredentialsException::new));
     }

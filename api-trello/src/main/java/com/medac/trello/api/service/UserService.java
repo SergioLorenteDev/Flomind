@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder; // ⬅️ ¡Nueva Importación!
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -16,6 +17,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+
+
+    //------------------------------------FUNCIONALIDADES DE CONSULTA----------------
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
 
 
     // 🎯 Inyección por constructor (preferida)
@@ -71,9 +80,7 @@ public class UserService {
 
     // ---------------------- FUNCIONALIDAD DE EDICIÓN ----------------------
 
-    /**
-     * Actualiza el nombre de usuario de un usuario específico. (Tu método original)
-     */
+
     public User updateUsername(Long userId, String newUsername) {
 
         User userToUpdate = userRepository.findById(userId)
@@ -93,4 +100,7 @@ public class UserService {
         userToUpdate.setUsername(newUsername);
         return userRepository.save(userToUpdate);
     }
+
+    //------------------------------------FUNCIONALIDADES DE CONSULTA----------------
+
 }

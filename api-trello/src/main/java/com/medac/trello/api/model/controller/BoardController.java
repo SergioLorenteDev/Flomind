@@ -1,13 +1,20 @@
 package com.medac.trello.api.model.controller;
 
+import com.medac.trello.api.dto.InviteRequestDTO;
+import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
+import com.medac.trello.api.model.User;
 import com.medac.trello.api.service.BoardService;
 import com.medac.trello.api.resources.TrelloApi;
+import com.medac.trello.api.service.InvitationService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Set;
 
@@ -17,9 +24,15 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping(value = "/tableros", produces = APPLICATION_JSON_VALUE)
 public class BoardController implements TrelloApi {
+    private final BoardService boardService;
+    private final InvitationService invitationService;
 
     @Autowired
-    private BoardService boardService;
+    public BoardController(BoardService boardService, InvitationService invitationService) {
+        this.boardService = boardService;
+        this.invitationService = invitationService;
+
+    }
 
     //CREAR
     @PostMapping
@@ -58,5 +71,42 @@ public class BoardController implements TrelloApi {
     public Set<Board> listarTablerosPorUsuario(@PathVariable Long userId) {
         // Llama al nuevo método del servicio
         return boardService.obtenerTablerosPorUsuario(userId);
+    }
+
+    //-----------------------------endpoint de invitacion a tablero------------
+
+
+
+    @PostMapping("/invite")
+    public ResponseEntity<String> inviteUserToBoard(
+            @Valid @RequestBody InviteRequestDTO request,
+            @AuthenticationPrincipal User authenticatedUser) {
+
+        try {
+            // 1. Obtener el ID del usuario que invita (inviter) de forma segura
+            Long inviterId = authenticatedUser.getId();
+
+            // 2. Llamar al servicio para realizar las validaciones, guardar la invitación y enviar el correo
+            invitationService.createAndSendInvite(
+                    inviterId,
+                    request.boardId(),
+                    request.invitedEmail()
+            );
+
+            return ResponseEntity.ok("Invitación enviada con éxito a " + request.invitedEmail());
+
+        } catch (AccessDeniedException e) {
+            // Si el usuario no tiene permisos sobre el tablero
+            return ResponseEntity.status(403).body(e.getMessage()); // 403 Forbidden
+        } catch (ResourceNotFoundException e) {
+            // Si el boardId no existe
+            return ResponseEntity.status(404).body(e.getMessage()); // 404 Not Found
+        } catch (IllegalArgumentException e) {
+            // Si el usuario ya es miembro o hay otro error de validación
+            return ResponseEntity.status(400).body(e.getMessage()); // 400 Bad Request
+        } catch (Exception e) {
+            // Manejo de otros posibles errores (ej: fallo de EmailService)
+            return ResponseEntity.status(500).body("Error interno al procesar la invitación.");
+        }
     }
 }

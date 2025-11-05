@@ -30,3 +30,4 @@ security:
   jwt:
     secret-key: ***REMOVED***
     expiration-time: 3600000
+    refresh-expiration-time: 2592000000

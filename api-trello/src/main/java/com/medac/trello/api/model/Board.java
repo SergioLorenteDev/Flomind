@@ -3,7 +3,9 @@ package com.medac.trello.api.model;
 import jakarta.persistence.*;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -27,6 +29,41 @@ public class Board {
     @Column(name = "id_usuario_creador", nullable = false)
     private Long createdBy;
 
+    @ManyToMany
+    @JoinTable(
+            name = "tablero_miembros",
+            joinColumns = @JoinColumn(name = "id_tablero"),
+            inverseJoinColumns = @JoinColumn(name = "id_usuario")
+    )
+    private Set<User> members;
+
+    //------------------------METODOS PARA LAS INVITACIONES------------------
+
+    // 🎯 getOwnerId() -> Mapeado a createdBy
+    public Long getOwnerId() {
+        return this.createdBy;
+    }
+
+    // 🎯 isMember()
+    public boolean isMember(Long userId) {
+        if (this.members == null) {
+            return false;
+        }
+        return this.members.stream()
+                .anyMatch(user -> user.getId() != null && user.getId().equals(userId));
+    }
+
+    // ... (restantes getters y setters de Board) ...
+
+    public Set<User> getMembers() {
+        return Collections.unmodifiableSet(members);
+    }
+    public void setMembers(Set<User> members) {
+        this.members = members;
+    }
+
+
+
     public Board() {}
 
     public Board(String name, Instant createdOn, Long createdBy) {
@@ -49,6 +86,8 @@ public class Board {
         this.createdOn = createdOn;
         this.createdBy = createdBy;
     }
+
+
 
     public Long getId() {
         return id;
