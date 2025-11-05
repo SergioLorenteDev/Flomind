@@ -4,11 +4,15 @@ import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
-import static jakarta.persistence.GenerationType.*;
+import jakarta.persistence.GenerationType;
+
+import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
 @Table(name = "usuario")
@@ -26,6 +30,13 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
     private String password;
+    @Column(name = "is_verified", nullable = false)
+    private boolean isVerified = false; // Por defecto es FALSE, no verificado
+    @Column(name = "fecha_creacion")
+    private Instant createdOn = Instant.now(); // Asignar al crear
+    @Column(name = "confirmation_token")
+    private String confirmationToken;
+
 
     protected User() {}
 
@@ -34,6 +45,9 @@ public class User implements UserDetails {
         this.username = username;
         this.email = email;
         this.password = password;
+
+        // ⬅️ ASIGNACIÓN DEL TOKEN AQUÍ
+        this.confirmationToken = UUID.randomUUID().toString();
     }
 
     public Long getId() {
@@ -44,9 +58,25 @@ public class User implements UserDetails {
         return name;
     }
 
+    public boolean isVerified() { // Getter para el campo boolean
+        return isVerified;
+    }
+
+    public void setVerified(boolean verified) {
+        isVerified = verified;
+    }
+
+    public String getConfirmationToken() {
+        return confirmationToken;
+    }
+
+    public void setConfirmationToken(String confirmationToken) {
+        this.confirmationToken = confirmationToken;
+    }
+
     @Override
     public String getUsername() {
-        // Use email as the principal identifier for Spring Security
+        // Usa el email como identificador principal para Spring Security
         return email;
     }
 
@@ -59,30 +89,38 @@ public class User implements UserDetails {
         return email;
     }
 
+    public Instant getCreatedOn() {return createdOn;}
+
+    public void setCreatedOn(Instant createdOn) {this.createdOn = createdOn;}
+
+    public void setUsername(String username) {this.username = username;}
+
+    public void setPassword(String password) {this.password = password;}
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
     }
 
     @Override
+    public boolean isEnabled() {return this.isVerified;}
+
+    @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return true;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
-    }
+
 
     @Override
     public boolean equals(Object o) {
