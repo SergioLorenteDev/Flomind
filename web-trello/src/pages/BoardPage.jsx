@@ -593,8 +593,7 @@ export default function BoardPage() {
                     type="button"
                     onClick={() => setIsInviteOpen(true)}
                     className="
-                      inline-flex items-center gap-2 rounded-full bg-[#e0d4ff] px-5 py-2 text-sm font-semibold text-[#2d1b8a] border border-[#c4b5fd] shadow-sm hover:bg-[#d2c4ff] hover:shadow-md transition"
-                  >
+                      inline-flex items-center gap-2 rounded-full bg-[#e0d4ff] px-5 py-2 text-sm font-semibold text-[#2d1b8a] border border-[#c4b5fd] shadow-sm hover:bg-[#d2c4ff] hover:shadow-md transition">
                     Invitar
                   </button>
                 </div>
