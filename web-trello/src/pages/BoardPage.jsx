@@ -65,6 +65,7 @@ export default function BoardPage() {
   const [isBackgroundPickerOpen, setIsBackgroundPickerOpen] = useState(false);
   const [isSavingBackground, setIsSavingBackground] = useState(false);
   const [backgroundError, setBackgroundError] = useState(null);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   const backgroundOption = resolveBoardBackground(board?.background);
   const hasImageBackground = backgroundOption.type === "image";
@@ -171,7 +172,6 @@ export default function BoardPage() {
       return next;
     });
   };
-
 
   const handleCardMenuAction = (action, card) => {
     setSelectedCard(card);
@@ -571,13 +571,24 @@ export default function BoardPage() {
                     "Cambiar fondo"
                   )}
                 </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => navigate("/dashboard")}
-                  className="rounded-full px-5 py-2 text-sm shadow-md"
-                >
-                  Volver a tableros
-                </Button>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="primary"
+                    onClick={() => navigate("/dashboard")}
+                    className="rounded-full px-5 py-2 text-sm shadow-md"
+                  >
+                    Volver a tableros
+                  </Button>
+
+                  <Button
+                    type="button"
+                    onClick={() => setIsInviteOpen(true)}
+                   className="rounded-full bg-[#4b2fc8] px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#3a23a3]"
+                  >
+                    Invitar
+                  </Button>
+                </div>
               </div>
             </div>
             {isBackgroundPickerOpen ? (
@@ -596,75 +607,81 @@ export default function BoardPage() {
             ) : null}
           </section>
 
-        <main className="mx-auto max-w-7xl px-6 py-6">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragCancel={resetDragOverlay}
-          >
-            <SortableContext
-              items={lists.map((list) => String(list.idLista))}
-              strategy={horizontalListSortingStrategy}
+          <main className="mx-auto max-w-7xl px-6 py-6">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={resetDragOverlay}
             >
-              <div
-                className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5"
+              <SortableContext
+                items={lists.map((list) => String(list.idLista))}
+                strategy={horizontalListSortingStrategy}
               >
-                {lists.map((list) => (
-                  <ListColumn
-                    key={list.idLista}
-                    list={list}
-                    cards={cardsByListId[String(list.idLista)] || []}
-                    onAddCard={handleCreateCard}
-                    isSavingCard={creatingCardFor === list.idLista}
-                    completedCards={completedCards}
-                    onToggleCardComplete={handleToggleCardComplete}
-                    onCardMenuAction={handleCardMenuAction}
+                <div
+                  className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5"
+                >
+                  {lists.map((list) => (
+                    <ListColumn
+                      key={list.idLista}
+                      list={list}
+                      cards={cardsByListId[String(list.idLista)] || []}
+                      onAddCard={handleCreateCard}
+                      isSavingCard={creatingCardFor === list.idLista}
+                      completedCards={completedCards}
+                      onToggleCardComplete={handleToggleCardComplete}
+                      onCardMenuAction={handleCardMenuAction}
+                    />
+                  ))}
+
+                  <NewListColumn
+                    listName={listName}
+                    setListName={setListName}
+                    isAddingList={isAddingList}
+                    onSubmit={handleAddList}
                   />
-                ))}
+                </div>
+              </SortableContext>
+              {createPortal(
+                <DragOverlay>
+                  {activeCard ? (
+                    <CardDragPreview card={activeCard} />
+                  ) : activeList ? (
+                    <ListDragPreview list={activeList} />
+                  ) : null}
+                </DragOverlay>,
+                document.body
+              )}
+            </DndContext>
+          </main>
 
-                <NewListColumn
-                  listName={listName}
-                  setListName={setListName}
-                  isAddingList={isAddingList}
-                  onSubmit={handleAddList}
-                />
+          {isChecklistOpen && selectedCard ? (
+            <div className="fixed right-0 top-0 z-[999] h-full w-80 bg-white border-l border-neutral-200 shadow-xl p-4 overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-neutral-800">
+                  Checklist – {selectedCard.title || selectedCard.nombre || `Tarjeta ${selectedCard.id}`}
+                </h2>
+                <button
+                  onClick={() => setIsChecklistOpen(false)}
+                  className="text-neutral-400 hover:text-neutral-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </SortableContext>
-            {createPortal(
-              <DragOverlay>
-                {activeCard ? (
-                  <CardDragPreview card={activeCard} />
-                ) : activeList ? (
-                  <ListDragPreview list={activeList} />
-                ) : null}
-              </DragOverlay>,
-              document.body
-            )}
-          </DndContext>
-        </main>
 
-       
-        {isChecklistOpen && selectedCard ? (
-          <div className="fixed right-0 top-0 z-[999] h-full w-80 bg-white border-l border-neutral-200 shadow-xl p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-neutral-800">
-                Checklist – {selectedCard.title || selectedCard.nombre || `Tarjeta ${selectedCard.id}`}
-              </h2>
-              <button
-                onClick={() => setIsChecklistOpen(false)}
-                className="text-neutral-400 hover:text-neutral-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <InlineChecklist cardId={selectedCard.id} />
             </div>
+          ) : null}
 
-            <InlineChecklist cardId={selectedCard.id} />
-          </div>
-        ) : null}
+          {/* Modal de invitación al tablero */}
+          <InviteModal
+            open={isInviteOpen}
+            onClose={() => setIsInviteOpen(false)}
+            boardId={boardId}
+          />
+        </div>
       </div>
-    </div>
     </>
   );
 }
@@ -725,7 +742,7 @@ function BackgroundPicker({
         })}
       </div>
       {errorMessage ? (
-        <p className="mt-3 text-xs font-medium text-red-500">
+        <p className="mt-3 text-xs text-red-500 font-medium">
           {errorMessage}
         </p>
       ) : null}
@@ -779,10 +796,8 @@ function AvatarArea() {
 
   const initial = (user?.email || "U").charAt(0).toUpperCase();
 
-
   const storageKey = user ? `profilePhoto:${user.id}` : null;
   const [profilePhoto, setProfilePhoto] = useState(null);
-
 
   useEffect(() => {
     if (!storageKey) {
@@ -798,7 +813,6 @@ function AvatarArea() {
     }
   }, [storageKey]);
 
- 
   useEffect(() => {
     function onDocClick(e) {
       if (!ref.current) return;
@@ -862,7 +876,6 @@ function AvatarArea() {
     </div>
   );
 }
-
 
 function MenuItem({ children, onClick, danger }) {
   return (
@@ -969,7 +982,6 @@ function NewListColumn({ listName, setListName, isAddingList, onSubmit }) {
   );
 }
 
-
 function InlineChecklist({ cardId }) {
   const STORAGE_KEY = "trello-checklist-" + cardId;
 
@@ -1068,3 +1080,83 @@ function InlineChecklist({ cardId }) {
     </div>
   );
 }
+
+
+function InviteModal({ open, onClose, boardId }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!open) return null;
+
+  const boardUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/tableros/${boardId}`
+      : `/tableros/${boardId}`;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(boardUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert("No se pudo copiar el enlace, cópialo manualmente.");
+    }
+  };
+
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[998] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      onClick={handleBackdropClick}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">
+              Invitar a este tablero
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              Comparte este enlace con la persona que quieras invitar.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <label className="text-xs font-semibold uppercase text-neutral-500">
+            Enlace al tablero
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              type="text"
+              value={boardUrl}
+              readOnly
+              className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-800"
+            />
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="rounded-lg bg-[#4b2fc8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3a23a3]"
+            >
+              {copied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

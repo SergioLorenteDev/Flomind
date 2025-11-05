@@ -38,7 +38,6 @@ export default function Dashboard() {
 
   const searchParams = new URLSearchParams(location.search);
   const urlQuery = searchParams.get("q") || "";
-  const onlyMine = searchParams.get("mine") === "1";
 
   const [boards, setBoards] = React.useState([]);
   const [search, setSearch] = React.useState(urlQuery);
@@ -49,12 +48,10 @@ export default function Dashboard() {
   const [boardPendingDeletion, setBoardPendingDeletion] = React.useState(null);
   const [isDeletingBoard, setIsDeletingBoard] = React.useState(false);
 
-
   React.useEffect(() => {
     setSearch(urlQuery);
   }, [urlQuery]);
 
- 
   const fetchBoards = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -79,12 +76,11 @@ export default function Dashboard() {
     fetchBoards();
   }, [fetchBoards]);
 
-
   React.useEffect(() => {
     fetchBoards();
   }, [location.search, fetchBoards]);
 
- 
+  // ID del usuario logueado, siempre como número
   const currentUserId = React.useMemo(() => {
     if (user?.id == null) return null;
     const parsed = Number(user.id);
@@ -93,42 +89,37 @@ export default function Dashboard() {
 
   const resolveBoardId = React.useCallback(
     (board) => board?.id ?? board?.idTablero ?? board?.id_tablero ?? null,
-    [],
+    []
   );
 
- 
   const resolveBoardName = React.useCallback(
     (board) => board?.name || "Este tablero",
-    [],
+    []
   );
 
-
+  // 🔥 AQUÍ FILTRAMOS SIEMPRE POR EL USUARIO ACTUAL
   const boardsByOwner = React.useMemo(() => {
-    if (!onlyMine) return boards;
     if (!currentUserId) return boards;
 
     return boards.filter((b) => {
-      const ownerRaw = b?.createdBy ?? b?.ownerId ?? b?.idUsuarioCreador;
-      if (ownerRaw == null) {
-        // datos antiguos sin owner asignado: los mostramos por compatibilidad
-        return true;
-      }
+      // Ajusta aquí según cómo venga del back.
+      // Por lo que hemos visto, seguramente sea idUsuarioCreador.
+      const ownerRaw = b?.idUsuarioCreador ?? b?.ownerId ?? b?.createdBy;
+      if (ownerRaw == null) return false; // si no tiene dueño, no lo mostramos
+
       const ownerId = Number(ownerRaw);
-      if (Number.isNaN(ownerId)) {
-        // valores no numéricos, asumimos que el tablero es accesible
-        return true;
-      }
+      if (Number.isNaN(ownerId)) return false;
+
       return ownerId === currentUserId;
     });
-  }, [boards, onlyMine, currentUserId]);
-
+  }, [boards, currentUserId]);
 
   const boardsToShow = boardsByOwner.filter((b) => {
     const q = search.toLowerCase();
     const name = (b.name || "").toLowerCase();
     const desc = (b.description || "").toLowerCase();
 
-    if (!q) return true; 
+    if (!q) return true;
     return name.includes(q) || desc.includes(q);
   });
 
@@ -165,7 +156,7 @@ export default function Dashboard() {
       setIsDeletingBoard(true);
       await apiFetch(`/tableros/${boardId}`, { method: "DELETE" });
       setBoards((prev) =>
-        prev.filter((board) => resolveBoardId(board) !== boardId),
+        prev.filter((board) => resolveBoardId(board) !== boardId)
       );
       setBoardPendingDeletion(null);
     } catch (err) {
@@ -179,7 +170,7 @@ export default function Dashboard() {
   return (
     <>
       <PageShell
-        title={onlyMine ? "Mis tableros" : null}
+        title="Mis tableros"
         actions={
           <Button
             variant="primary"
@@ -253,7 +244,7 @@ export default function Dashboard() {
                       background={board.background}
                       onOpen={
                         boardId
-                          ? () => navigate(`/tableros/${boardId}`) 
+                          ? () => navigate(`/tableros/${boardId}`)
                           : undefined
                       }
                       onDelete={
