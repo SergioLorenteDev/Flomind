@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
@@ -70,7 +65,7 @@ export default function BoardPage() {
   const backgroundOption = resolveBoardBackground(board?.background);
   const hasImageBackground = backgroundOption.type === "image";
   const pageBackgroundStyle = boardBackgroundToStyle(
-    board?.background ?? backgroundOption.value,
+    board?.background ?? backgroundOption.value
   );
   const boardSurfaceClass = hasImageBackground
     ? "bg-transparent"
@@ -80,7 +75,9 @@ export default function BoardPage() {
     ? "border-transparent bg-black/35 backdrop-blur-sm"
     : "border-white/50 bg-white/40 backdrop-blur-sm";
   const titleTextClass = hasImageBackground ? "text-white" : "text-neutral-900";
-  const titleButtonTextClass = hasImageBackground ? "text-white" : "text-neutral-900";
+  const titleButtonTextClass = hasImageBackground
+    ? "text-white"
+    : "text-neutral-900";
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -114,8 +111,7 @@ export default function BoardPage() {
           const sortedCards = normalizeCards(
             (Array.isArray(cards) ? cards : []).sort(
               (a, b) =>
-                (a.cardOrder ?? a.order ?? 0) -
-                (b.cardOrder ?? b.order ?? 0)
+                (a.cardOrder ?? a.order ?? 0) - (b.cardOrder ?? b.order ?? 0)
             )
           ).map((card) => ({ ...card, listId: list.idLista }));
           return [String(list.idLista), sortedCards];
@@ -150,9 +146,10 @@ export default function BoardPage() {
 
       setCardsByListId((prev) => {
         const next = { ...prev };
-        const updated = normalizeCards(
-          [...(next[listId] || []), { ...newCard, listId }]
-        );
+        const updated = normalizeCards([
+          ...(next[listId] || []),
+          { ...newCard, listId },
+        ]);
         next[listId] = updated;
         return next;
       });
@@ -229,9 +226,7 @@ export default function BoardPage() {
       if (cardsByListId[key]) return key;
 
       return Object.keys(cardsByListId).find((listId) =>
-        (cardsByListId[listId] || []).some(
-          (card) => toKey(card.id) === key
-        )
+        (cardsByListId[listId] || []).some((card) => toKey(card.id) === key)
       );
     },
     [cardsByListId]
@@ -279,7 +274,10 @@ export default function BoardPage() {
     const overData = over.data.current;
 
     // mover listas
-    if (activeData?.type === "list" && (overData?.type === "list" || !overData)) {
+    if (
+      activeData?.type === "list" &&
+      (overData?.type === "list" || !overData)
+    ) {
       reorderLists(active.id, over.id);
       return;
     }
@@ -312,15 +310,16 @@ export default function BoardPage() {
 
     const overIndexOriginal =
       overData?.type === "card" && sourceContainer === overContainer
-        ? sourceCards.findIndex(
-            (card) => toKey(card.id) === toKey(over.id)
-          )
+        ? sourceCards.findIndex((card) => toKey(card.id) === toKey(over.id))
         : -1;
 
     const [movedCard] = sourceItems.splice(activeIndex, 1);
 
     let destinationIndex;
-    if (overData?.type === "card" && overContainer === String(overData.listId)) {
+    if (
+      overData?.type === "card" &&
+      overContainer === String(overData.listId)
+    ) {
       destinationIndex = destinationItems.findIndex(
         (card) => toKey(card.id) === toKey(over.id)
       );
@@ -447,9 +446,7 @@ export default function BoardPage() {
 
     const previousBackground = board?.background ?? null;
     setBackgroundError(null);
-    setBoard((prev) =>
-      prev ? { ...prev, background: resolved } : prev,
-    );
+    setBoard((prev) => (prev ? { ...prev, background: resolved } : prev));
 
     try {
       setIsSavingBackground(true);
@@ -461,9 +458,11 @@ export default function BoardPage() {
       setIsBackgroundPickerOpen(false);
     } catch (e) {
       console.error("Error al actualizar el fondo del tablero:", e);
-      setBackgroundError("No se pudo guardar el nuevo fondo. Intentalo de nuevo.");
+      setBackgroundError(
+        "No se pudo guardar el nuevo fondo. Intentalo de nuevo."
+      );
       setBoard((prev) =>
-        prev ? { ...prev, background: previousBackground } : prev,
+        prev ? { ...prev, background: previousBackground } : prev
       );
     } finally {
       setIsSavingBackground(false);
@@ -477,7 +476,9 @@ export default function BoardPage() {
       <div className="p-8 bg-neutral-50">
         <div className="mx-auto w-full max-w-lg rounded-xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-lg">
           <h1 className="mb-2 text-2xl font-bold">Error de carga</h1>
-          <p className="mb-4">No se pudo cargar el tablero con ID: {boardId}.</p>
+          <p className="mb-4">
+            No se pudo cargar el tablero con ID: {boardId}.
+          </p>
           <p className="font-mono text-sm">{error}</p>
           <div className="mt-4 flex justify-end">
             <Button onClick={() => navigate("/dashboard")} variant="secondary">
@@ -496,7 +497,9 @@ export default function BoardPage() {
       <style>{SCROLLBAR_STYLE}</style>
       <div className="min-h-screen" style={pageBackgroundStyle}>
         <div
-          className={["min-h-screen", boardTextClass, boardSurfaceClass].join(" ")}
+          className={["min-h-screen", boardTextClass, boardSurfaceClass].join(
+            " "
+          )}
         >
           <BoardTopNav />
 
@@ -539,13 +542,20 @@ export default function BoardPage() {
                 </form>
               ) : (
                 <div className="flex items-center gap-3">
-                  <h1 className={["text-2xl font-semibold", titleTextClass].join(" ")}>
+                  <h1
+                    className={["text-2xl font-semibold", titleTextClass].join(
+                      " "
+                    )}
+                  >
                     {board.name}
                   </h1>
                   <button
                     type="button"
                     onClick={handleStartEditingTitle}
-                    className={["inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 transition hover:bg-white", titleButtonTextClass].join(" ")}
+                    className={[
+                      "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 transition hover:bg-white",
+                      titleButtonTextClass,
+                    ].join(" ")}
                     aria-label="Editar nombre del tablero"
                   >
                     <Pencil className="h-4 w-4" />
@@ -556,9 +566,7 @@ export default function BoardPage() {
               <div className="flex items-center gap-3 self-start md:self-auto">
                 <Button
                   variant="secondary"
-                  onClick={() =>
-                    setIsBackgroundPickerOpen((value) => !value)
-                  }
+                  onClick={() => setIsBackgroundPickerOpen((value) => !value)}
                   disabled={isSavingBackground}
                   className="rounded-full px-5 py-2 text-sm text-[#2d1b8a]"
                 >
@@ -581,13 +589,14 @@ export default function BoardPage() {
                     Volver a tableros
                   </Button>
 
-                  <Button
+                  <button
                     type="button"
                     onClick={() => setIsInviteOpen(true)}
-                   className="rounded-full bg-[#4b2fc8] px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-[#3a23a3]"
+                    className="
+                      inline-flex items-center gap-2 rounded-full bg-[#e0d4ff] px-5 py-2 text-sm font-semibold text-[#2d1b8a] border border-[#c4b5fd] shadow-sm hover:bg-[#d2c4ff] hover:shadow-md transition"
                   >
                     Invitar
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -619,9 +628,7 @@ export default function BoardPage() {
                 items={lists.map((list) => String(list.idLista))}
                 strategy={horizontalListSortingStrategy}
               >
-                <div
-                  className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5"
-                >
+                <div className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5">
                   {lists.map((list) => (
                     <ListColumn
                       key={list.idLista}
@@ -660,7 +667,10 @@ export default function BoardPage() {
             <div className="fixed right-0 top-0 z-[999] h-full w-80 bg-white border-l border-neutral-200 shadow-xl p-4 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-neutral-800">
-                  Checklist – {selectedCard.title || selectedCard.nombre || `Tarjeta ${selectedCard.id}`}
+                  Checklist –{" "}
+                  {selectedCard.title ||
+                    selectedCard.nombre ||
+                    `Tarjeta ${selectedCard.id}`}
                 </h2>
                 <button
                   onClick={() => setIsChecklistOpen(false)}
@@ -674,7 +684,6 @@ export default function BoardPage() {
             </div>
           ) : null}
 
-    
           <InviteModal
             open={isInviteOpen}
             onClose={() => setIsInviteOpen(false)}
@@ -724,7 +733,7 @@ function BackgroundPicker({
                 "rounded-2xl border-2 p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d41e7]",
                 isActive
                   ? "border-[var(--color-brand-500)] shadow-md"
-                  : "border-transparent hover:border-white hover:shadow"
+                  : "border-transparent hover:border-white hover:shadow",
               ].join(" ")}
             >
               <div
@@ -742,9 +751,7 @@ function BackgroundPicker({
         })}
       </div>
       {errorMessage ? (
-        <p className="mt-3 text-xs text-red-500 font-medium">
-          {errorMessage}
-        </p>
+        <p className="mt-3 text-xs text-red-500 font-medium">{errorMessage}</p>
       ) : null}
       {isSaving ? (
         <p className="mt-3 text-xs font-medium text-[var(--color-brand-600)]">
@@ -839,9 +846,7 @@ function AvatarArea() {
 
   return (
     <div className="flex items-center gap-3" ref={ref}>
-      <span className="hidden text-sm text-white/90 sm:inline">
-        Mi cuenta
-      </span>
+      <span className="hidden text-sm text-white/90 sm:inline">Mi cuenta</span>
 
       <div className="relative">
         <button
@@ -869,7 +874,9 @@ function AvatarArea() {
           >
             <MenuItem onClick={() => go("/perfil")}>Mi cuenta</MenuItem>
             <MenuItem onClick={() => go("/ajustes")}>Ajustes</MenuItem>
-            <MenuItem danger onClick={logout}>Cerrar sesion</MenuItem>
+            <MenuItem danger onClick={logout}>
+              Cerrar sesion
+            </MenuItem>
           </div>
         )}
       </div>
@@ -1003,18 +1010,13 @@ function InlineChecklist({ cardId }) {
   const addItem = () => {
     const t = text.trim();
     if (!t) return;
-    setItems((prev) => [
-      ...prev,
-      { id: Date.now(), text: t, done: false },
-    ]);
+    setItems((prev) => [...prev, { id: Date.now(), text: t, done: false }]);
     setText("");
   };
 
   const toggleItem = (id) => {
     setItems((prev) =>
-      prev.map((it) =>
-        it.id === id ? { ...it, done: !it.done } : it
-      )
+      prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it))
     );
   };
 
@@ -1081,7 +1083,6 @@ function InlineChecklist({ cardId }) {
   );
 }
 
-
 function InviteModal({ open, onClose, boardId }) {
   const [copied, setCopied] = useState(false);
 
@@ -1101,7 +1102,6 @@ function InviteModal({ open, onClose, boardId }) {
       alert("No se pudo copiar el enlace, cópialo manualmente.");
     }
   };
-
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
@@ -1159,4 +1159,3 @@ function InviteModal({ open, onClose, boardId }) {
     </div>
   );
 }
-
