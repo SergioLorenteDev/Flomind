@@ -966,7 +966,7 @@ export default function BoardPage() {
                   <button
                     type="button"
                     onClick={handleStartEditingTitle}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-brand-600)] text-white shadow-sm transition hover:bg-[var(--color-brand-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-200)]/60 focus:ring-offset-1"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-brand-300)] bg-white/90 text-[var(--color-brand-700)] shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-200)]/60 focus:ring-offset-1"
                     aria-label="Editar nombre del tablero"
                   >
                     <Pencil className="h-4 w-4" />
