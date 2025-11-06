@@ -18,10 +18,9 @@ export function AuthProvider({ children }) {
     return logged;
   }, []);
 
-  const register = useCallback(async (email, password, remember) => {
-    await Promise.resolve(authRegister(email, password));
-    return login(email, password, remember);
-  }, [login]);
+  const register = useCallback(async (email, password) => {
+    return authRegister(email, password);
+  }, []);
 
   const signOut = useCallback(() => {
     authSignOut();

@@ -5,6 +5,8 @@ import {
   DndContext,
   PointerSensor,
   closestCorners,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
   DragOverlay,
@@ -17,7 +19,13 @@ import {
 import { Pencil, Check, X, Loader2, Plus } from "lucide-react";
 import Button from "../components/ui/Button.jsx";
 import ListColumn from "../components/board/ListColumn.jsx";
-import { apiFetch } from "../modules/apiClient";
+import {
+  apiFetch,
+  updateCard,
+  fetchBoardLabels,
+  createBoardLabel,
+  updateBoardLabel,
+} from "../modules/apiClient";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import logo from "../assets/Logo dashboard2.png";
 import {
@@ -32,11 +40,48 @@ const SCROLLBAR_STYLE = `
 .board-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
-const normalizeCards = (items) =>
-  items.map((card, index) => ({ ...card, cardOrder: index }));
+const LIST_SORTABLE_PREFIX = "list-";
+const LIST_DROPPABLE_PREFIX = "list-droppable-";
+const CARD_PREFIX = "card-";
 
-const toKey = (value) =>
-  value === null || value === undefined ? undefined : String(value);
+const DEFAULT_LABEL_COLOR = "#7f56d9";
+
+const toListSortableId = (value) => `${LIST_SORTABLE_PREFIX}${value}`;
+const toCardSortableId = (value) => `${CARD_PREFIX}${value}`;
+
+const extractListId = (value) => {
+  if (!value) return undefined;
+  const key = String(value);
+  if (key.startsWith(LIST_SORTABLE_PREFIX)) {
+    return key.slice(LIST_SORTABLE_PREFIX.length);
+  }
+  if (key.startsWith(LIST_DROPPABLE_PREFIX)) {
+    return key.slice(LIST_DROPPABLE_PREFIX.length);
+  }
+  if (/^\d+$/.test(key)) {
+    return key;
+  }
+  return undefined;
+};
+
+const extractCardId = (value) => {
+  if (!value) return undefined;
+  const key = String(value);
+  if (key.startsWith(CARD_PREFIX)) {
+    return key.slice(CARD_PREFIX.length);
+  }
+  if (/^\d+$/.test(key)) {
+    return key;
+  }
+  return undefined;
+};
+
+const normalizeCards = (items, listId) =>
+  items.map((card, index) => ({
+    ...card,
+    cardOrder: index,
+    listId: String(listId ?? card.listId ?? ""),
+  }));
 
 export default function BoardPage() {
   const { boardId } = useParams();
@@ -62,6 +107,21 @@ export default function BoardPage() {
   const [isSavingBackground, setIsSavingBackground] = useState(false);
   const [backgroundError, setBackgroundError] = useState(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [labels, setLabels] = useState(() => []);
+  const [labelEditorState, setLabelEditorState] = useState({
+    open: false,
+    cardId: null,
+    listKey: null,
+    selectedLabelId: null,
+  });
+  const lastOverId = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const panStateRef = useRef({
+    isActive: false,
+    pointerId: null,
+    startX: 0,
+    startScrollLeft: 0,
+  });
 
   const backgroundOption = resolveBoardBackground(board?.background);
   const hasImageBackground = backgroundOption.type === "image";
@@ -76,13 +136,134 @@ export default function BoardPage() {
     ? "border-transparent bg-black/35 backdrop-blur-sm"
     : "border-white/50 bg-white/40 backdrop-blur-sm";
   const titleTextClass = hasImageBackground ? "text-white" : "text-neutral-900";
-  const titleButtonTextClass = hasImageBackground
-    ? "text-white"
-    : "text-neutral-900";
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
+
+  const resolveCardListKey = useCallback(
+    (card) => {
+      if (!card) return null;
+      if (card.listId != null) return String(card.listId);
+      if (card.idLista != null) return String(card.idLista);
+      const match = Object.entries(cardsByListId).find(([, cards]) =>
+        (cards || []).some((item) => item.id === card.id)
+      );
+      return match ? match[0] : null;
+    },
+    [cardsByListId]
+  );
+
+  useEffect(() => {
+    const shouldIgnoreEvent = (event) =>
+      Boolean(
+        event.target.closest(
+          "[data-draggable], button, a, input, textarea, select, [role='button']"
+        )
+      );
+
+    const handlePointerDown = (event) => {
+      if (event.button !== 0 && event.pointerType !== "touch") return;
+      if (shouldIgnoreEvent(event)) return;
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const state = panStateRef.current;
+      state.isActive = true;
+      state.pointerId = event.pointerId;
+      state.startX = event.clientX;
+      state.startScrollLeft = container.scrollLeft;
+
+      document.body.style.cursor = "grabbing";
+      container.dataset.panning = "true";
+      container.style.cursor = "grabbing";
+      event.preventDefault();
+    };
+
+    const handlePointerMove = (event) => {
+      const container = scrollContainerRef.current;
+      const state = panStateRef.current;
+      if (
+        !state.isActive ||
+        (state.pointerId !== null && state.pointerId !== event.pointerId)
+      ) {
+        return;
+      }
+      if (!container) return;
+
+      const deltaX = event.clientX - state.startX;
+      container.scrollLeft = state.startScrollLeft - deltaX;
+      event.preventDefault();
+    };
+
+    const endPan = (event) => {
+      const state = panStateRef.current;
+      if (!state.isActive) return;
+      if (state.pointerId !== null && state.pointerId !== event.pointerId) {
+        return;
+      }
+      state.isActive = false;
+      state.pointerId = null;
+      state.startX = 0;
+      state.startScrollLeft = 0;
+
+      const container = scrollContainerRef.current;
+      if (container) {
+        delete container.dataset.panning;
+        container.style.cursor = "";
+      }
+      document.body.style.cursor = "";
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown, { passive: false });
+    document.addEventListener("pointermove", handlePointerMove, { passive: false });
+    document.addEventListener("pointerup", endPan);
+    document.addEventListener("pointercancel", endPan);
+    document.addEventListener("pointerleave", endPan);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", endPan);
+      document.removeEventListener("pointercancel", endPan);
+      document.removeEventListener("pointerleave", endPan);
+    };
+  }, []);
+
+  const collisionDetection = useCallback((args) => {
+    const activeType = args.active?.data?.current?.type;
+    if (activeType === "list") {
+      const listContainers = args.droppableContainers.filter(
+        (container) => container.data?.current?.type === "list"
+      );
+      return closestCorners({
+        ...args,
+        droppableContainers:
+          listContainers.length > 0 ? listContainers : args.droppableContainers,
+      });
+    }
+
+    let collisions = pointerWithin(args);
+
+    if (!collisions.length) {
+      collisions = rectIntersection(args);
+    }
+
+    if (!collisions.length) {
+      collisions = closestCorners(args);
+    }
+
+    if (collisions.length) {
+      lastOverId.current = collisions[0].id;
+      return collisions;
+    }
+
+    if (lastOverId.current != null) {
+      return [{ id: lastOverId.current }];
+    }
+
+    return [];
+  }, []);
 
   const fetchBoardAndLists = useCallback(async () => {
     if (!boardId) {
@@ -106,16 +287,28 @@ export default function BoardPage() {
       );
       setLists(sortedLists);
 
+      const labelsData = await fetchBoardLabels(boardId);
+
+      setLabels(
+        (Array.isArray(labelsData) ? labelsData : []).map((label) => ({
+          id: label.id,
+          color: label.color ?? DEFAULT_LABEL_COLOR,
+          text: label.text ?? "",
+        }))
+      );
+
       const cardsEntries = await Promise.all(
         sortedLists.map(async (list) => {
           const cards = await apiFetch(`/listas/${list.idLista}/tarjetas`);
-          const sortedCards = normalizeCards(
-            (Array.isArray(cards) ? cards : []).sort(
-              (a, b) =>
-                (a.cardOrder ?? a.order ?? 0) - (b.cardOrder ?? b.order ?? 0)
-            )
-          ).map((card) => ({ ...card, listId: list.idLista }));
-          return [String(list.idLista), sortedCards];
+          const rawCards = (Array.isArray(cards) ? cards : []).sort(
+            (a, b) =>
+              (a.cardOrder ?? a.order ?? 0) - (b.cardOrder ?? b.order ?? 0)
+          );
+          const normalizedCards = normalizeCards(
+            rawCards.map((card) => ({ ...card, listId: list.idLista })),
+            list.idLista
+          );
+          return [String(list.idLista), normalizedCards];
         })
       );
 
@@ -147,10 +340,10 @@ export default function BoardPage() {
 
       setCardsByListId((prev) => {
         const next = { ...prev };
-        const updated = normalizeCards([
-          ...(next[listId] || []),
-          { ...newCard, listId },
-        ]);
+        const updated = normalizeCards(
+          [...(next[listId] || []), { ...newCard, listId }],
+          listId
+        );
         next[listId] = updated;
         return next;
       });
@@ -171,22 +364,216 @@ export default function BoardPage() {
     });
   };
 
+  const closeLabelEditor = useCallback(() => {
+    setLabelEditorState({
+      open: false,
+      cardId: null,
+      listKey: null,
+      selectedLabelId: null,
+    });
+  }, []);
+
+  const mutateCardLabel = useCallback((cardId, listKey, nextLabel) => {
+    if (!cardId) return;
+    const clonedLabel = nextLabel ? { ...nextLabel } : null;
+    setCardsByListId((prev) => {
+      let resolvedKey = listKey;
+      if (!resolvedKey || !prev[resolvedKey]) {
+        resolvedKey = Object.keys(prev).find((key) =>
+          (prev[key] || []).some((card) => card.id === cardId)
+        );
+      }
+      if (!resolvedKey) return prev;
+      const updatedCards = (prev[resolvedKey] || []).map((card) =>
+        card.id === cardId ? { ...card, label: clonedLabel } : card
+      );
+      return { ...prev, [resolvedKey]: updatedCards };
+    });
+
+    setSelectedCard((prev) =>
+      prev && prev.id === cardId ? { ...prev, label: clonedLabel } : prev
+    );
+    setActiveCard((prev) =>
+      prev && prev.id === cardId ? { ...prev, label: clonedLabel } : prev
+    );
+  }, []);
+
+  const handleSelectLabelForCard = useCallback(
+    async (labelId, labelOverride = null) => {
+      if (!labelEditorState.cardId) return;
+      const labelData =
+        labelOverride ?? labels.find((label) => label.id === labelId) ?? null;
+      const previous = selectedCard?.label ?? null;
+
+      if (labelData && labelData.id) {
+        setLabels((prev) => {
+          if (prev.some((item) => item.id === labelData.id)) {
+            return prev;
+          }
+          return [...prev, labelData];
+        });
+      }
+
+      mutateCardLabel(labelEditorState.cardId, labelEditorState.listKey, labelData);
+      setLabelEditorState((prev) => ({
+        ...prev,
+        selectedLabelId: labelId ?? null,
+      }));
+
+      try {
+        await updateCard(labelEditorState.cardId, {
+          labelId,
+        });
+      } catch (err) {
+        mutateCardLabel(labelEditorState.cardId, labelEditorState.listKey, previous);
+        setLabelEditorState((prev) => ({ ...prev, selectedLabelId: previous?.id ?? null }));
+        throw err;
+      }
+    },
+    [labelEditorState, labels, mutateCardLabel, selectedCard]
+  );
+
+  const handleClearLabel = useCallback(async () => {
+    if (!labelEditorState.cardId) {
+      closeLabelEditor();
+      return;
+    }
+    const previous = selectedCard?.label ?? null;
+    mutateCardLabel(labelEditorState.cardId, labelEditorState.listKey, null);
+    setLabelEditorState((prev) => ({ ...prev, selectedLabelId: null }));
+    try {
+      await updateCard(labelEditorState.cardId, { labelId: null });
+      closeLabelEditor();
+    } catch (err) {
+      mutateCardLabel(labelEditorState.cardId, labelEditorState.listKey, previous);
+      setLabelEditorState((prev) => ({ ...prev, selectedLabelId: previous?.id ?? null }));
+      throw err;
+    }
+  }, [labelEditorState, mutateCardLabel, closeLabelEditor, selectedCard]);
+
+  const registerCardLabel = useCallback((card) => {
+    if (!card?.label) return null;
+    const label = {
+      id: card.label.id,
+      color: card.label.color ?? DEFAULT_LABEL_COLOR,
+      text: card.label.text ?? "",
+    };
+
+    setLabels((prev) => {
+      if (!label.id || prev.some((item) => item.id === label.id)) {
+        return prev;
+      }
+      return [...prev, label];
+    });
+
+    return label.id ?? null;
+  }, []);
+
+  const handleCreateLabel = useCallback(async () => {
+    if (!boardId) {
+      throw new Error("Tablero no disponible.");
+    }
+    const newLabel = await createBoardLabel(boardId, {
+      text: "",
+      color: DEFAULT_LABEL_COLOR,
+    });
+    setLabels((prev) =>
+      prev.some((label) => label.id === newLabel.id)
+        ? prev
+        : [...prev, newLabel]
+    );
+    return newLabel;
+  }, [boardId]);
+
+  const handleUpdateLabel = useCallback(
+    async (labelId, updates) => {
+      if (!boardId) {
+        throw new Error("Tablero no disponible.");
+      }
+      const payload = {};
+      if (typeof updates.text === "string") {
+        payload.text = updates.text;
+      }
+      if (typeof updates.color === "string") {
+        payload.color = updates.color;
+      }
+      if (Object.keys(payload).length === 0) {
+        return;
+      }
+
+      const updated = await updateBoardLabel(boardId, labelId, payload);
+
+      setLabels((prev) =>
+        prev.map((label) => (label.id === updated.id ? updated : label))
+      );
+
+      setCardsByListId((prev) => {
+        const entries = Object.entries(prev).map(([key, cards]) => [
+          key,
+          (cards || []).map((card) =>
+            card.label?.id === updated.id ? { ...card, label: updated } : card
+          ),
+        ]);
+        return Object.fromEntries(entries);
+      });
+
+      setSelectedCard((prev) =>
+        prev && prev.label?.id === updated.id ? { ...prev, label: updated } : prev
+      );
+      setActiveCard((prev) =>
+        prev && prev.label?.id === updated.id ? { ...prev, label: updated } : prev
+      );
+    },
+    [boardId]
+  );
+
+  const openLabelEditor = useCallback(
+    (card) => {
+      const listKey = resolveCardListKey(card);
+      const selectedLabelId = registerCardLabel(card);
+
+      setLabelEditorState({
+        open: true,
+        cardId: card?.id ?? null,
+        listKey,
+        selectedLabelId: selectedLabelId ?? null,
+      });
+
+      setSelectedCard(card);
+      setIsChecklistOpen(false);
+    },
+    [resolveCardListKey, registerCardLabel]
+  );
+
   const handleCardMenuAction = (action, card) => {
+    if (action === "edit-labels") {
+      openLabelEditor(card);
+      return;
+    }
     setSelectedCard(card);
     setIsChecklistOpen(true);
   };
 
-  const reorderLists = (activeId, overId) => {
-    const activeKey = toKey(activeId);
-    const overKey = toKey(overId);
-    if (!activeKey || !overKey) return;
+  const reorderLists = (activeListId, overListId) => {
+    const sourceId =
+      activeListId !== null && activeListId !== undefined
+        ? String(activeListId)
+        : null;
+    const targetId =
+      overListId !== null && overListId !== undefined
+        ? String(overListId)
+        : null;
+
+    if (!sourceId || !targetId || sourceId === targetId) {
+      return;
+    }
 
     setLists((prev) => {
       const oldIndex = prev.findIndex(
-        (list) => toKey(list.idLista) === activeKey
+        (list) => String(list.idLista) === sourceId
       );
       const newIndex = prev.findIndex(
-        (list) => toKey(list.idLista) === overKey
+        (list) => String(list.idLista) === targetId
       );
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
         return prev;
@@ -202,7 +589,7 @@ export default function BoardPage() {
       (async () => {
         try {
           await Promise.all(
-            reordered.map((list, index) =>
+                reordered.map((list, index) =>
               apiFetch(`/tableros/listas/${list.idLista}`, {
                 method: "PUT",
                 body: JSON.stringify({ nombre: list.nombre, orden: index }),
@@ -222,12 +609,20 @@ export default function BoardPage() {
 
   const findContainer = useCallback(
     (id) => {
-      const key = toKey(id);
-      if (!key) return undefined;
-      if (cardsByListId[key]) return key;
+      if (id === null || id === undefined) return undefined;
+      const key = String(id);
+      const listIdFromKey = extractListId(key);
+      if (listIdFromKey) {
+        return listIdFromKey;
+      }
+
+      const cardId = extractCardId(key);
+      if (!cardId) return undefined;
 
       return Object.keys(cardsByListId).find((listId) =>
-        (cardsByListId[listId] || []).some((card) => toKey(card.id) === key)
+        (cardsByListId[listId] || []).some(
+          (card) => String(card.id) === cardId
+        )
       );
     },
     [cardsByListId]
@@ -237,12 +632,12 @@ export default function BoardPage() {
     const activeData = active.data.current;
     if (activeData?.type === "card") {
       const sourceContainer = activeData.listId
-        ? toKey(activeData.listId)
-        : findContainer(toKey(active.id));
+        ? String(activeData.listId)
+        : findContainer(active.id);
       const card =
         sourceContainer != null
           ? (cardsByListId[sourceContainer] || []).find(
-              (c) => toKey(c.id) === toKey(active.id)
+              (c) => toCardSortableId(c.id) === String(active.id)
             )
           : null;
       setActiveCard(card ?? null);
@@ -251,8 +646,10 @@ export default function BoardPage() {
     }
 
     if (activeData?.type === "list") {
+      const listId =
+        String(activeData.listId ?? extractListId(active.id) ?? "");
       const list =
-        lists.find((l) => toKey(l.idLista) === toKey(active.id)) ?? null;
+        lists.find((l) => String(l.idLista) === listId) ?? null;
       setActiveList(list);
       setActiveCard(null);
       return;
@@ -265,6 +662,7 @@ export default function BoardPage() {
   const resetDragOverlay = () => {
     setActiveCard(null);
     setActiveList(null);
+    lastOverId.current = null;
   };
 
   const handleDragEnd = async ({ active, over }) => {
@@ -275,27 +673,43 @@ export default function BoardPage() {
     const overData = over.data.current;
 
     // mover listas
-    if (
-      activeData?.type === "list" &&
-      (overData?.type === "list" || !overData)
-    ) {
-      reorderLists(active.id, over.id);
+    if (activeData?.type === "list") {
+      const sourceId =
+        activeData.listId ?? extractListId(active.id) ?? undefined;
+      const targetId =
+        overData?.listId ?? extractListId(over?.id) ?? undefined;
+      if (!sourceId || !targetId) return;
+      reorderLists(sourceId, targetId);
       return;
     }
 
     // mover tarjetas
     if (activeData?.type !== "card") return;
 
-    const activeId = toKey(active.id);
+    const activeId = String(active.id);
     const sourceContainer = activeData.listId
-      ? toKey(activeData.listId)
+      ? String(activeData.listId)
       : findContainer(activeId);
-    const overContainer =
-      overData?.type === "list"
-        ? toKey(over.id)
-        : findContainer(toKey(overData?.listId ?? over.id));
+
+    let overContainer;
+    if (overData?.type === "card") {
+      overContainer = String(overData.listId);
+    } else if (
+      overData?.type === "list" ||
+      overData?.type === "list-droppable"
+    ) {
+      overContainer = overData.listId
+        ? String(overData.listId)
+        : extractListId(over.id);
+    } else {
+      overContainer = findContainer(over.id);
+    }
 
     if (!sourceContainer || !overContainer) return;
+
+    if (sourceContainer === overContainer && activeId === String(over.id)) {
+      return;
+    }
 
     const sourceCards = cardsByListId[sourceContainer] || [];
     const sourceItems = [...sourceCards];
@@ -305,28 +719,26 @@ export default function BoardPage() {
         : [...(cardsByListId[overContainer] || [])];
 
     const activeIndex = sourceCards.findIndex(
-      (card) => toKey(card.id) === activeId
+      (card) => toCardSortableId(card.id) === activeId
     );
     if (activeIndex === -1) return;
 
+    const overKey = String(over.id);
     const overIndexOriginal =
       overData?.type === "card" && sourceContainer === overContainer
-        ? sourceCards.findIndex((card) => toKey(card.id) === toKey(over.id))
+        ? sourceCards.findIndex(
+            (card) => toCardSortableId(card.id) === overKey
+          )
         : -1;
 
     const [movedCard] = sourceItems.splice(activeIndex, 1);
 
     let destinationIndex;
-    if (
-      overData?.type === "card" &&
-      overContainer === String(overData.listId)
-    ) {
-      destinationIndex = destinationItems.findIndex(
-        (card) => toKey(card.id) === toKey(over.id)
+    if (overData?.type === "card") {
+      const idx = destinationItems.findIndex(
+        (card) => toCardSortableId(card.id) === overKey
       );
-      if (destinationIndex === -1) {
-        destinationIndex = destinationItems.length;
-      }
+      destinationIndex = idx === -1 ? destinationItems.length : idx;
     } else {
       destinationIndex = destinationItems.length;
     }
@@ -344,28 +756,29 @@ export default function BoardPage() {
 
     destinationItems.splice(destinationIndex, 0, {
       ...movedCard,
-      listId: Number(overContainer),
+      listId: overContainer,
     });
 
     const nextState = { ...cardsByListId };
     nextState[sourceContainer] =
       sourceContainer === overContainer
-        ? normalizeCards(destinationItems)
-        : normalizeCards(sourceItems);
+        ? normalizeCards(destinationItems, sourceContainer)
+        : normalizeCards(sourceItems, sourceContainer);
 
     if (sourceContainer !== overContainer) {
-      nextState[overContainer] = normalizeCards(destinationItems);
+      nextState[overContainer] = normalizeCards(
+        destinationItems,
+        overContainer
+      );
     }
 
     setCardsByListId(nextState);
 
     try {
-      await apiFetch(`/tarjetas/${movedCard.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          cardOrder: destinationIndex,
-          idLista: Number(overContainer),
-        }),
+      await updateCard(movedCard.id, {
+        cardOrder: destinationIndex,
+        idLista: Number(overContainer),
+        labelId: movedCard.label?.id ?? null,
       });
     } catch (e) {
       console.error("Error al mover tarjeta:", e);
@@ -553,10 +966,7 @@ export default function BoardPage() {
                   <button
                     type="button"
                     onClick={handleStartEditingTitle}
-                    className={[
-                      "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-white/60 transition hover:bg-white",
-                      titleButtonTextClass,
-                    ].join(" ")}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-brand-600)] text-white shadow-sm transition hover:bg-[var(--color-brand-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-200)]/60 focus:ring-offset-1"
                     aria-label="Editar nombre del tablero"
                   >
                     <Pencil className="h-4 w-4" />
@@ -619,16 +1029,19 @@ export default function BoardPage() {
           <main className="mx-auto max-w-7xl px-6 py-6">
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCorners}
+              collisionDetection={collisionDetection}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDragCancel={resetDragOverlay}
             >
               <SortableContext
-                items={lists.map((list) => String(list.idLista))}
+                items={lists.map((list) => toListSortableId(list.idLista))}
                 strategy={horizontalListSortingStrategy}
               >
-                <div className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5">
+                <div
+                  ref={scrollContainerRef}
+                  className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5 cursor-grab"
+                >
                   {lists.map((list) => (
                     <ListColumn
                       key={list.idLista}
@@ -689,8 +1102,20 @@ export default function BoardPage() {
             onClose={() => setIsInviteOpen(false)}
             boardId={boardId}
           />
+
+          <LabelEditorModal
+            open={labelEditorState.open}
+            labels={labels}
+            selectedLabelId={labelEditorState.selectedLabelId}
+            onSelectLabel={handleSelectLabelForCard}
+            onCreateLabel={handleCreateLabel}
+            onUpdateLabel={handleUpdateLabel}
+            onClearLabel={handleClearLabel}
+            onClose={closeLabelEditor}
+          />
           
         </div>
+
       </div>
     </>
   );
@@ -907,17 +1332,272 @@ function MenuItem({ children, onClick, danger }) {
 }
 
 
+function LabelEditorModal({
+  open,
+  labels,
+  selectedLabelId,
+  onSelectLabel,
+  onCreateLabel,
+  onUpdateLabel,
+  onClearLabel,
+  onClose,
+}) {
+  const [editingId, setEditingId] = useState(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftColor, setDraftColor] = useState(DEFAULT_LABEL_COLOR);
+  const [isBusy, setIsBusy] = useState(false);
+  const [modalError, setModalError] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setEditingId(null);
+      setDraftName("");
+      setDraftColor(DEFAULT_LABEL_COLOR);
+      setModalError("");
+      setIsBusy(false);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const runAction = async (operation) => {
+    setModalError("");
+    setIsBusy(true);
+    try {
+      return await operation();
+    } catch (err) {
+      setModalError(
+        err instanceof Error ? err.message : "No se pudo completar la acción."
+      );
+      throw err;
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const beginEditing = (label) => {
+    setEditingId(label.id);
+    setDraftName(label.text ?? "");
+    setDraftColor(label.color ?? DEFAULT_LABEL_COLOR);
+  };
+
+  const handleCommitEdit = () => {
+    if (!editingId) return;
+    runAction(() =>
+      onUpdateLabel(editingId, {
+        text: draftName,
+        color: draftColor,
+      })
+    )
+      .then(() => {
+        setEditingId(null);
+        setDraftName("");
+        setDraftColor(DEFAULT_LABEL_COLOR);
+      })
+      .catch(() => {});
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setDraftName("");
+    setDraftColor(DEFAULT_LABEL_COLOR);
+    setModalError("");
+  };
+
+  const handleCreateLabel = () => {
+    runAction(onCreateLabel)
+      .then((newLabel) => {
+        if (!newLabel) return;
+        beginEditing(newLabel);
+        return runAction(() => onSelectLabel(newLabel.id, newLabel));
+      })
+      .catch(() => {});
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      onClick={() => {
+        if (!isBusy) onClose();
+      }}
+    >
+      <div
+        className="
+          w-full max-w-md rounded-2xl border border-[var(--color-surface-hover)] bg-[var(--color-surface)]
+          p-6 shadow-2xl transition-colors duration-300
+          text-[var(--color-neutral-950)] dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-50)]
+        "
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--color-brand-700)] dark:text-[var(--color-brand-200)]">
+              Etiquetas
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+              Elige una etiqueta para esta tarjeta o crea una nueva.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isBusy}
+            className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-60 dark:hover:bg-white/10"
+            aria-label="Cerrar editor de etiquetas"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {labels.length === 0 ? (
+            <p className="rounded-2xl bg-white/60 p-3 text-sm text-neutral-600 dark:bg-white/10 dark:text-neutral-300">
+              No hay etiquetas. Crea una nueva para asignarla a esta tarjeta.
+            </p>
+          ) : null}
+
+          {labels.map((label) => {
+            const isSelected = selectedLabelId === label.id;
+            const isEditing = editingId === label.id;
+            const displayName = label.text && label.text.trim().length > 0 ? label.text.trim() : "Sin nombre";
+
+            return (
+              <div
+                key={label.id}
+                className={[
+                  "rounded-2xl border border-white/10 bg-white/40 p-3 transition dark:border-white/10 dark:bg-white/5",
+                  isSelected ? "ring-2 ring-[var(--color-brand-500)]/60" : "",
+                ].join(" ")}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="card-label"
+                    className="h-4 w-4 accent-[var(--color-brand-600)]"
+                    checked={isSelected}
+                    disabled={isBusy}
+                    onChange={() => {
+                      if (isBusy) return;
+                      runAction(() => onSelectLabel(label.id, label)).catch(() => {});
+                    }}
+                    aria-label={`Seleccionar etiqueta ${displayName}`}
+                  />
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      if (isBusy) return;
+                      runAction(() => onSelectLabel(label.id, label)).catch(() => {});
+                    }}
+                    className="relative flex h-11 flex-1 items-center rounded-xl border-2 border-transparent text-left transition hover:border-white/70 hover:shadow disabled:opacity-60"
+                    style={{ backgroundColor: label.color }}
+                  >
+                    <span className="ml-3 text-sm font-semibold tracking-wide text-white drop-shadow-sm">
+                      {displayName}
+                    </span>
+                    {isSelected ? (
+                      <Check className="absolute right-3 h-4 w-4 text-white drop-shadow-sm" />
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => beginEditing(label)}
+                    className="rounded-full p-1 text-neutral-500 hover:bg-white/60 hover:text-neutral-800 disabled:opacity-60 dark:hover:bg-white/10 dark:text-neutral-200"
+                    aria-label={`Editar etiqueta ${displayName}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {isEditing ? (
+                  <div className="mt-3 space-y-3 rounded-xl bg-white/60 p-3 shadow-sm dark:bg-white/10">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-300">
+                        Nombre
+                      </label>
+                      <input
+                        type="text"
+                        value={draftName}
+                        onChange={(event) => setDraftName(event.target.value)}
+                        className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-[var(--color-brand-500)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-300)]/50 dark:border-white/10 dark:bg-white/5 dark:text-neutral-100"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-300">
+                        Color
+                      </label>
+                      <input
+                        type="color"
+                        value={draftColor}
+                        onChange={(event) => setDraftColor(event.target.value)}
+                        className="h-9 w-16 cursor-pointer overflow-hidden rounded-lg border border-neutral-200 bg-white/90 dark:border-white/20"
+                      />
+                      <div className="ml-auto flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          className="rounded-full px-3 py-1 text-xs font-medium text-neutral-500 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-white"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCommitEdit}
+                          className="rounded-full bg-[var(--btn-primary-bg)] px-4 py-1.5 text-xs font-semibold text-white shadow hover:bg-[var(--btn-primary-bg-hover)]"
+                        >
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+
+        {modalError ? (
+          <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:bg-red-900/30 dark:text-red-200">
+            {modalError}
+          </p>
+        ) : null}
+
+        <div className="mt-6 space-y-3">
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() => void handleCreateLabel()}
+            className="w-full rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-600 transition hover:bg-neutral-100 disabled:opacity-60 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+          >
+            Crear nueva etiqueta
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void runAction(onClearLabel).catch(() => {});
+            }}
+            disabled={!selectedLabelId || isBusy}
+            className="w-full rounded-full border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-500 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+          >
+            Quitar etiqueta de esta tarjeta
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function CardDragPreview({ card }) {
   if (!card) return null;
   return (
     <div
       className="
-        w-72 max-w-xs rounded-2xl border px-4 py-3 shadow-2xl transition-all duration-300
-        border-[var(--color-brand-200)] bg-[var(--color-surface)] text-[var(--color-neutral-900)]
-        shadow-[0_10px_30px_-10px_rgba(0,0,0,0.3)]
-
-        dark:border-[var(--color-brand-700)] dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
-        dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)]
+        w-72 max-w-xs rounded-2xl border border-transparent px-4 py-3 shadow-2xl transition-all duration-300
+        bg-[#22222c] text-white shadow-[0_12px_35px_-12px_rgba(0,0,0,0.65)]
+        dark:bg-[#22222c] dark:text-white
       "
     >
       <div className="text-sm font-semibold">{card.title}</div>

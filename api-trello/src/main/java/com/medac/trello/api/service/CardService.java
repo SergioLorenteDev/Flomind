@@ -4,8 +4,10 @@ import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Card;
 import com.medac.trello.api.model.HistorialMovimiento;
 import com.medac.trello.api.model.Lista;
+import com.medac.trello.api.model.Label;
 import com.medac.trello.api.model.repository.CardRepository;
 import com.medac.trello.api.model.repository.HistorialMovimientoRepository;
+import com.medac.trello.api.model.repository.LabelRepository;
 import com.medac.trello.api.model.repository.ListaRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,10 +30,13 @@ public class CardService {
     @Autowired
     private HistorialMovimientoRepository historialMovimientoRepository;
 
+    @Autowired
+    private LabelRepository labelRepository;
+
     // ---------------------- C - CREAR TARJETA ----------------------
 
     @Transactional
-    public Card guardarCard(Long listId, Card card) {
+    public Card guardarCard(Long listId, Card card, Long labelId) {
         // 1. Obtener la lista (columna)
         Lista lista = listaRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + listId));
@@ -42,7 +47,7 @@ public class CardService {
             card.setCreatedOn(Instant.now());
         }
 
-        // El orden se gestiona en el front.
+        applyLabel(card, labelId, lista);
 
         // 3. Guardar
         return cardRepository.save(card);
@@ -74,7 +79,7 @@ public class CardService {
     // ---------------------- U - ACTUALIZAR/MOVER TARJETAS ----------------------
 
     @Transactional
-    public Card actualizarCard(Long idTarjeta, Card cardDetails) {
+    public Card actualizarCard(Long idTarjeta, Card cardDetails, Long labelId) {
 
         // 1. Obtener la tarjeta existente
         Card cardExistente = cardRepository.findById(idTarjeta)
@@ -122,6 +127,8 @@ public class CardService {
 
             historialMovimientoRepository.save(registro);
         }
+
+        applyLabel(cardExistente, labelId, listaDestino);
 
         // Persistimos cambios simples antes de recalcular el orden
         cardRepository.save(cardExistente);
@@ -194,5 +201,36 @@ public class CardService {
         }
 
         cardRepository.saveAll(tarjetas);
+    }
+
+    private void applyLabel(Card card, Long labelId, Lista lista) {
+        card.setPrimaryLabel(null);
+        if (labelId == null) {
+            return;
+        }
+
+        Long boardId = resolveBoardId(lista);
+
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Etiqueta no encontrada con id: " + labelId));
+
+        if (boardId != null && !Objects.equals(label.getOwningBoardId(), boardId)) {
+            throw new ResourceNotFoundException("La etiqueta no pertenece al tablero indicado.");
+        }
+
+        card.setPrimaryLabel(label);
+    }
+
+    private Long resolveBoardId(Lista lista) {
+        if (lista == null) {
+            return null;
+        }
+        if (lista.getBoard() != null) {
+            return lista.getBoard().getId();
+        }
+        if (lista.getIdTablero() != null) {
+            return lista.getIdTablero();
+        }
+        return null;
     }
 }

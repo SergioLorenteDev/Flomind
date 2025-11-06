@@ -10,6 +10,10 @@ import Button from "../ui/Button.jsx";
 import { Plus } from "lucide-react";
 import CardItem from "./CardItem.jsx";
 
+const LIST_SORTABLE_PREFIX = "list-";
+const LIST_DROPPABLE_PREFIX = "list-droppable-";
+const CARD_PREFIX = "card-";
+
 export default function ListColumn({
   list,
   cards,
@@ -19,7 +23,9 @@ export default function ListColumn({
   onToggleCardComplete,
   onCardMenuAction,
 }) {
-  const listKey = String(list.idLista);
+  const listId = String(list.idLista);
+  const sortableId = `${LIST_SORTABLE_PREFIX}${listId}`;
+  const droppableId = `${LIST_DROPPABLE_PREFIX}${listId}`;
 
   const completedSet =
     completedCards instanceof Set
@@ -44,12 +50,13 @@ export default function ListColumn({
     transition,
     isDragging,
   } = useSortable({
-    id: listKey,
-    data: { type: "list", listId: listKey },
+    id: sortableId,
+    data: { type: "list", listId },
   });
 
   const { setNodeRef: setDroppableRef } = useDroppable({
-    id: listKey,
+    id: droppableId,
+    data: { type: "list-droppable", listId },
   });
 
   const style = {
@@ -77,6 +84,7 @@ export default function ListColumn({
   return (
    <div
   ref={setNodeRef}
+  data-draggable="list"
   style={style}
   className={[
     "flex w-72 flex-shrink-0 flex-col rounded-2xl border transition-all duration-300",
@@ -101,11 +109,15 @@ export default function ListColumn({
 </header>
 
       <SortableContext
-        id={listKey}
-        items={tarjetas.map((card) => String(card.id))}
+        id={droppableId}
+        items={tarjetas.map((card) => `${CARD_PREFIX}${card.id}`)}
         strategy={verticalListSortingStrategy}
       >
-        <div ref={setDroppableRef} className="space-y-3 px-4 pb-1">
+        <div
+          ref={setDroppableRef}
+          className="space-y-3 px-4 pb-1"
+          style={{ minHeight: tarjetas.length === 0 ? "4rem" : undefined }}
+        >
           {tarjetas.length === 0 ? (
   <div
     className="flex h-16 items-center justify-center rounded-xl border border-dashed text-sm font-medium transition-colors"

@@ -8,6 +8,7 @@ public class CardRequestDTO {
     private String description;
     private Integer cardOrder;
     private Long idLista; // Clave: Solo se recibe el ID de la Lista padre
+    private Long labelId;
 
     // --- Getters y Setters ---
 
@@ -22,4 +23,7 @@ public class CardRequestDTO {
 
     public Long getIdLista() { return idLista; }
     public void setIdLista(Long idLista) { this.idLista = idLista; }
+
+    public Long getLabelId() { return labelId; }
+    public void setLabelId(Long labelId) { this.labelId = labelId; }
 }

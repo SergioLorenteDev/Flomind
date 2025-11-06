@@ -11,4 +11,6 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     List<Card> findByLista_IdListaOrderByCardOrderAsc(Long listId);
 
     List<Card> findByLista_Board_Id(Long boardId);
+
+    List<Card> findByLabels_Id(Long labelId);
 }

@@ -42,3 +42,27 @@ export function updateCard(cardId, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function fetchBoardLabels(boardId) {
+  return apiFetch(`/tableros/${boardId}/etiquetas`);
+}
+
+export function createBoardLabel(boardId, payload) {
+  return apiFetch(`/tableros/${boardId}/etiquetas`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateBoardLabel(boardId, labelId, payload) {
+  return apiFetch(`/tableros/${boardId}/etiquetas/${labelId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteBoardLabel(boardId, labelId) {
+  return apiFetch(`/tableros/${boardId}/etiquetas/${labelId}`, {
+    method: "DELETE",
+  });
+}

@@ -16,8 +16,10 @@ public class Label {
     private Long id;
     @Column(name = "nombre", nullable = false)
     private String name;
+
     @Column(name = "color")
     private String colour;
+
     @Column(name = "id_tablero", nullable = false)
     private Long owningBoardId;
 
@@ -37,19 +39,31 @@ public class Label {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getColour() {
         return colour;
+    }
+
+    public void setColour(String colour) {
+        this.colour = colour;
     }
 
     public Long getOwningBoardId() {
         return owningBoardId;
     }
 
+    public void setOwningBoardId(Long owningBoardId) {
+        this.owningBoardId = owningBoardId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Label label = (Label) o;
-        return id == label.id;
+        return Objects.equals(id, label.id);
     }
 
     @Override

@@ -1,15 +1,18 @@
 package com.medac.trello.api.model.repository;
 
-import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Label;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Set;
-import java.util.UUID;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface LabelRepository extends CrudRepository<Label, UUID> {
+public interface LabelRepository extends JpaRepository<Label, Long> {
 
-    Set<Label> findAllByOwningBoardId(Long boardId);
+    List<Label> findAllByOwningBoardIdOrderByIdAsc(Long boardId);
+
+    Optional<Label> findByIdAndOwningBoardId(Long id, Long boardId);
+
+    void deleteAllByOwningBoardId(Long boardId);
 }

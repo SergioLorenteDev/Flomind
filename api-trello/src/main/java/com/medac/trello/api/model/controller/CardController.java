@@ -37,7 +37,7 @@ public class CardController {
         cardParaGuardar.setCardOrder(cardDto.getCardOrder());
 
         // 2. Llamada al servicio con la entidad y el ID de la lista padre
-        Card cardGuardada = cardService.guardarCard(listId, cardParaGuardar);
+        Card cardGuardada = cardService.guardarCard(listId, cardParaGuardar, cardDto.getLabelId());
 
         // 3. Mapeo Entidad -> DTO de Respuesta
         CardResponseDTO responseDto = new CardResponseDTO(cardGuardada);
@@ -115,7 +115,7 @@ public class CardController {
        }
 
        // 2. Llamada al servicio
-       Card cardActualizada = cardService.actualizarCard(cardId, cardParaActualizar);
+       Card cardActualizada = cardService.actualizarCard(cardId, cardParaActualizar, cardDto.getLabelId());
 
        // 3. Mapeo Entidad -> DTO de Respuesta
        CardResponseDTO responseDto = new CardResponseDTO(cardActualizada);

@@ -10,8 +10,8 @@ spring:
       mode: always
   datasource:
     url: jdbc:mysql://localhost:3306/trello
-    username:
-    password:
+    username: root  
+    password: ***REMOVED***
     driverClassName: com.mysql.cj.jdbc.Driver
   mail:
     host: smtp.gmail.com

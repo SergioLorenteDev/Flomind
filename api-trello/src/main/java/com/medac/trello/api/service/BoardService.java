@@ -5,6 +5,7 @@ import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Lista;
 import com.medac.trello.api.model.repository.BoardRepository;
 import com.medac.trello.api.model.repository.HistorialMovimientoRepository;
+import com.medac.trello.api.model.repository.LabelRepository;
 import com.medac.trello.api.model.repository.ListaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,16 +22,19 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final ListaRepository listaRepository;
     private final HistorialMovimientoRepository historialMovimientoRepository;
+    private final LabelRepository labelRepository;
 
     @Autowired
     public BoardService(
             BoardRepository boardRepository,
             ListaRepository listaRepository,
-            HistorialMovimientoRepository historialMovimientoRepository
+            HistorialMovimientoRepository historialMovimientoRepository,
+            LabelRepository labelRepository
     ) {
         this.boardRepository = boardRepository;
         this.listaRepository = listaRepository;
         this.historialMovimientoRepository = historialMovimientoRepository;
+        this.labelRepository = labelRepository;
     }
 
     //---------------------CREAR/GUARDAR-----------------------
@@ -122,10 +126,13 @@ public class BoardService {
             historialMovimientoRepository.deleteAllByTarjeta_IdIn(cardIds);
         }
 
-        // 3. Eliminar primero las listas asociadas para evitar violaciones de FK.
+        // 3. Eliminar etiquetas asociadas al tablero
+        labelRepository.deleteAllByOwningBoardId(id);
+
+        // 4. Eliminar primero las listas asociadas para evitar violaciones de FK.
         listaRepository.deleteAllByBoard_Id(id);
 
-        // 4. Eliminar el tablero.
+        // 5. Eliminar el tablero.
         boardRepository.delete(boardExistente);
     }
 }

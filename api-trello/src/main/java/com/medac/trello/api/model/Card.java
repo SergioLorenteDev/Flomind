@@ -3,6 +3,8 @@ package com.medac.trello.api.model;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tarjeta")
@@ -33,6 +35,14 @@ public class Card {
     @JoinColumn(name = "id_lista", nullable = false)
     private Lista lista;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "tarjeta_etiqueta",
+            joinColumns = @JoinColumn(name = "id_tarjeta"),
+            inverseJoinColumns = @JoinColumn(name = "id_etiqueta")
+    )
+    private Set<Label> labels = new HashSet<>();
+
     public Card() {}
 
 
@@ -44,6 +54,10 @@ public class Card {
     public Lista getLista() { return lista; }
     public Long getOwningListId() { return (lista != null) ? lista.getIdLista() : null; }
     public Instant getCreatedOn() {return createdOn;}
+    public Set<Label> getLabels() { return labels; }
+    public Label getPrimaryLabel() {
+        return labels.stream().findFirst().orElse(null);
+    }
 
     public void setTitle(String title) {
         this.title = title;
@@ -68,6 +82,13 @@ public class Card {
     }
 
     public void setCreatedOn(Instant createdOn) {this.createdOn = createdOn;}
+    public void setLabels(Set<Label> labels) { this.labels = labels; }
+    public void setPrimaryLabel(Label label) {
+        this.labels.clear();
+        if (label != null) {
+            this.labels.add(label);
+        }
+    }
 
     // --- Equals y HashCode (Mantenidos) ---
     @Override

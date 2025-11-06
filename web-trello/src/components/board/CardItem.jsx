@@ -4,6 +4,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { CheckCircle2, Circle, MoreHorizontal } from "lucide-react";
 import CardMenu from "./CardMenu.jsx";
 
+const CARD_PREFIX = "card-";
+
 export default function CardItem({
   card,
   listId,
@@ -12,7 +14,9 @@ export default function CardItem({
   onMenuAction,
 }) {
   const cardId = String(card.id);
+  const cardSortableId = `${CARD_PREFIX}${cardId}`;
   const listKey = String(listId);
+  const labelColor = card?.label?.color ?? null;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
@@ -26,8 +30,8 @@ export default function CardItem({
     transition,
     isDragging,
   } = useSortable({
-    id: cardId,
-    data: { type: "card", listId: listKey },
+    id: cardSortableId,
+    data: { type: "card", listId: listKey, cardId },
   });
 
   const setRefs = useCallback(
@@ -65,13 +69,21 @@ export default function CardItem({
   return (
     <div
       ref={setRefs}
+      data-draggable="card"
       style={style}
-      className={`group relative rounded-2xl border border-transparent bg-[#22222c] px-3 py-3 shadow-md transition hover:border-[#4b3acd]/40 hover:shadow-lg ${
+      className={`group relative overflow-hidden rounded-2xl border border-transparent bg-[#22222c] px-3 py-3 shadow-md transition hover:border-[#4b3acd]/40 hover:shadow-lg ${
         isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""
       }`}
       {...attributes}
       {...listeners}
     >
+      {labelColor ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-1"
+          style={{ backgroundColor: labelColor }}
+        />
+      ) : null}
       <div className="flex items-center gap-3 text-white">
         <button
           type="button"

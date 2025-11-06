@@ -125,3 +125,39 @@ SET @sql := IF(@has_background = 0,
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Ensure etiqueta table exists
+SET @has_etiqueta_table :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'etiqueta');
+SET @sql := IF(@has_etiqueta_table = 0,
+    'CREATE TABLE etiqueta (
+        id_etiqueta BIGINT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(50) NOT NULL,
+        color VARCHAR(20),
+        id_tablero BIGINT NOT NULL,
+        CONSTRAINT fk_etiqueta_tablero FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero)
+     );',
+    'SELECT ''etiqueta already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Ensure tarjeta_etiqueta join table exists
+SET @has_tarjeta_etiqueta :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'tarjeta_etiqueta');
+SET @sql := IF(@has_tarjeta_etiqueta = 0,
+    'CREATE TABLE tarjeta_etiqueta (
+        id_tarjeta BIGINT NOT NULL,
+        id_etiqueta BIGINT NOT NULL,
+        PRIMARY KEY (id_tarjeta, id_etiqueta),
+        CONSTRAINT fk_tarjeta_etiqueta_tarjeta FOREIGN KEY (id_tarjeta) REFERENCES tarjeta(id_tarjeta) ON DELETE CASCADE,
+        CONSTRAINT fk_tarjeta_etiqueta_etiqueta FOREIGN KEY (id_etiqueta) REFERENCES etiqueta(id_etiqueta) ON DELETE CASCADE
+     );',
+    'SELECT ''tarjeta_etiqueta already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
