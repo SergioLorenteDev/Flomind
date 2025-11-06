@@ -1,52 +1,97 @@
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect,  } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import Button from "../components/ui/Button.jsx";
+import { apiFetch } from "../modules/apiClient";
+
+
+function computeBaseDisplayName(user) {
+  if (user?.username && user.username.trim()) return user.username;
+  if (user?.name && user.name.trim()) return user.name;
+
+  const email = user?.email || "";
+  const base = email.split("@")[0] || "usuario";
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
 
 export default function Perfil() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Nombre "bonito" por defecto
-  const displayName = useMemo(() => {
-    if (user?.name && user.name.trim()) return user.name;
-    const email = user?.email || "";
-    const base = email.split("@")[0] || "usuario";
-    return base.charAt(0).toUpperCase() + base.slice(1);
-  }, [user]);
-
   const initial = (user?.email || "U").charAt(0).toUpperCase();
 
-  // Foto de perfil guardada en localStorage por id de usuario
-  const storageKey = user ? `profilePhoto:${user.id}` : null;
+  
+  const photoStorageKey = user ? `profilePhoto:${user.id}` : null;
+  const usernameStorageKey = user ? `customUsername:${user.id}` : null;
+
   const [profilePhoto, setProfilePhoto] = useState(null);
 
-  // Cargar foto del localStorage al entrar
+  
+  const [displayName, setDisplayName] = useState(() => {
+    if (!user) return "Usuario";
+    if (usernameStorageKey) {
+      try {
+        const saved = localStorage.getItem(usernameStorageKey);
+        if (saved && saved.trim()) return saved;
+      } catch {
+        /* ignore */
+      }
+    }
+    return computeBaseDisplayName(user);
+  });
+
+  
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState(null);
+
+  
   useEffect(() => {
-    if (!storageKey) {
+    if (!user) {
+      setDisplayName("Usuario");
+      return;
+    }
+    if (usernameStorageKey) {
+      try {
+        const saved = localStorage.getItem(usernameStorageKey);
+        if (saved && saved.trim()) {
+          setDisplayName(saved);
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    setDisplayName(computeBaseDisplayName(user));
+  }, [user, usernameStorageKey]);
+
+  
+  useEffect(() => {
+    if (!photoStorageKey) {
       setProfilePhoto(null);
       return;
     }
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(photoStorageKey);
       if (saved) setProfilePhoto(saved);
       else setProfilePhoto(null);
     } catch {
       /* ignore */
     }
-  }, [storageKey]);
+  }, [photoStorageKey]);
 
-  // Subir foto de perfil (solo frontend)
+  
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
-    if (!file || !storageKey) return;
+    if (!file || !photoStorageKey) return;
 
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result;
       setProfilePhoto(result);
       try {
-        localStorage.setItem(storageKey, result);
+        localStorage.setItem(photoStorageKey, result);
       } catch {
         /* ignore */
       }
@@ -56,7 +101,68 @@ export default function Perfil() {
 
   const handleRemovePhoto = () => {
     setProfilePhoto(null);
-    if (storageKey) localStorage.removeItem(storageKey);
+    if (photoStorageKey) localStorage.removeItem(photoStorageKey);
+  };
+
+  
+  const handleStartEditingUsername = () => {
+    setUsernameError(null);
+    const current =
+      (usernameStorageKey && localStorage.getItem(usernameStorageKey)) ||
+      user?.username ||
+      user?.name ||
+      displayName ||
+      "";
+    setUsernameDraft(current);
+    setIsEditingUsername(true);
+  };
+
+  const handleCancelEditingUsername = () => {
+    setIsEditingUsername(false);
+    setUsernameDraft("");
+    setUsernameError(null);
+  };
+
+  const handleSubmitUsername = async (e) => {
+    e.preventDefault();
+    const next = usernameDraft.trim();
+    if (!next) {
+      setUsernameError("El nombre de usuario no puede estar vacío.");
+      return;
+    }
+
+    try {
+      setIsSavingUsername(true);
+      setUsernameError(null);
+
+      
+      await apiFetch("/usuarios/username", {
+        method: "PATCH",
+        body: JSON.stringify({ username: next }),
+      });
+
+      
+      if (usernameStorageKey) {
+        try {
+          localStorage.setItem(usernameStorageKey, next);
+        } catch {
+          /* ignore */
+        }
+      }
+
+   
+      setDisplayName(next);
+
+      setIsEditingUsername(false);
+      setUsernameDraft("");
+    } catch (err) {
+      console.error("Error al actualizar el nombre de usuario:", err);
+      setUsernameError(
+        err?.message || "No se pudo actualizar el nombre de usuario."
+      );
+    } finally {
+      setIsSavingUsername(false);
+    }
   };
 
   return (
@@ -68,14 +174,14 @@ export default function Perfil() {
       "
     >
       <div className="mx-auto w-full max-w-3xl">
-        {/* Botón volver */}
+       
         <div className="mb-4">
           <Button variant="secondary" onClick={() => navigate(-1)}>
             ← Volver
           </Button>
         </div>
 
-        {/* Tarjeta del perfil */}
+        
         <div
           className="
             rounded-2xl border border-black/10
@@ -87,10 +193,10 @@ export default function Perfil() {
             p-6 transition-all duration-300
           "
         >
-          {/* Cabecera */}
+          
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              {/* Foto de perfil */}
+             
               <div
                 className="
                   h-16 w-16 rounded-full overflow-hidden
@@ -126,7 +232,7 @@ export default function Perfil() {
               </div>
             </div>
 
-            {/* Controles foto */}
+         
             <div className="flex flex-col gap-2 text-sm">
               <label className="inline-flex cursor-pointer items-center gap-2">
                 <span
@@ -159,10 +265,8 @@ export default function Perfil() {
               )}
             </div>
           </div>
-
-          {/* Datos del usuario */}
+     
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Nombre */}
             <div
               className="
                 rounded-xl border border-black/10 
@@ -174,12 +278,75 @@ export default function Perfil() {
                 dark:hover:shadow-[0_0_14px_rgba(177,151,249,0.35)]
               "
             >
-              <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-neutral-300">
-                Nombre
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase tracking-wide font-semibold text-gray-700 dark:text-neutral-300">
+                  Nombre de usuario
+                </div>
+                {!isEditingUsername && (
+                  <button
+                    type="button"
+                    onClick={handleStartEditingUsername}
+                    className="text-xs font-semibold text-[var(--color-brand-600)] hover:underline"
+                  >
+                    Editar
+                  </button>
+                )}
               </div>
-              <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white break-words">
-                {displayName}
-              </div>
+
+              {isEditingUsername ? (
+                <form
+                  onSubmit={handleSubmitUsername}
+                  className="mt-2 flex flex-col gap-2"
+                >
+                  <input
+                    type="text"
+                    value={usernameDraft}
+                    onChange={(e) => setUsernameDraft(e.target.value)}
+                    className="
+                      w-full rounded-lg border border-neutral-300 
+                      bg-white px-3 py-2 text-sm text-neutral-900
+                      placeholder:text-neutral-400
+                      focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-400)]
+                      dark:bg-[var(--color-surface)] dark:border-neutral-600
+                      dark:text-neutral-50 dark:placeholder:text-neutral-400
+                    "
+                    placeholder="Escribe tu nombre de usuario"
+                    disabled={isSavingUsername}
+                  />
+                  {usernameError && (
+                    <p className="text-xs text-red-500">{usernameError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingUsername || !usernameDraft.trim()}
+                      className="
+                        rounded-full bg-[var(--color-brand-600)] px-3 py-1 
+                        text-xs font-semibold text-white shadow 
+                        hover:bg-[var(--color-brand-700)] disabled:opacity-60
+                      "
+                    >
+                      {isSavingUsername ? "Guardando..." : "Guardar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEditingUsername}
+                      disabled={isSavingUsername}
+                      className="
+                        rounded-full border border-neutral-300 px-3 py-1 
+                        text-xs font-medium text-neutral-700 hover:bg-neutral-100
+                        dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800
+                      "
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white break-words">
+                  {displayName}
+                </div>
+              )}
             </div>
 
             {/* Correo */}

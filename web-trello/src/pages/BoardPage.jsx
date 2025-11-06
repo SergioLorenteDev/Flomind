@@ -21,6 +21,7 @@ import {
 import BotonModo from "../components/ui/BotonModo.jsx";
 
 
+
 const SCROLLBAR_STYLE = `
 .board-scroll::-webkit-scrollbar { display: none; }
 .board-scroll { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1831,106 +1832,129 @@ function InlineChecklist({ cardId }) {
 }
 
 function InviteModal({ open, onClose, boardId }) {
-  const [copied, setCopied] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [role, setRole] = useState("lector"); // 👈 rol seleccionado
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   if (!open) return null;
 
-  const boardUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/tableros/${boardId}`
-      : `/tableros/${boardId}`;
+  const handleSendInvite = async (event) => {
+    event.preventDefault();
+    const email = inviteEmail.trim();
+    if (!email) {
+      setError("Introduce un correo válido.");
+      return;
+    }
 
-  const handleCopy = async () => {
+    setSending(true);
+    setError(null);
+    setSuccess(null);
+
     try {
-      await navigator.clipboard.writeText(boardUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      alert("No se pudo copiar el enlace, cópialo manualmente.");
+      await apiFetch(`/tableros/${boardId}/invitaciones`, {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          role, // 👈 mandamos el rol al back
+        }),
+      });
+
+      setSuccess("Invitación enviada correctamente ✉️");
+      setInviteEmail("");
+      setRole("lector");
+    } catch (e) {
+      console.error("Error al enviar invitación:", e);
+      setError("No se pudo enviar la invitación. Inténtalo de nuevo.");
+    } finally {
+      setSending(false);
     }
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   return (
-  <div
-    className="
-      fixed inset-0 z-[998] flex items-center justify-center
-      bg-black/40 backdrop-blur-md px-4
-    "
-    onClick={handleBackdropClick}
-  >
-    <div
-      className="
-        w-full max-w-md rounded-2xl border shadow-xl transition-colors duration-300
-        bg-[var(--color-surface)] text-[var(--color-neutral-950)]
-        dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
-        border-[var(--color-neutral-200)] dark:border-[var(--color-neutral-700)]
-        p-6 backdrop-blur-md
-      "
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2
-            className="
-              text-lg font-bold tracking-tight
-              text-[var(--color-brand-700)] dark:text-[var(--color-brand-300)]
-              transition-colors duration-300
-            "
-          >
-            Invitar a este tablero
-          </h2>
-
-          <p
-            className="
-              mt-1 text-sm font-medium
-              text-[var(--color-brand-500)] dark:text-[var(--color-brand-400)]
-              transition-colors duration-300
-            "
-          >
-            Comparte este enlace con la persona que quieras invitar.
-          </p>
-        </div>
-
+    <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl relative">
+        {/* Botón X para cerrar */}
         <button
           type="button"
           onClick={onClose}
-          className="
-            rounded-full p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800
-            dark:text-neutral-300 dark:hover:bg-[var(--color-surface)] dark:hover:text-white
-            transition-colors duration-300
-          "
-          aria-label="Cerrar"
+          className="absolute right-4 top-4 text-neutral-400 hover:text-neutral-700"
         >
-          ✕
+          ×
         </button>
-        
-      </div>
-        <div className="mt-4">
-          <label className="text-xs font-semibold uppercase text-neutral-500">
-            Enlace al tablero
-          </label>
-          <div className="mt-1 flex gap-2">
+
+        <h2 className="text-lg font-semibold text-neutral-900">
+          Invitar a este tablero
+        </h2>
+        <p className="mt-1 text-sm text-neutral-600">
+          Escribe el correo de la persona y elige qué puede hacer en este tablero.
+        </p>
+
+        <form onSubmit={handleSendInvite} className="mt-4 space-y-4">
+          {/* Correo */}
+          <div>
+            <label className="text-xs font-semibold uppercase text-neutral-500">
+              Correo electrónico
+            </label>
             <input
-              type="text"
-              value={boardUrl}
-              readOnly
-              className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-800"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="persona@ejemplo.com"
+              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#4b2fc8]/60"
+              disabled={sending}
             />
+          </div>
+
+          {/* Permisos */}
+          <div>
+            <label className="text-xs font-semibold uppercase text-neutral-500">
+              Permisos en el tablero
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-[#4b2fc8]/60"
+              disabled={sending}
+            >
+              <option value="lector">Solo lectura</option>
+              <option value="editor">Puede editar</option>
+              <option value="admin">Administrador</option>
+            </select>
+            <p className="mt-1 text-[11px] text-neutral-500">
+              • <b>Solo lectura</b>: puede ver listas y tarjetas.<br />
+              • <b>Puede editar</b>: puede crear y mover tarjetas/listas.<br />
+              • <b>Administrador</b>: mismos permisos que tú (gestiona miembros).
+            </p>
+          </div>
+
+          {error && (
+            <p className="text-xs font-medium text-red-500">{error}</p>
+          )}
+          {success && (
+            <p className="text-xs font-medium text-emerald-600">{success}</p>
+          )}
+
+          <div className="mt-2 flex justify-end gap-2">
             <button
               type="button"
-              onClick={handleCopy}
-              className="rounded-lg bg-[#4b2fc8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#3a23a3]"
+              onClick={onClose}
+              className="rounded-full border border-neutral-200 px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
+              disabled={sending}
             >
-              {copied ? "Copiado" : "Copiar"}
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="rounded-full bg-[#4b2fc8] px-4 py-2 text-xs font-semibold text-white shadow-md hover:bg-[#3a23a3] disabled:opacity-60"
+              disabled={sending || !inviteEmail.trim()}
+            >
+              {sending ? "Enviando..." : "Enviar invitación"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
-    
   );
 }
