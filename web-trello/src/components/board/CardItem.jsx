@@ -68,71 +68,55 @@ export default function CardItem({
 
   return (
     <div
-      ref={setRefs}
-      data-draggable="card"
-      style={style}
-      className={`group relative overflow-hidden rounded-2xl border border-transparent bg-[#22222c] px-3 py-3 shadow-md transition hover:border-[#4b3acd]/40 hover:shadow-lg ${
-        isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""
-      }`}
-      {...attributes}
-      {...listeners}
+  ref={setRefs}
+  data-draggable="card"
+  style={style}
+  className={`group relative overflow-hidden rounded-2xl border border-transparent
+    bg-[var(--color-surface)] text-[var(--color-neutral-950)]
+    px-3 py-3 shadow-md transition-colors duration-300
+    hover:border-[var(--color-brand-500)]/40 hover:shadow-lg
+    ${isDragging ? "card--dragging" : ""}`}
+  {...attributes}
+  {...listeners}
+>
+
+
+  {labelColor && (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 top-0 h-1"
+      style={{ backgroundColor: labelColor }}
+    />
+  )}
+
+  <div className="flex items-center gap-3">
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onToggleComplete();
+      }}
+      aria-label={
+        isComplete ? "Marcar como pendiente" : "Marcar como completada"
+      }
+      className="rounded-full text-[var(--color-brand-500)] transition hover:text-[var(--color-brand-600)]"
     >
-      {labelColor ? (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-1"
-          style={{ backgroundColor: labelColor }}
-        />
-      ) : null}
-      <div className="flex items-center gap-3 text-white">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleComplete();
-          }}
-          aria-label={
-            isComplete ? "Marcar como pendiente" : "Marcar como completada"
-          }
-          className="rounded-full text-[#9b8cff] transition hover:text-[#cdbfff]"
-        >
-          {isComplete ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          ) : (
-            <Circle className="h-4 w-4" />
-          )}
-        </button>
+      {isComplete ? (
+        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+      ) : (
+        <Circle className="h-4 w-4" />
+      )}
+    </button>
 
-        <div className="flex-1 pr-6 text-sm font-medium text-white">
-          {card.title}
-          {card.description && (
-            <p className="mt-1 text-xs font-normal text-neutral-300 line-clamp-2">
-              {card.description}
-            </p>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={handleMenuToggle}
-          className="rounded-full border border-transparent bg-[#2d2d38] p-1.5 text-neutral-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100 hover:border-[#4b3acd]/40 hover:bg-[#383846]"
-          aria-label="Abrir menu de tarjeta"
-        >
-          <MoreHorizontal className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {menuOpen && anchorRect && (
-        <CardMenu
-          anchorRect={anchorRect}
-          onClose={() => setMenuOpen(false)}
-          onAction={(action) => {
-            onMenuAction?.(action, card);
-            setMenuOpen(false);
-          }}
-        />
+    <div className="flex-1 pr-6 text-sm font-medium">
+      {card.title}
+      {card.description && (
+        <p className="mt-1 text-xs font-normal text-[var(--color-neutral-950)]/70 dark:text-[var(--color-neutral-950)]/85 line-clamp-2">
+          {card.description}
+        </p>
       )}
     </div>
+  </div>
+</div>
   );
 }

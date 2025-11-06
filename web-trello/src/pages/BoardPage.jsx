@@ -1,39 +1,25 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
-  DndContext,
-  PointerSensor,
-  closestCorners,
-  pointerWithin,
-  rectIntersection,
-  useSensor,
-  useSensors,
-  DragOverlay,
+  DndContext, PointerSensor, closestCorners, pointerWithin, rectIntersection,
+  useSensor, useSensors, DragOverlay
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  horizontalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { Pencil, Check, X, Loader2, Plus } from "lucide-react";
 import Button from "../components/ui/Button.jsx";
 import ListColumn from "../components/board/ListColumn.jsx";
 import {
-  apiFetch,
-  updateCard,
-  fetchBoardLabels,
-  createBoardLabel,
-  updateBoardLabel,
+  apiFetch, updateCard, fetchBoardLabels,
+  createBoardLabel, updateBoardLabel
 } from "../modules/apiClient";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import logo from "../assets/Logo dashboard2.png";
 import {
-  BOARD_BACKGROUND_OPTIONS,
-  boardBackgroundToStyle,
-  resolveBoardBackground,
+  BOARD_BACKGROUND_OPTIONS, boardBackgroundToStyle, resolveBoardBackground
 } from "../constants/boardBackgrounds.js";
 import BotonModo from "../components/ui/BotonModo.jsx";
+
 
 const SCROLLBAR_STYLE = `
 .board-scroll::-webkit-scrollbar { display: none; }
@@ -925,13 +911,12 @@ export default function BoardPage() {
                   className="flex items-center gap-2"
                 >
                   <input
-                    value={titleDraft}
-                    onChange={(event) => setTitleDraft(event.target.value)}
-                    className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-[#4632c5] shadow-sm placeholder:text-[#a192ff] focus:outline-none focus:ring-2 focus:ring-[#846bff]"
-                    placeholder="Nombre del tablero"
-                    autoFocus
-                    disabled={isSavingTitle}
-                  />
+  type="text"
+  value={titleDraft}
+  onChange={(e) => setTitleDraft(e.target.value)}
+  className="board-title-input text-2xl font-bold"
+  autoFocus
+/>
                   <button
                     type="submit"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-600 disabled:opacity-60"
@@ -1064,15 +1049,24 @@ export default function BoardPage() {
                 </div>
               </SortableContext>
               {createPortal(
-                <DragOverlay>
-                  {activeCard ? (
-                    <CardDragPreview card={activeCard} />
-                  ) : activeList ? (
-                    <ListDragPreview list={activeList} />
-                  ) : null}
-                </DragOverlay>,
-                document.body
-              )}
+ <DragOverlay>
+  <div
+    className={
+      document.documentElement.classList.contains("dark")
+        ? "dark card-drag-overlay"
+        : "card-drag-overlay"
+    }
+  >
+    {activeCard ? (
+      <CardDragPreview card={activeCard} />
+    ) : activeList ? (
+      <ListDragPreview list={activeList} />
+    ) : null}
+  </div>
+</DragOverlay>,
+  document.body
+)}
+
             </DndContext>
           </main>
 
@@ -1592,13 +1586,31 @@ function LabelEditorModal({
 
 function CardDragPreview({ card }) {
   if (!card) return null;
+
+  const isDark =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark");
+
+  const styles = {
+    backgroundColor: isDark
+      ? "var(--color-surface-hover)"
+      : "var(--color-surface)",
+    color: isDark
+      ? "var(--color-neutral-50)"
+      : "var(--color-neutral-950)",
+    border: isDark
+      ? "1px solid rgba(255,255,255,0.1)"
+      : "1px solid rgba(0,0,0,0.1)",
+    boxShadow: isDark
+      ? "0 10px 30px rgba(177, 151, 249, 0.25)"
+      : "0 10px 30px rgba(0, 0, 0, 0.15)",
+    transition: "background-color 0.25s ease, color 0.25s ease",
+  };
+
   return (
     <div
-      className="
-        w-72 max-w-xs rounded-2xl border border-transparent px-4 py-3 shadow-2xl transition-all duration-300
-        bg-[#22222c] text-white shadow-[0_12px_35px_-12px_rgba(0,0,0,0.65)]
-        dark:bg-[#22222c] dark:text-white
-      "
+      className="card-drag-preview w-72 max-w-xs rounded-2xl px-4 py-3 shadow-2xl"
+      style={styles}
     >
       <div className="text-sm font-semibold">{card.title}</div>
       {card.description ? (
@@ -1609,25 +1621,6 @@ function CardDragPreview({ card }) {
     </div>
   );
 }
-
-function ListDragPreview({ list }) {
-  if (!list) return null;
-  return (
-    <div
-      className="
-        w-72 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-2xl transition-all duration-300
-        border-[var(--color-brand-200)] bg-[var(--color-surface)] text-[var(--color-neutral-900)]
-        shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)]
-
-        dark:border-[var(--color-brand-700)] dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-100)]
-        dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.7)]
-      "
-    >
-      {list.nombre}
-    </div>
-  );
-}
-
 
 function NewListColumn({ listName, setListName, isAddingList, onSubmit }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -1914,9 +1907,8 @@ function InviteModal({ open, onClose, boardId }) {
         >
           ✕
         </button>
+        
       </div>
-
-
         <div className="mt-4">
           <label className="text-xs font-semibold uppercase text-neutral-500">
             Enlace al tablero

@@ -26,7 +26,6 @@ export default function CardMenu({ anchorRect, onAction, onClose }) {
 
     window.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("keydown", handleEsc);
-
     return () => {
       window.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("keydown", handleEsc);
@@ -37,25 +36,36 @@ export default function CardMenu({ anchorRect, onAction, onClose }) {
 
   const top = anchorRect.top + window.scrollY;
   const left = anchorRect.right + 12 + window.scrollX;
+  const isDark = document.documentElement.classList.contains("dark");
 
   return createPortal(
-    <div
-      ref={menuRef}
-      className="fixed z-50 w-52 rounded-3xl bg-[#11111a] text-sm text-neutral-100 shadow-2xl border border-neutral-700/70 overflow-hidden"
-      style={{ top, left }}
-    >
-      <ul className="py-2">
-        {MENU_OPTIONS.map((option) => (
-          <li key={option.id}>
-            <button
-              onClick={() => onAction?.(option.id)}
-              className="w-full px-4 py-2 text-left hover:bg-violet-500/20 hover:text-white transition"
-            >
-              {option.label}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <div className={isDark ? "dark" : ""}>
+      <div
+        ref={menuRef}
+        className="
+          fixed z-50 w-52 rounded-3xl overflow-hidden border shadow-2xl
+          bg-[var(--color-surface)] text-[var(--color-neutral-950)] border-[rgba(0,0,0,0.1)]
+          dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-950)] dark:border-[rgba(255,255,255,0.1)]
+        "
+        style={{ top, left }}
+      >
+        <ul className="py-2">
+          {MENU_OPTIONS.map((option) => (
+            <li key={option.id}>
+              <button
+                onClick={() => onAction?.(option.id)}
+                className="
+                  w-full px-4 py-2 text-left transition
+                  hover:bg-[var(--color-brand-500)]/15 hover:text-[var(--color-brand-700)]
+                  dark:hover:bg-[var(--color-brand-500)]/25 dark:hover:text-[var(--color-brand-300)]
+                "
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>,
     document.body
   );

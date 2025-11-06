@@ -25,15 +25,21 @@ export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("theme", theme);
-    console.log("Tema actual:", theme);
-  }, [theme]);
+  const root = document.documentElement;
+  const body = document.body;
+
+  if (theme === "dark") {
+    root.classList.add("dark");
+    body.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+    body.classList.remove("dark");
+  }
+
+  localStorage.setItem("theme", theme);
+  console.log("Tema actual:", theme);
+}, [theme]);
+
 
   const toggleTheme = () => {
     const root = document.documentElement;
