@@ -30,22 +30,20 @@ public class Board {
     @Column(name = "id_usuario_creador", nullable = false)
     private Long createdBy;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY) // FetchType.LAZY es recomendable
     @JoinTable(
-            name = "miembro_tablero",
+            name = "miembro_tablero", //TABLA INTERMEDIAA
             joinColumns = @JoinColumn(name = "id_tablero"),
             inverseJoinColumns = @JoinColumn(name = "id_usuario")
     )
-    private Set<User> members;
+    private Set<User> members = new HashSet<>();
 
     //------------------------METODOS PARA LAS INVITACIONES------------------
 
-    // 🎯 getOwnerId() -> Mapeado a createdBy
     public Long getOwnerId() {
         return this.createdBy;
     }
 
-    // 🎯 isMember()
     public boolean isMember(Long userId) {
         if (this.members == null) {
             return false;
@@ -54,7 +52,7 @@ public class Board {
                 .anyMatch(user -> user.getId() != null && user.getId().equals(userId));
     }
 
-    // ... (restantes getters y setters de Board) ...
+//----------------------------------SETTERS Y GETTERS-----------------
 
     public Set<User> getMembers() {
         return Collections.unmodifiableSet(members);
@@ -90,7 +88,7 @@ public class Board {
         this.createdBy = createdBy;
     }
 
-
+    //private Set<User> users = new HashSet<>(); // Inicializar para evitar NullPointerException
 
     public Long getId() {
         return id;
@@ -116,6 +114,8 @@ public class Board {
         return createdBy;
     }
 
+    //public Set<User> getUsers(){return users;}
+
     public void setName(String name) {
         this.name = name;
     }
@@ -135,6 +135,8 @@ public class Board {
     public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
     }
+
+    //public void setUsers(Set<User> users) {this.users = users;}
 
     public void setId(Long id) {this.id = id;}
 

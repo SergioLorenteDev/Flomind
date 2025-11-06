@@ -19,6 +19,12 @@ public class EmailService {
     private JavaMailSender mailSender; // Inyecta el componente de envío de Spring
 
 
+    @Autowired
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+
     public void sendConfirmationEmail(String toEmail, String token) {
         System.out.println("📬 Entrando a EmailService.sendConfirmationEmail()");
 
@@ -69,4 +75,15 @@ public class EmailService {
             e.printStackTrace();
         }
     }
+
+    public void sendEmail(String toEmail, String subject, String body) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("***REMOVED***");
+        message.setTo(toEmail);
+        message.setSubject(subject);
+        message.setText(body);
+
+        mailSender.send(message);
+    }
+
 }

@@ -10,15 +10,12 @@ import java.util.UUID;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // Método que usará Spring Security para buscar al usuario por email durante el LOGIN
+    //PARA BUSCAR AL USUARIO POR EMAIL DURANTE EL LOGIN
     Optional<User> findByEmail(String email);
 
-    // 🔑 MÉTODO CLAVE PARA LA CONFIRMACIÓN DE CUENTA
-    // Spring Data JPA genera automáticamente la consulta SQL:
-    // SELECT * FROM usuario WHERE confirmation_token = ?
+    // CONFIRMACION DE LA CUENTA
     Optional<User> findByConfirmationToken(String confirmationToken);
 
-    // ✅ MÉTODO AÑADIDO PARA LA LÓGICA DE ACTUALIZACIÓN DEL NOMBRE DE USUARIO
-    // Spring Data JPA lo interpreta como: SELECT * FROM user WHERE username = ?
+    //ACTUALIZACION DEL NOMBRE DE USUARIO
     Optional<User> findByUsername(String username);
 }

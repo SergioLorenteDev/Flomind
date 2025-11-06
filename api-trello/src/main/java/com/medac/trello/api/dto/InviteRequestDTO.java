@@ -12,3 +12,4 @@ public record InviteRequestDTO(
         @NotNull(message = "El email del invitado no puede ser nulo")
         String invitedEmail) {
 }
+

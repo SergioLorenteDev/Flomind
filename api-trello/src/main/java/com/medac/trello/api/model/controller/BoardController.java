@@ -3,6 +3,7 @@ package com.medac.trello.api.model.controller;
 import com.medac.trello.api.dto.InviteRequestDTO;
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
+import com.medac.trello.api.model.Invitation;
 import com.medac.trello.api.model.User;
 import com.medac.trello.api.service.BoardService;
 import com.medac.trello.api.resources.TrelloApi;
@@ -16,7 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
+//import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -82,37 +84,57 @@ public class BoardController implements TrelloApi {
     //-----------------------------endpoint de invitacion a tablero------------
 
 
-
     @PostMapping("/invite")
     public ResponseEntity<String> inviteUserToBoard(
             @Valid @RequestBody InviteRequestDTO request,
             @AuthenticationPrincipal User authenticatedUser) {
 
         try {
-            // 1. Obtener el ID del usuario que invita (inviter) de forma segura
+            // 1. Obtener el ID del usuario que invita (inviter)
             Long inviterId = authenticatedUser.getId();
 
-            // 2. Llamar al servicio para realizar las validaciones, guardar la invitación y enviar el correo
-            invitationService.createAndSendInvite(
-                    inviterId,
-                    request.boardId(),
-                    request.invitedEmail()
+            // 2. RECUPERAR EL OBJETO BOARD COMPLETO (NECESARIO PARA EL SERVICE)
+            Board board = boardService.obtenerBoardPorId(request.boardId());
+
+            // 3. Validar si el usuario autenticado tiene permisos para invitar
+            if (!board.getOwnerId().equals(authenticatedUser.getId()) && !board.getMembers().contains(authenticatedUser)) {
+                throw new AccessDeniedException("Solo el dueño o miembros del tablero pueden invitar.");
+            }
+
+            // 4. Llamar al servicio con el objeto Board
+            invitationService.createAndSendInvitation(
+                    board,
+                    request.invitedEmail(),
+                    inviterId
             );
 
             return ResponseEntity.ok("Invitación enviada con éxito a " + request.invitedEmail());
 
         } catch (AccessDeniedException e) {
-            // Si el usuario no tiene permisos sobre el tablero
-            return status(403).body(e.getMessage()); // 403 Forbidden
+            return status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (ResourceNotFoundException e) {
-            // Si el boardId no existe
-            return status(404).body(e.getMessage()); // 404 Not Found
+            return status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (IllegalArgumentException e) {
-            // Si el usuario ya es miembro o hay otro error de validación
-            return status(400).body(e.getMessage()); // 400 Bad Request
+            return status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            // Manejo de otros posibles errores (ej: fallo de EmailService)
-            return status(500).body("Error interno al procesar la invitación.");
+            // Esto capturará MailException o cualquier otro error no manejado.
+            return status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al procesar la invitación: " + e.getMessage());
         }
+    }
+
+    //---------------------------------ENDPOINT PARA VER LAS INNVITACIONES-------------------------
+
+    @GetMapping("/invitations/received")
+    public ResponseEntity<List<Invitation>> getReceivedInvitations(
+            @AuthenticationPrincipal User authenticatedUser) { // Obtiene el usuario autenticado del JWT
+
+        // 1. Obtener el email del usuario autenticado
+        String userEmail = authenticatedUser.getEmail();
+
+        // 2. Llamar al servicio
+        List<Invitation> invitations = invitationService.getReceivedInvitations(userEmail);
+
+        // 3. Devolver la lista
+        return ResponseEntity.ok(invitations);
     }
 }

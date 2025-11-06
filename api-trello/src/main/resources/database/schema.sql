@@ -116,3 +116,20 @@ CREATE TABLE IF NOT EXISTS tokens_refresco (
     id_duenio BIGINT NOT NULL,
     FOREIGN KEY (id_duenio) REFERENCES usuario(id_usuario)
 );
+
+--------------TABLA DE INVITACIONES ------------------
+CREATE TABLE invitacion (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    invitee_email VARCHAR(255) NOT NULL,
+    id_tablero BIGINT NOT NULL,
+    id_usuario_invitador BIGINT NOT NULL,
+    expires_at DATETIME,
+    fecha_creacion DATETIME NOT NULL,
+
+    -- Restricción para asegurar que el tablero exista
+    FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero),
+
+    -- Restricción para asegurar que el usuario invitador exista
+    FOREIGN KEY (id_usuario_invitador) REFERENCES usuario(id_usuario)
+);

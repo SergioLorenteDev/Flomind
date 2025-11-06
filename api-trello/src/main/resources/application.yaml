@@ -7,11 +7,11 @@ spring:
     init:
       schema-locations: classpath*:database/schema.sql
       data-locations: classpath*:database/migrations.sql
-      mode: always
+      mode: never
   datasource:
-    url: jdbc:mysql://localhost:3306/trello
+    url: jdbc:mysql://localhost:3306/trello_bd
     username: root  
-    password: ***REMOVED***
+    password: ""
     driverClassName: com.mysql.cj.jdbc.Driver
   mail:
     host: smtp.gmail.com
@@ -32,3 +32,5 @@ security:
     secret-key: ***REMOVED***
     expiration-time: 3600000
     refresh-expiration-time: 2592000000
+app:
+  base-url: http://localhost:8080/trello/v1/
