@@ -6,12 +6,17 @@ import {
   useSensor, useSensors, DragOverlay
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { Pencil, Check, X, Loader2, Plus } from "lucide-react";
+import { Pencil, Check, X, Loader2, Plus, CalendarDays, Trash2, AlertTriangle } from "lucide-react";
 import Button from "../components/ui/Button.jsx";
 import ListColumn from "../components/board/ListColumn.jsx";
 import {
-  apiFetch, updateCard, fetchBoardLabels,
-  createBoardLabel, updateBoardLabel
+  apiFetch,
+  updateCard,
+  fetchBoardLabels,
+  createBoardLabel,
+  updateBoardLabel,
+  deleteBoardLabel,
+  deleteCard,
 } from "../modules/apiClient";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import logo from "../assets/Logo dashboard2.png";
@@ -32,6 +37,49 @@ const LIST_DROPPABLE_PREFIX = "list-droppable-";
 const CARD_PREFIX = "card-";
 
 const DEFAULT_LABEL_COLOR = "#7f56d9";
+
+const DATE_STATE_TEMPLATE = {
+  open: false,
+  cardId: null,
+  listKey: null,
+  startsOn: null,
+  expiresOn: null,
+  isSaving: false,
+  error: "",
+};
+
+const DELETE_DIALOG_TEMPLATE = {
+  open: false,
+  cardId: null,
+  cardTitle: "",
+  listKey: null,
+  isDeleting: false,
+  error: "",
+};
+
+const toDateInputValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const toIsoMidday = (value) => {
+  if (!value) return null;
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return null;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 12));
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString();
+};
+
+const areIsoDatesEqual = (a, b) => {
+  if (!a && !b) return true;
+  return a === b;
+};
 
 const toListSortableId = (value) => `${LIST_SORTABLE_PREFIX}${value}`;
 const toCardSortableId = (value) => `${CARD_PREFIX}${value}`;
@@ -101,6 +149,12 @@ export default function BoardPage() {
     listKey: null,
     selectedLabelId: null,
   });
+  const [dateEditorState, setDateEditorState] = useState(() => ({
+    ...DATE_STATE_TEMPLATE,
+  }));
+  const [deleteDialogState, setDeleteDialogState] = useState(() => ({
+    ...DELETE_DIALOG_TEMPLATE,
+  }));
   const lastOverId = useRef(null);
   const scrollContainerRef = useRef(null);
   const panStateRef = useRef({
@@ -360,6 +414,20 @@ export default function BoardPage() {
     });
   }, []);
 
+  const closeDateEditor = useCallback(() => {
+    setDateEditorState((prev) => {
+      if (prev.isSaving) return prev;
+      return { ...DATE_STATE_TEMPLATE };
+    });
+  }, []);
+
+  const closeDeleteDialog = useCallback(() => {
+    setDeleteDialogState((prev) => {
+      if (prev.isDeleting) return prev;
+      return { ...DELETE_DIALOG_TEMPLATE };
+    });
+  }, []);
+
   const mutateCardLabel = useCallback((cardId, listKey, nextLabel) => {
     if (!cardId) return;
     const clonedLabel = nextLabel ? { ...nextLabel } : null;
@@ -382,6 +450,30 @@ export default function BoardPage() {
     );
     setActiveCard((prev) =>
       prev && prev.id === cardId ? { ...prev, label: clonedLabel } : prev
+    );
+  }, []);
+
+  const mutateCardDates = useCallback((cardId, listKey, startsOn, expiresOn) => {
+    if (!cardId) return;
+    setCardsByListId((prev) => {
+      let resolvedKey = listKey;
+      if (!resolvedKey || !prev[resolvedKey]) {
+        resolvedKey = Object.keys(prev).find((key) =>
+          (prev[key] || []).some((card) => card.id === cardId)
+        );
+      }
+      if (!resolvedKey) return prev;
+      const updatedCards = (prev[resolvedKey] || []).map((card) =>
+        card.id === cardId ? { ...card, startsOn, expiresOn } : card
+      );
+      return { ...prev, [resolvedKey]: updatedCards };
+    });
+
+    setSelectedCard((prev) =>
+      prev && prev.id === cardId ? { ...prev, startsOn, expiresOn } : prev
+    );
+    setActiveCard((prev) =>
+      prev && prev.id === cardId ? { ...prev, startsOn, expiresOn } : prev
     );
   }, []);
 
@@ -420,6 +512,43 @@ export default function BoardPage() {
     [labelEditorState, labels, mutateCardLabel, selectedCard]
   );
 
+  const handleDeleteLabel = useCallback(
+    async (labelId) => {
+      if (!boardId) {
+        throw new Error("Tablero no disponible.");
+      }
+
+      await deleteBoardLabel(boardId, labelId);
+
+      setLabels((prev) => prev.filter((label) => label.id !== labelId));
+
+      setCardsByListId((prev) => {
+        const nextEntries = Object.entries(prev).map(([key, cards]) => [
+          key,
+          cards.map((card) =>
+            card.label?.id === labelId ? { ...card, label: null } : card
+          ),
+        ]);
+        return Object.fromEntries(nextEntries);
+      });
+
+      setSelectedCard((prev) =>
+        prev && prev.label?.id === labelId ? { ...prev, label: null } : prev
+      );
+
+      setActiveCard((prev) =>
+        prev && prev.label?.id === labelId ? { ...prev, label: null } : prev
+      );
+
+      setLabelEditorState((prev) =>
+        prev.selectedLabelId === labelId
+          ? { ...prev, selectedLabelId: null }
+          : prev
+      );
+    },
+    [boardId]
+  );
+
   const handleClearLabel = useCallback(async () => {
     if (!labelEditorState.cardId) {
       closeLabelEditor();
@@ -430,13 +559,23 @@ export default function BoardPage() {
     setLabelEditorState((prev) => ({ ...prev, selectedLabelId: null }));
     try {
       await updateCard(labelEditorState.cardId, { labelId: null });
-      closeLabelEditor();
+
+      const labelId =
+        labelEditorState.selectedLabelId ?? previous?.id ?? null;
+      if (labelId) {
+        try {
+          await handleDeleteLabel(labelId);
+        } catch (deleteError) {
+          console.error("No se pudo eliminar la etiqueta:", deleteError);
+        }
+      }
+
     } catch (err) {
       mutateCardLabel(labelEditorState.cardId, labelEditorState.listKey, previous);
       setLabelEditorState((prev) => ({ ...prev, selectedLabelId: previous?.id ?? null }));
       throw err;
     }
-  }, [labelEditorState, mutateCardLabel, closeLabelEditor, selectedCard]);
+  }, [labelEditorState, mutateCardLabel, closeLabelEditor, selectedCard, handleDeleteLabel]);
 
   const registerCardLabel = useCallback((card) => {
     if (!card?.label) return null;
@@ -518,10 +657,16 @@ export default function BoardPage() {
     (card) => {
       const listKey = resolveCardListKey(card);
       const selectedLabelId = registerCardLabel(card);
+      if (!card?.id || !listKey) {
+        console.warn("No se pudo abrir el editor de etiquetas: tarjeta no encontrada.");
+        return;
+      }
 
+      closeDateEditor();
+      closeDeleteDialog();
       setLabelEditorState({
         open: true,
-        cardId: card?.id ?? null,
+        cardId: card.id,
         listKey,
         selectedLabelId: selectedLabelId ?? null,
       });
@@ -529,17 +674,247 @@ export default function BoardPage() {
       setSelectedCard(card);
       setIsChecklistOpen(false);
     },
-    [resolveCardListKey, registerCardLabel]
+    [resolveCardListKey, registerCardLabel, closeDateEditor, closeDeleteDialog]
+  );
+
+  const openDateEditor = useCallback(
+    (card) => {
+      const listKey = resolveCardListKey(card);
+      if (!card?.id || !listKey) {
+        console.warn("No se pudo abrir el editor de fechas: tarjeta no encontrada.");
+        return;
+      }
+
+      closeLabelEditor();
+      closeDeleteDialog();
+      setDateEditorState({
+        open: true,
+        cardId: card.id,
+        listKey,
+        startsOn: card.startsOn ?? null,
+        expiresOn: card.expiresOn ?? null,
+        isSaving: false,
+        error: "",
+      });
+
+      setSelectedCard(card);
+      setIsChecklistOpen(false);
+    },
+    [resolveCardListKey, closeLabelEditor, closeDeleteDialog]
+  );
+
+  const openDeleteDialog = useCallback(
+    (card) => {
+      const listKey = resolveCardListKey(card);
+      if (!card?.id || !listKey) {
+        console.warn("No se pudo abrir el cuadro de confirmación: tarjeta no encontrada.");
+        return;
+      }
+
+      closeLabelEditor();
+      closeDateEditor();
+      setDeleteDialogState({
+        open: true,
+        cardId: card.id,
+        cardTitle: card.title || card.nombre || `Tarjeta ${card.id}`,
+        listKey,
+        isDeleting: false,
+        error: "",
+      });
+
+      setSelectedCard(card);
+      setIsChecklistOpen(false);
+    },
+    [resolveCardListKey, closeLabelEditor, closeDateEditor]
   );
 
   const handleCardMenuAction = (action, card) => {
+    if (!card) return;
     if (action === "edit-labels") {
       openLabelEditor(card);
+      return;
+    }
+    if (action === "edit-dates") {
+      openDateEditor(card);
+      return;
+    }
+    if (action === "delete-card") {
+      openDeleteDialog(card);
       return;
     }
     setSelectedCard(card);
     setIsChecklistOpen(true);
   };
+
+  const commitCardDates = useCallback(
+    async ({ startsOn, expiresOn }) => {
+      if (!dateEditorState.open || !dateEditorState.cardId || !dateEditorState.listKey) {
+        return;
+      }
+
+      const listKey = dateEditorState.listKey;
+      const cardId = dateEditorState.cardId;
+      const cards = cardsByListId[listKey] || [];
+      const currentCard = cards.find((item) => item.id === cardId) ?? null;
+      if (!currentCard) {
+        setDateEditorState({ ...DATE_STATE_TEMPLATE });
+        return;
+      }
+
+      const nextStarts = startsOn ?? null;
+      const nextExpires = expiresOn ?? null;
+      if (
+        areIsoDatesEqual(currentCard.startsOn ?? null, nextStarts) &&
+        areIsoDatesEqual(currentCard.expiresOn ?? null, nextExpires)
+      ) {
+        setDateEditorState({ ...DATE_STATE_TEMPLATE });
+        return;
+      }
+
+      const previousDates = {
+        startsOn: currentCard.startsOn ?? null,
+        expiresOn: currentCard.expiresOn ?? null,
+      };
+
+      mutateCardDates(cardId, listKey, nextStarts, nextExpires);
+      setDateEditorState((prev) => ({
+        ...prev,
+        startsOn: nextStarts,
+        expiresOn: nextExpires,
+        isSaving: true,
+        error: "",
+      }));
+
+      try {
+        await updateCard(cardId, {
+          startsOn: nextStarts,
+          expiresOn: nextExpires,
+          labelId: currentCard.label?.id ?? null,
+          idLista: Number(listKey),
+          cardOrder: currentCard.cardOrder ?? null,
+        });
+        setDateEditorState({ ...DATE_STATE_TEMPLATE });
+      } catch (err) {
+        console.error("Error al actualizar fechas de la tarjeta:", err);
+        mutateCardDates(cardId, listKey, previousDates.startsOn, previousDates.expiresOn);
+        setDateEditorState((prev) => ({
+          ...prev,
+          startsOn: previousDates.startsOn,
+          expiresOn: previousDates.expiresOn,
+          isSaving: false,
+          error:
+            err instanceof Error
+              ? err.message
+              : "No se pudieron guardar las fechas. Inténtalo de nuevo.",
+        }));
+      }
+    },
+    [dateEditorState, cardsByListId, mutateCardDates, updateCard]
+  );
+
+  const handleClearDates = useCallback(() => {
+    return commitCardDates({ startsOn: null, expiresOn: null });
+  }, [commitCardDates]);
+
+  const handleConfirmDeleteCard = useCallback(async () => {
+    if (!deleteDialogState.open || !deleteDialogState.cardId || !deleteDialogState.listKey) {
+      return;
+    }
+
+    const { cardId, listKey } = deleteDialogState;
+    const cards = cardsByListId[listKey] || [];
+    const targetCard = cards.find((item) => item.id === cardId) ?? null;
+    if (!targetCard) {
+      setDeleteDialogState({ ...DELETE_DIALOG_TEMPLATE });
+      return;
+    }
+
+    const previousCardsSnapshot = cards.map((item) => ({ ...item }));
+    const filteredCards = normalizeCards(
+      cards.filter((item) => item.id !== cardId).map((item) => ({ ...item })),
+      listKey
+    );
+    const wasCompleted = completedCards.has(cardId);
+    const previousSelectedCard = selectedCard;
+    const previousActiveCard = activeCard;
+    const wasChecklistOpen = isChecklistOpen;
+
+    setDeleteDialogState((prev) => ({
+      ...prev,
+      isDeleting: true,
+      error: "",
+    }));
+
+    setCardsByListId((prev) => ({
+      ...prev,
+      [listKey]: filteredCards,
+    }));
+
+    setCompletedCards((prev) => {
+      if (!prev.has(cardId)) return prev;
+      const next = new Set(prev);
+      next.delete(cardId);
+      return next;
+    });
+
+    if (selectedCard?.id === cardId) {
+      setSelectedCard(null);
+      setIsChecklistOpen(false);
+    }
+
+    if (activeCard?.id === cardId) {
+      setActiveCard(null);
+    }
+
+    try {
+      await deleteCard(cardId);
+      setDeleteDialogState({ ...DELETE_DIALOG_TEMPLATE });
+      closeLabelEditor();
+      closeDateEditor();
+    } catch (err) {
+      console.error("Error al eliminar la tarjeta:", err);
+      setCardsByListId((prev) => ({
+        ...prev,
+        [listKey]: previousCardsSnapshot.map((item) => ({ ...item })),
+      }));
+
+      if (wasCompleted) {
+        setCompletedCards((prev) => {
+          const next = new Set(prev);
+          next.add(cardId);
+          return next;
+        });
+      }
+
+      if (previousSelectedCard?.id === cardId) {
+        setSelectedCard(previousSelectedCard);
+        setIsChecklistOpen(wasChecklistOpen);
+      }
+
+      if (previousActiveCard?.id === cardId) {
+        setActiveCard(previousActiveCard);
+      }
+
+      setDeleteDialogState((prev) => ({
+        ...prev,
+        isDeleting: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "No se pudo eliminar la tarjeta. Inténtalo de nuevo.",
+      }));
+    }
+  }, [
+    deleteDialogState,
+    cardsByListId,
+    completedCards,
+    selectedCard,
+    activeCard,
+    isChecklistOpen,
+    deleteCard,
+    closeLabelEditor,
+    closeDateEditor,
+  ]);
 
   const reorderLists = (activeListId, overListId) => {
     const sourceId =
@@ -1116,8 +1491,29 @@ export default function BoardPage() {
             onSelectLabel={handleSelectLabelForCard}
             onCreateLabel={handleCreateLabel}
             onUpdateLabel={handleUpdateLabel}
+            onDeleteLabel={handleDeleteLabel}
             onClearLabel={handleClearLabel}
             onClose={closeLabelEditor}
+          />
+
+          <DateEditorModal
+            open={dateEditorState.open}
+            startsOn={dateEditorState.startsOn}
+            expiresOn={dateEditorState.expiresOn}
+            isSaving={dateEditorState.isSaving}
+            errorMessage={dateEditorState.error}
+            onSubmit={commitCardDates}
+            onClear={handleClearDates}
+            onClose={closeDateEditor}
+          />
+
+          <DeleteCardModal
+            open={deleteDialogState.open}
+            cardTitle={deleteDialogState.cardTitle}
+            isDeleting={deleteDialogState.isDeleting}
+            errorMessage={deleteDialogState.error}
+            onCancel={closeDeleteDialog}
+            onConfirm={handleConfirmDeleteCard}
           />
           
         </div>
@@ -1345,6 +1741,7 @@ function LabelEditorModal({
   onSelectLabel,
   onCreateLabel,
   onUpdateLabel,
+  onDeleteLabel,
   onClearLabel,
   onClose,
 }) {
@@ -1353,6 +1750,7 @@ function LabelEditorModal({
   const [draftColor, setDraftColor] = useState(DEFAULT_LABEL_COLOR);
   const [isBusy, setIsBusy] = useState(false);
   const [modalError, setModalError] = useState("");
+  const [pendingLabelId, setPendingLabelId] = useState(null);
 
   useEffect(() => {
     if (!open) {
@@ -1361,10 +1759,18 @@ function LabelEditorModal({
       setDraftColor(DEFAULT_LABEL_COLOR);
       setModalError("");
       setIsBusy(false);
+      setPendingLabelId(null);
     }
   }, [open]);
 
   if (!open) return null;
+
+  const resetEditingState = () => {
+    setEditingId(null);
+    setDraftName("");
+    setDraftColor(DEFAULT_LABEL_COLOR);
+    setModalError("");
+  };
 
   const runAction = async (operation) => {
     setModalError("");
@@ -1389,43 +1795,70 @@ function LabelEditorModal({
 
   const handleCommitEdit = () => {
     if (!editingId) return;
+    const currentId = editingId;
     runAction(() =>
-      onUpdateLabel(editingId, {
+      onUpdateLabel(currentId, {
         text: draftName,
         color: draftColor,
       })
     )
       .then(() => {
-        setEditingId(null);
-        setDraftName("");
-        setDraftColor(DEFAULT_LABEL_COLOR);
+        setPendingLabelId((prev) => (prev === currentId ? null : prev));
+        resetEditingState();
       })
       .catch(() => {});
   };
 
   const handleCancelEdit = () => {
-    setEditingId(null);
-    setDraftName("");
-    setDraftColor(DEFAULT_LABEL_COLOR);
-    setModalError("");
+    if (!editingId) {
+      resetEditingState();
+      return;
+    }
+
+    const currentId = editingId;
+    if (pendingLabelId === currentId) {
+      runAction(() => onDeleteLabel(currentId))
+        .then(() => {
+          setPendingLabelId(null);
+          resetEditingState();
+        })
+        .catch(() => {});
+    } else {
+      resetEditingState();
+    }
   };
 
   const handleCreateLabel = () => {
     runAction(onCreateLabel)
       .then((newLabel) => {
         if (!newLabel) return;
+        setPendingLabelId(newLabel.id);
         beginEditing(newLabel);
         return runAction(() => onSelectLabel(newLabel.id, newLabel));
       })
       .catch(() => {});
   };
 
+  const handleRequestClose = () => {
+    if (isBusy) return;
+    if (pendingLabelId) {
+      runAction(() => onDeleteLabel(pendingLabelId))
+        .then(() => {
+          setPendingLabelId(null);
+          resetEditingState();
+          onClose();
+        })
+        .catch(() => {});
+      return;
+    }
+    resetEditingState();
+    onClose();
+  };
+
   return createPortal(
     <div
       className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-      onClick={() => {
-        if (!isBusy) onClose();
-      }}
+      onClick={handleRequestClose}
     >
       <div
         className="
@@ -1446,7 +1879,7 @@ function LabelEditorModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleRequestClose}
             disabled={isBusy}
             className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-60 dark:hover:bg-white/10"
             aria-label="Cerrar editor de etiquetas"
@@ -1596,6 +2029,270 @@ function LabelEditorModal({
   );
 }
 
+function DateEditorModal({
+  open,
+  startsOn,
+  expiresOn,
+  isSaving,
+  errorMessage,
+  onSubmit,
+  onClear,
+  onClose,
+}) {
+  const [startValue, setStartValue] = useState("");
+  const [endValue, setEndValue] = useState("");
+  const [validationError, setValidationError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setStartValue(toDateInputValue(startsOn));
+    setEndValue(toDateInputValue(expiresOn));
+    setValidationError("");
+  }, [open, startsOn, expiresOn]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (startValue && endValue && startValue > endValue) {
+      setValidationError("La fecha de inicio no puede ser posterior a la fecha de finalización.");
+    } else {
+      setValidationError("");
+    }
+  }, [open, startValue, endValue]);
+
+  if (!open) return null;
+
+  const combinedError = validationError || errorMessage || "";
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (validationError) return;
+    onSubmit?.({
+      startsOn: toIsoMidday(startValue),
+      expiresOn: toIsoMidday(endValue),
+    });
+  };
+
+  const handleClear = () => {
+    onClear?.();
+  };
+
+  const handleBackdropClick = (event) => {
+    if (event.target !== event.currentTarget) return;
+    if (isSaving) return;
+    onClose?.();
+  };
+
+  const handleClose = () => {
+    if (isSaving) return;
+    onClose?.();
+  };
+
+  const isSubmitDisabled = Boolean(validationError) || Boolean(isSaving);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+      onClick={handleBackdropClick}
+    >
+      <form
+        className="
+          w-full max-w-md rounded-2xl border border-[var(--color-surface-hover)] bg-[var(--color-surface)]
+          p-6 shadow-2xl transition-colors duration-300 text-[var(--color-neutral-950)]
+          dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-50)]
+        "
+        onClick={(event) => event.stopPropagation()}
+        onSubmit={handleSubmit}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand-500)]/15 text-[var(--color-brand-600)] dark:bg-[var(--color-brand-500)]/20 dark:text-[var(--color-brand-200)]">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--color-brand-700)] dark:text-[var(--color-brand-200)]">
+                Editar fechas
+              </h2>
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                Selecciona el rango de fechas para esta tarjeta.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSaving}
+            className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-60 dark:hover:bg-white/10"
+            aria-label="Cerrar editor de fechas"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300">
+              Comienza en
+            </label>
+            <input
+              type="date"
+              value={startValue}
+              onChange={(event) => setStartValue(event.target.value)}
+              max={endValue || undefined}
+              disabled={isSaving}
+              className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm transition focus:border-[var(--color-brand-500)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/30 disabled:opacity-60 dark:border-white/15 dark:bg-white/10 dark:text-neutral-100"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-300">
+              Termina en
+            </label>
+            <input
+              type="date"
+              value={endValue}
+              onChange={(event) => setEndValue(event.target.value)}
+              min={startValue || undefined}
+              disabled={isSaving}
+              className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800 shadow-sm transition focus:border-[var(--color-brand-500)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/30 disabled:opacity-60 dark:border-white/15 dark:bg-white/10 dark:text-neutral-100"
+            />
+          </div>
+        </div>
+
+        {combinedError ? (
+          <p className="mt-5 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-600 dark:bg-red-500/15 dark:text-red-200">
+            {combinedError}
+          </p>
+        ) : null}
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="submit"
+            disabled={isSubmitDisabled}
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={isSaving}
+            className="text-sm font-semibold text-[var(--color-brand-600)] transition hover:text-[var(--color-brand-500)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Quitar fechas
+          </button>
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSaving}
+            className="text-sm font-medium text-neutral-500 transition hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>,
+    document.body
+  );
+}
+
+function DeleteCardModal({
+  open,
+  cardTitle,
+  isDeleting,
+  errorMessage,
+  onConfirm,
+  onCancel,
+}) {
+  if (!open) return null;
+
+  const handleBackdropClick = (event) => {
+    if (event.target !== event.currentTarget) return;
+    if (isDeleting) return;
+    onCancel?.();
+  };
+
+  const handleClose = () => {
+    if (isDeleting) return;
+    onCancel?.();
+  };
+
+  const handleConfirm = () => {
+    onConfirm?.();
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/45 backdrop-blur-sm px-4"
+      onClick={handleBackdropClick}
+    >
+      <div
+        className="
+          w-full max-w-md rounded-2xl border border-red-500/20 bg-[var(--color-surface)]
+          p-6 shadow-2xl transition-colors duration-300 text-[var(--color-neutral-950)]
+          dark:border-red-500/30 dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-50)]
+        "
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/15 text-red-600 dark:bg-red-500/20 dark:text-red-300">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-red-600 dark:text-red-300">
+              Eliminar tarjeta
+            </h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+              Se eliminarán etiquetas, fechas, comentarios y actividad asociada a{" "}
+              <span className="font-semibold">"{cardTitle || "esta tarjeta"}"</span>. Esta acción no se puede deshacer.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isDeleting}
+            className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-60 dark:hover:bg-white/10"
+            aria-label="Cerrar confirmación de eliminación"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {errorMessage ? (
+          <p className="mt-5 rounded-xl bg-red-500/15 px-3 py-2 text-sm font-medium text-red-600 dark:bg-red-500/20 dark:text-red-200">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isDeleting}
+            className="rounded-full px-4 py-2 text-sm font-medium text-neutral-500 transition hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function CardDragPreview({ card }) {
   if (!card) return null;
 
@@ -1630,6 +2327,52 @@ function CardDragPreview({ card }) {
           {card.description}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function ListDragPreview({ list }) {
+  if (!list) return null;
+
+  const isDark =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark");
+
+  const styles = {
+    backgroundColor: isDark
+      ? "rgba(34, 27, 44, 0.95)"
+      : "rgba(255, 255, 255, 0.95)",
+    color: isDark ? "var(--color-neutral-50)" : "var(--color-neutral-900)",
+    border: isDark
+      ? "1px solid rgba(255,255,255,0.1)"
+      : "1px solid rgba(0,0,0,0.08)",
+    boxShadow: isDark
+      ? "0 12px 40px rgba(131, 92, 239, 0.35)"
+      : "0 12px 40px rgba(64, 46, 167, 0.25)",
+    transition: "background-color 0.25s ease, color 0.25s ease",
+    width: "18rem",
+    maxWidth: "18rem",
+    borderRadius: "1.25rem",
+  };
+
+  return (
+    <div
+      className="list-drag-preview flex flex-col gap-3 p-4 shadow-2xl"
+      style={styles}
+    >
+      <header className="flex items-center justify-between">
+        <span className="text-sm font-semibold tracking-wide">
+          {list.nombre || list.title || `Lista ${list.idLista}`}
+        </span>
+        <span className="rounded-full bg-[var(--color-brand-50)] px-2 py-0.5 text-xs font-semibold text-[var(--color-brand-600)]">
+          {Array.isArray(list.cards) ? list.cards.length : 0} tarjetas
+        </span>
+      </header>
+      <div className="space-y-2 text-xs text-neutral-500 dark:text-neutral-300">
+        <div className="rounded-xl border border-dashed border-neutral-200/60 p-3 dark:border-neutral-700/60">
+          Arrastra la lista hasta la posición que prefieras.
+        </div>
+      </div>
     </div>
   );
 }

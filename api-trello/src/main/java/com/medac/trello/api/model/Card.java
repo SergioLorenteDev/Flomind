@@ -28,6 +28,9 @@ public class Card {
     @Column(name = "expira_en")
     private Instant expiresOn;
 
+    @Column(name = "comienza_en")
+    private Instant startsOn;
+
     @Column(name = "card_order", nullable = false)
     private Integer cardOrder; // Cambiado a Integer
 
@@ -58,6 +61,7 @@ public class Card {
     public Label getPrimaryLabel() {
         return labels.stream().findFirst().orElse(null);
     }
+    public Instant getStartsOn() { return startsOn; }
 
     public void setTitle(String title) {
         this.title = title;
@@ -69,6 +73,10 @@ public class Card {
 
     public void setExpiresOn(Instant expiresOn) {
         this.expiresOn = expiresOn;
+    }
+
+    public void setStartsOn(Instant startsOn) {
+        this.startsOn = startsOn;
     }
 
     // ✅ Setter de Order

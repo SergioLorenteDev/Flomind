@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS tarjeta (
     titulo VARCHAR(100) NOT NULL,
     descripcion TEXT,
     creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    comienza_en DATETIME,
     expira_en DATETIME,
     card_order INT NOT NULL,
     id_lista BIGINT NOT NULL,

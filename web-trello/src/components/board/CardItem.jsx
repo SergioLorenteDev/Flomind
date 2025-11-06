@@ -2,7 +2,32 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+<<<<<<< HEAD
 import { MoreHorizontal, CheckCircle, Circle } from "lucide-react";
+=======
+import { CheckCircle2, Circle, MoreHorizontal, Clock3 } from "lucide-react";
+import CardMenu from "./CardMenu.jsx";
+
+const CARD_PREFIX = "card-";
+const dateFormatter = new Intl.DateTimeFormat("es-ES", {
+  day: "numeric",
+  month: "short",
+});
+
+const formatDateRange = (startsOn, expiresOn) => {
+  const normalize = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return dateFormatter.format(date).toLowerCase().replace(/\./g, "");
+  };
+
+  const start = normalize(startsOn);
+  const end = normalize(expiresOn);
+  if (start && end) return `${start} - ${end}`;
+  return start || end || "";
+};
+>>>>>>> 9f65021 (Opciones Tarjetas)
 
 export default function CardItem({
   card,
@@ -11,6 +36,20 @@ export default function CardItem({
   onToggleComplete,
   onMenuAction,
 }) {
+<<<<<<< HEAD
+=======
+  const cardId = String(card.id);
+  const cardSortableId = `${CARD_PREFIX}${cardId}`;
+  const listKey = String(listId);
+  const labelColor = card?.label?.color ?? null;
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState(null);
+  const itemRef = useRef(null);
+  const dateLabel = formatDateRange(card.startsOn, card.expiresOn);
+  const hasDateBadge = dateLabel.length > 0;
+
+>>>>>>> 9f65021 (Opciones Tarjetas)
   const {
     attributes,
     listeners,
@@ -163,7 +202,30 @@ const style = {
         </div>
       </div>
 
+<<<<<<< HEAD
       {renderMenu()}
     </>
+=======
+      {hasDateBadge ? (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-300/90 px-3 py-1 text-xs font-semibold text-neutral-900 shadow">
+            <Clock3 className="h-3.5 w-3.5" />
+            <span>{dateLabel}</span>
+          </div>
+        </div>
+      ) : null}
+
+      {menuOpen && anchorRect && (
+        <CardMenu
+          anchorRect={anchorRect}
+          onClose={() => setMenuOpen(false)}
+          onAction={(action) => {
+            onMenuAction?.(action, card);
+            setMenuOpen(false);
+          }}
+        />
+      )}
+    </div>
+>>>>>>> 9f65021 (Opciones Tarjetas)
   );
 }

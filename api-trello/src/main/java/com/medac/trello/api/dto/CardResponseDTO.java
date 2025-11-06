@@ -14,6 +14,8 @@ public class CardResponseDTO {
     private Integer cardOrder;
     private Long idLista;
     private LabelResponseDTO label;
+    private Instant startsOn;
+    private Instant expiresOn;
 
     public CardResponseDTO() {
     }
@@ -25,6 +27,8 @@ public class CardResponseDTO {
         this.createdOn = card.getCreatedOn();
         this.cardOrder = card.getCardOrder();
         this.idLista = card.getLista() != null ? card.getLista().getIdLista() : null;
+        this.startsOn = card.getStartsOn();
+        this.expiresOn = card.getExpiresOn();
         Label primaryLabel = card.getPrimaryLabel();
         this.label = primaryLabel != null ? new LabelResponseDTO(primaryLabel) : null;
     }
@@ -84,5 +88,20 @@ public class CardResponseDTO {
     public void setLabel(LabelResponseDTO label) {
         this.label = label;
     }
-}
 
+    public Instant getStartsOn() {
+        return startsOn;
+    }
+
+    public void setStartsOn(Instant startsOn) {
+        this.startsOn = startsOn;
+    }
+
+    public Instant getExpiresOn() {
+        return expiresOn;
+    }
+
+    public void setExpiresOn(Instant expiresOn) {
+        this.expiresOn = expiresOn;
+    }
+}

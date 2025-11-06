@@ -8,6 +8,7 @@ import com.medac.trello.api.model.Label;
 import com.medac.trello.api.model.repository.CardRepository;
 import com.medac.trello.api.model.repository.HistorialMovimientoRepository;
 import com.medac.trello.api.model.repository.LabelRepository;
+import com.medac.trello.api.model.repository.CommentRepository;
 import com.medac.trello.api.model.repository.ListaRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class CardService {
     @Autowired
     private LabelRepository labelRepository;
 
+    @Autowired
+    private CommentRepository commentRepository;
+
     // ---------------------- C - CREAR TARJETA ----------------------
 
     @Transactional
@@ -46,6 +50,7 @@ public class CardService {
         if (card.getCreatedOn() == null) {
             card.setCreatedOn(Instant.now());
         }
+        validateCardDates(card.getStartsOn(), card.getExpiresOn());
 
         applyLabel(card, labelId, lista);
 
@@ -79,7 +84,13 @@ public class CardService {
     // ---------------------- U - ACTUALIZAR/MOVER TARJETAS ----------------------
 
     @Transactional
-    public Card actualizarCard(Long idTarjeta, Card cardDetails, Long labelId) {
+    public Card actualizarCard(
+            Long idTarjeta,
+            Card cardDetails,
+            Long labelId,
+            boolean startsOnPresent,
+            boolean expiresOnPresent
+    ) {
 
         // 1. Obtener la tarjeta existente
         Card cardExistente = cardRepository.findById(idTarjeta)
@@ -94,8 +105,14 @@ public class CardService {
         if (cardDetails.getDescription() != null) {
             cardExistente.setDescription(cardDetails.getDescription());
         }
-        if (cardDetails.getExpiresOn() != null) {
-            cardExistente.setExpiresOn(cardDetails.getExpiresOn());
+        Instant candidateStartsOn = startsOnPresent ? cardDetails.getStartsOn() : cardExistente.getStartsOn();
+        Instant candidateExpiresOn = expiresOnPresent ? cardDetails.getExpiresOn() : cardExistente.getExpiresOn();
+        validateCardDates(candidateStartsOn, candidateExpiresOn);
+        if (startsOnPresent) {
+            cardExistente.setStartsOn(candidateStartsOn);
+        }
+        if (expiresOnPresent) {
+            cardExistente.setExpiresOn(candidateExpiresOn);
         }
 
         // 3. Manejar movimiento (cambio de lista/columna)
@@ -150,11 +167,24 @@ public class CardService {
 
     // ---------------------- D - ELIMINAR TARJETA ----------------------
 
+    @Transactional
     public void eliminarTarjeta(Long idTarjeta) {
-        if (!cardRepository.existsById(idTarjeta)) {
-            throw new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta);
+        Card cardExistente = cardRepository.findById(idTarjeta)
+                .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta));
+
+        cardExistente.getLabels().clear();
+        cardRepository.save(cardExistente);
+
+        historialMovimientoRepository.deleteAllByTarjeta_IdIn(java.util.Collections.singletonList(idTarjeta));
+        commentRepository.deleteAllByOwningCardId(idTarjeta);
+
+        cardRepository.delete(cardExistente);
+    }
+
+    private void validateCardDates(Instant startsOn, Instant expiresOn) {
+        if (startsOn != null && expiresOn != null && startsOn.isAfter(expiresOn)) {
+            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de finalización.");
         }
-        cardRepository.deleteById(idTarjeta);
     }
 
     /**
@@ -234,3 +264,6 @@ public class CardService {
         return null;
     }
 }
+
+
+

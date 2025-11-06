@@ -1,4 +1,4 @@
-// src/components/layout/PageShell.jsx
+﻿// src/components/layout/PageShell.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../modules/auth/AuthContext.jsx";
@@ -145,7 +145,7 @@ function AvatarArea() {
     </MenuItem>
 
     <MenuItem danger onClick={logout}>
-      Cerrar sesión
+      Cerrar sesi{'\u00f3'}n
     </MenuItem>
   </div>
 )}

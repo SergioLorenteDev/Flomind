@@ -43,6 +43,12 @@ export function updateCard(cardId, payload) {
   });
 }
 
+export function deleteCard(cardId) {
+  return apiFetch(`/tarjetas/${cardId}`, {
+    method: "DELETE",
+  });
+}
+
 export function fetchBoardLabels(boardId) {
   return apiFetch(`/tableros/${boardId}/etiquetas`);
 }

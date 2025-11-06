@@ -35,6 +35,12 @@ public class CardController {
         cardParaGuardar.setTitle(cardDto.getTitle());
         cardParaGuardar.setDescription(cardDto.getDescription());
         cardParaGuardar.setCardOrder(cardDto.getCardOrder());
+        if (cardDto.isStartsOnPresent()) {
+            cardParaGuardar.setStartsOn(cardDto.getStartsOn());
+        }
+        if (cardDto.isExpiresOnPresent()) {
+            cardParaGuardar.setExpiresOn(cardDto.getExpiresOn());
+        }
 
         // 2. Llamada al servicio con la entidad y el ID de la lista padre
         Card cardGuardada = cardService.guardarCard(listId, cardParaGuardar, cardDto.getLabelId());
@@ -105,6 +111,12 @@ public class CardController {
        cardParaActualizar.setTitle(cardDto.getTitle());
        cardParaActualizar.setDescription(cardDto.getDescription());
        cardParaActualizar.setCardOrder(cardDto.getCardOrder());
+       if (cardDto.isStartsOnPresent()) {
+           cardParaActualizar.setStartsOn(cardDto.getStartsOn());
+       }
+       if (cardDto.isExpiresOnPresent()) {
+           cardParaActualizar.setExpiresOn(cardDto.getExpiresOn());
+       }
 
        // Lógica de MOVIMIENTO:
        if (cardDto.getIdLista() != null) {
@@ -115,7 +127,13 @@ public class CardController {
        }
 
        // 2. Llamada al servicio
-       Card cardActualizada = cardService.actualizarCard(cardId, cardParaActualizar, cardDto.getLabelId());
+       Card cardActualizada = cardService.actualizarCard(
+               cardId,
+               cardParaActualizar,
+               cardDto.getLabelId(),
+               cardDto.isStartsOnPresent(),
+               cardDto.isExpiresOnPresent()
+       );
 
        // 3. Mapeo Entidad -> DTO de Respuesta
        CardResponseDTO responseDto = new CardResponseDTO(cardActualizada);

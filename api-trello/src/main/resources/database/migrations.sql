@@ -48,6 +48,19 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+-- Add comienza_en column if missing
+SET @has_comienza_en :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'tarjeta'
+          AND COLUMN_NAME = 'comienza_en');
+SET @sql := IF(@has_comienza_en = 0,
+    'ALTER TABLE tarjeta ADD COLUMN comienza_en DATETIME;',
+    'SELECT ''comienza_en already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- Rename orden -> card_order
 SET @has_orden :=
     (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
