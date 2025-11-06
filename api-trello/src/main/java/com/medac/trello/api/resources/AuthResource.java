@@ -1,21 +1,21 @@
 package com.medac.trello.api.resources;
 
-import com.medac.trello.api.model.User;
 import com.medac.trello.api.model.repository.UserRepository;
 import com.medac.trello.api.request.CodeGrantRequest;
 import com.medac.trello.api.request.LoginRequest;
 import com.medac.trello.api.request.RegisterRequest;
 import com.medac.trello.api.resources.exception.InvalidLoginCredentialsException;
+import com.medac.trello.api.service.AuthService;
 import com.medac.trello.api.service.JwtManager;
 import com.medac.trello.api.view.AuthenticatedUserView;
 import com.medac.trello.api.view.GoogleAuthConfig;
 import com.medac.trello.api.view.UserView;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
@@ -28,17 +28,18 @@ import static org.springframework.http.ResponseEntity.ok;
 @RequestMapping(value = "/auth", produces = APPLICATION_JSON_VALUE)
 public class AuthResource implements TrelloApi {
 
-    private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtManager jwtManager;
+    private final AuthService authService;
 
     @Autowired
-    public AuthResource(PasswordEncoder passwordEncoder, UserRepository userRepository, AuthenticationManager authenticationManager, JwtManager jwtManager) {
-        this.passwordEncoder = passwordEncoder;
+    public AuthResource(UserRepository userRepository, AuthenticationManager authenticationManager,
+                        JwtManager jwtManager, AuthService authService) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtManager = jwtManager;
+        this.authService = authService;
     }
 
     @PostMapping("/login")
@@ -57,13 +58,36 @@ public class AuthResource implements TrelloApi {
 
     @PostMapping("/register")
     public ResponseEntity<UserView> register(@Valid @RequestBody RegisterRequest request) {
-        final var newUser = new User(request.name(),request.userName(), request.email(), passwordEncoder.encode(request.password()));
-        final var registeredUser = userRepository.save(newUser);
-        return ok(new UserView(
-                registeredUser.getId(),
-                registeredUser.getUsername(),
-                registeredUser.getEmail(),
-                registeredUser.getName()));
+        try {
+            final var registeredUser = authService.register(request);
+            return ok(new UserView(
+                    registeredUser.getId(),
+                    registeredUser.getUsername(),
+                    registeredUser.getEmail(),
+                    registeredUser.getName()));
+        } catch (IllegalStateException e) {
+            // Maneja el caso en que el correo ya está en uso
+            return new ResponseEntity(e.getMessage(), HttpStatus.CONFLICT);
+        } catch (Exception e) {
+            // Maneja otros errores (ej. error de base de datos o de correo)
+            return new ResponseEntity("Error al procesar el registro.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Endpoint al que el usuario hace clic en el enlace de correo para confirmar la cuenta.
+     * La URL será algo como: http://localhost:8080/trello/v1/auth/confirm?token=ABC-123-XYZ
+     */
+    @GetMapping("/confirm")
+    public ResponseEntity<String> confirmAccount(@RequestParam("token") String token) {
+        try {
+            String result = authService.confirmToken(token);
+            // El servicio retorna un mensaje de éxito
+            return new ResponseEntity<>(result, HttpStatus.OK);
+        } catch (IllegalStateException e) {
+            // Maneja errores como token no encontrado o token ya expirado
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/google/config")

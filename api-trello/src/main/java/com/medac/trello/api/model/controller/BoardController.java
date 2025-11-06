@@ -7,6 +7,8 @@ import com.medac.trello.api.model.User;
 import com.medac.trello.api.service.BoardService;
 import com.medac.trello.api.resources.TrelloApi;
 import com.medac.trello.api.service.InvitationService;
+import com.medac.trello.api.view.BoardView;
+import com.medac.trello.api.view.UserView;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,8 +19,12 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
+import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.ResponseEntity.status;
 
 // Implementamos la interfaz TrelloApi
 @RestController
@@ -97,16 +103,16 @@ public class BoardController implements TrelloApi {
 
         } catch (AccessDeniedException e) {
             // Si el usuario no tiene permisos sobre el tablero
-            return ResponseEntity.status(403).body(e.getMessage()); // 403 Forbidden
+            return status(403).body(e.getMessage()); // 403 Forbidden
         } catch (ResourceNotFoundException e) {
             // Si el boardId no existe
-            return ResponseEntity.status(404).body(e.getMessage()); // 404 Not Found
+            return status(404).body(e.getMessage()); // 404 Not Found
         } catch (IllegalArgumentException e) {
             // Si el usuario ya es miembro o hay otro error de validación
-            return ResponseEntity.status(400).body(e.getMessage()); // 400 Bad Request
+            return status(400).body(e.getMessage()); // 400 Bad Request
         } catch (Exception e) {
             // Manejo de otros posibles errores (ej: fallo de EmailService)
-            return ResponseEntity.status(500).body("Error interno al procesar la invitación.");
+            return status(500).body("Error interno al procesar la invitación.");
         }
     }
 }

@@ -27,7 +27,7 @@ public class EmailService {
             message.setTo(toEmail);
             message.setSubject("Confirma tu Cuenta en Trello App");
 
-            String confirmationUrl = "http://localhost:8080/api/auth/confirm?token=" + token;
+            String confirmationUrl = "http://localhost:8080/trello/v1/auth/confirm?token=" + token;
             String emailContent = String.format(
                     "¡Hola! Gracias por registrarte.\n\nPor favor, haz clic en el siguiente enlace:\n%s",
                     confirmationUrl

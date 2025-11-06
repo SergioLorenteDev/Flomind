@@ -13,13 +13,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/auth")
+//@RestController
+//@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
 
-    @Autowired
+    //@Autowired
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
@@ -27,7 +27,7 @@ public class AuthController {
     /**
      * Endpoint para registrar un nuevo usuario y enviar el correo de confirmación.
      */
-    @PostMapping("/register")
+//    @PostMapping("/register")
     public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterRequest request) {
         try {
             authService.register(request);
@@ -45,7 +45,7 @@ public class AuthController {
      * Endpoint al que el usuario hace clic en el enlace de correo para confirmar la cuenta.
      * La URL será algo como: http://localhost:8080/api/auth/confirm?token=ABC-123-XYZ
      */
-    @GetMapping("/confirm")
+//    @GetMapping("/confirm")
     public ResponseEntity<String> confirmAccount(@RequestParam("token") String token) {
         try {
             String result = authService.confirmToken(token);

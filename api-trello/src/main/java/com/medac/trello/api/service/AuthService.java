@@ -33,7 +33,7 @@ public class AuthService {
      * @param request Datos del formulario de registro.
      * @throws IllegalStateException Si el email ya existe.
      */
-    public void register(RegisterRequest request) {
+    public User register(RegisterRequest request) {
         System.out.println("🟢 Entrando en AuthService.register()");
         // 1. Verificar si el usuario ya existe por email (¡Debe ir aquí!)
         if (userRepository.findByEmail(request.email()).isPresent()) {
@@ -56,6 +56,7 @@ public class AuthService {
         // 4. Envío del Correo de Confirmación
         emailService.sendConfirmationEmail(registeredUser.getEmail(), registeredUser.getConfirmationToken());
         System.out.println("📤 Correo enviado (o intento de envío ejecutado)");
+        return registeredUser;
     }
 
 

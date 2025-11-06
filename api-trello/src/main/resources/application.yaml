@@ -6,10 +6,11 @@ spring:
   sql:
     init:
       schema-locations: classpath*:database/schema.sql
+      data-locations: classpath*:database/migrations.sql
       mode: always
   datasource:
-    url: jdbc:mysql://localhost:3306/trello_bd
-    username: root
+    url: jdbc:mysql://localhost:3306/trello
+    username:
     password:
     driverClassName: com.mysql.cj.jdbc.Driver
   mail:

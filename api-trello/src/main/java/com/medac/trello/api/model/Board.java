@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,7 +32,7 @@ public class Board {
 
     @ManyToMany
     @JoinTable(
-            name = "tablero_miembros",
+            name = "miembro_tablero",
             joinColumns = @JoinColumn(name = "id_tablero"),
             inverseJoinColumns = @JoinColumn(name = "id_usuario")
     )
@@ -64,7 +65,9 @@ public class Board {
 
 
 
-    public Board() {}
+    public Board() {
+        this.members =  new HashSet<>();
+    }
 
     public Board(String name, Instant createdOn, Long createdBy) {
         this.name = name;

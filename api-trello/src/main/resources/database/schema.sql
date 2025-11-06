@@ -4,7 +4,10 @@ CREATE TABLE IF NOT EXISTS usuario (
     nombre_usuario VARCHAR(100) NOT NULL,
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL
+    password VARCHAR(255) NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT false,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    confirmation_token VARCHAR(255)
 );
 
 -- TABLA DE LOS TABLEROS

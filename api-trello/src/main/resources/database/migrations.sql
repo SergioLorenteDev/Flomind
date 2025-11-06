@@ -86,3 +86,42 @@ SET @sql := IF(@has_background = 0,
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Add is_verified column to usuario if missing
+SET @has_is_verified :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'usuario'
+          AND COLUMN_NAME = 'is_verified');
+SET @sql := IF(@has_background = 0,
+    'ALTER TABLE usuario ADD COLUMN is_verified BOOLEAN NOT NULL DEFAULT false;',
+    'SELECT ''is_verified already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add is_verified column to usuario if missing
+SET @has_fecha_creacion :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'usuario'
+          AND COLUMN_NAME = 'fecha_creacion');
+SET @sql := IF(@has_background = 0,
+    'ALTER TABLE usuario ADD COLUMN fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;',
+    'SELECT ''fecha_creacion already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add confirmation_token column to usuario if missing
+SET @has_confirmation_token :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'usuario'
+          AND COLUMN_NAME = 'confirmation_token');
+SET @sql := IF(@has_background = 0,
+    'ALTER TABLE usuario ADD COLUMN confirmation_token VARCHAR(255);',
+    'SELECT ''confirmation_token already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
