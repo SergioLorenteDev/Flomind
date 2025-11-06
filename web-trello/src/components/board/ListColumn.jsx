@@ -54,7 +54,7 @@ export default function ListColumn({
     data: { type: "list", listId },
   });
 
-  const { setNodeRef: setDroppableRef } = useDroppable({
+  const { isOver, setNodeRef: setDroppableRef } = useDroppable({
     id: droppableId,
     data: { type: "list-droppable", listId },
   });
@@ -82,66 +82,77 @@ export default function ListColumn({
   };
 
   return (
-   <div
-  ref={setNodeRef}
-  data-draggable="list"
-  style={style}
-  className={[
-    "flex w-72 flex-shrink-0 flex-col rounded-2xl border transition-all duration-300",
-    "bg-[var(--color-surface)] text-[var(--color-neutral-950)] border-[rgba(0,0,0,0.08)] shadow-[0_4px_14px_-4px_rgba(0,0,0,0.15)]",
-    "dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-950)] dark:border-[rgba(255,255,255,0.1)] dark:shadow-[0_4px_18px_-6px_rgba(255,255,255,0.08)]",
-  ].join(" ")}
->
-
+    <div
+      ref={setNodeRef}
+      data-draggable="list"
+      style={style}
+      className={[
+        "flex w-72 flex-shrink-0 flex-col rounded-2xl transition-all duration-300 overflow-visible",
+        "bg-[var(--color-surface-hover)] text-[var(--color-neutral-950)]",
+        "dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-950)]",
+        "shadow-[0_6px_18px_-6px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_18px_-6px_rgba(255,255,255,0.05)]",
+      ].join(" ")}
+    >
+      {/* HEADER */}
       <header
-  className="mb-3 flex cursor-grab items-start justify-between px-4 pt-3 active:cursor-grabbing"
-  {...attributes}
-  {...listeners}
->
-  <h4
-    className="text-sm font-semibold tracking-wide transition-colors"
-    style={{
-      color: "var(--color-brand-700)",
-    }}
-  >
-    {list.nombre}
-  </h4>
-</header>
+        className="mb-3 flex cursor-grab items-start justify-between px-4 pt-3 active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <h4
+          className="text-sm font-semibold tracking-wide transition-colors"
+          style={{
+            color: "var(--color-brand-700)",
+          }}
+        >
+          {list.nombre}
+        </h4>
+      </header>
 
       <SortableContext
         id={droppableId}
         items={tarjetas.map((card) => `${CARD_PREFIX}${card.id}`)}
         strategy={verticalListSortingStrategy}
       >
-        <div
-          ref={setDroppableRef}
-          className="space-y-3 px-4 pb-1"
-          style={{ minHeight: tarjetas.length === 0 ? "4rem" : undefined }}
-        >
-          {tarjetas.length === 0 ? (
-  <div
-    className="flex h-16 items-center justify-center rounded-xl border border-dashed text-sm font-medium transition-colors"
-    style={{
-      background: "var(--color-surface)",
-      color: "var(--color-neutral-950)",
-      borderColor: "rgba(0,0,0,0.2)",
-    }}
-  >
-    No hay tarjetas todavía
-  </div>
-) : (
-
-            tarjetas.map((card) => (
-              <CardItem
-                key={card.id}
-                card={card}
-                listId={list.idLista}
-                isComplete={completedSet.has(card.id)}
-                onToggleComplete={() => onToggleCardComplete?.(card.id)}
-                onMenuAction={(action) => onCardMenuAction?.(action, card)}
-              />
-            ))
-          )}
+        <div ref={setDroppableRef} className="relative flex flex-col flex-1">
+          <div
+            className={`
+              flex flex-col justify-center space-y-3 px-4 pb-1 border rounded-xl shadow-sm transition-all duration-300
+              ${isOver
+                ? "bg-transparent border-transparent"
+                : "bg-[var(--color-surface)] border-[rgba(0,0,0,0.08)]"}
+            `}
+            style={{
+              color: "var(--color-neutral-950)",
+              minHeight: tarjetas.length === 0 ? "6rem" : "100%",
+            }}
+          >
+            {tarjetas.length === 0 ? (
+              <div
+                className="flex h-16 items-center justify-center rounded-xl border border-dashed text-sm font-medium transition-all duration-300"
+                style={{
+                  backgroundColor: isOver
+                    ? "transparent"
+                    : "var(--color-surface-hover)",
+                  color: "var(--color-neutral-950)",
+                  borderColor: "rgba(0, 0, 0, 0.2)",
+                }}
+              >
+                No hay tarjetas todavía
+              </div>
+            ) : (
+              tarjetas.map((card) => (
+                <CardItem
+                  key={card.id}
+                  card={card}
+                  listId={list.idLista}
+                  isComplete={completedSet.has(card.id)}
+                  onToggleComplete={() => onToggleCardComplete?.(card.id)}
+                  onMenuAction={(action) => onCardMenuAction?.(action, card)}
+                />
+              ))
+            )}
+          </div>
         </div>
       </SortableContext>
 

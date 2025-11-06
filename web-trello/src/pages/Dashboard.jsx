@@ -272,40 +272,80 @@ export default function Dashboard() {
         showTriggerButton={false}
       />
 
-      {boardPendingDeletion ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-neutral-900">
-              Eliminar tablero
-            </h3>
-            <p className="mt-2 text-sm text-neutral-600">
-              Estas seguro de que quieres eliminar{" "}
-              <span className="font-semibold text-[var(--color-brand-600)]">
-                {resolveBoardName(boardPendingDeletion)}
-              </span>
-              ? Esta acción no se puede deshacer.
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCancelDeleteBoard}
-                className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
-                disabled={isDeletingBoard}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteBoard}
-                className="rounded-full bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white shadow hover:bg-[var(--color-brand-700)] disabled:opacity-60"
-                disabled={isDeletingBoard}
-              >
-                {isDeletingBoard ? "Eliminando..." : "Eliminar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+     {boardPendingDeletion ? (
+  <div
+    className="
+      fixed inset-0 z-50 flex items-center justify-center
+      bg-black/40 backdrop-blur-md px-4
+    "
+  >
+    <div
+      className="
+        w-full max-w-md rounded-2xl border shadow-xl transition-colors duration-300
+        bg-[var(--color-surface)] text-[var(--color-neutral-950)]
+        dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-50)]
+        border-[var(--color-neutral-200)] dark:border-[var(--color-neutral-700)]
+        p-6 backdrop-blur-md
+      "
+    >
+      <h3
+        className="
+          text-lg font-bold tracking-tight
+          text-[var(--color-brand-700)] dark:text-[var(--color-brand-300)]
+          transition-colors duration-300
+        "
+      >
+        Eliminar tablero
+      </h3>
+
+      <p
+        className="
+          mt-2 text-sm font-medium leading-relaxed
+          text-[var(--color-neutral-700)] dark:text-[var(--color-neutral-300)]
+          transition-colors duration-300
+        "
+      >
+        ¿Estás seguro de que quieres eliminar{" "}
+        <span className="font-semibold text-[var(--color-brand-600)] dark:text-[var(--color-brand-400)]">
+          {resolveBoardName(boardPendingDeletion)}
+        </span>
+        ? Esta acción no se puede deshacer.
+      </p>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={handleCancelDeleteBoard}
+          className="
+            rounded-full px-4 py-2 text-sm font-medium
+            border border-[var(--color-neutral-300)] bg-[var(--color-surface)]
+            text-[var(--color-neutral-800)] hover:bg-[var(--color-surface-hover)]
+            dark:border-[var(--color-neutral-600)] dark:bg-[var(--color-surface-hover)]
+            dark:text-[var(--color-neutral-200)] dark:hover:bg-[var(--color-surface)]
+            transition-colors duration-300
+          "
+          disabled={isDeletingBoard}
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          onClick={handleConfirmDeleteBoard}
+          className="
+            rounded-full px-4 py-2 text-sm font-semibold shadow
+            bg-[var(--color-brand-600)] text-white hover:bg-[var(--color-brand-700)]
+            dark:bg-[var(--color-brand-500)] dark:hover:bg-[var(--color-brand-400)]
+            disabled:opacity-60 transition-colors duration-300
+          "
+          disabled={isDeletingBoard}
+        >
+          {isDeletingBoard ? "Eliminando..." : "Eliminar"}
+        </button>
+      </div>
+    </div>
+  </div>
+) : null}
     </>
   );
 }

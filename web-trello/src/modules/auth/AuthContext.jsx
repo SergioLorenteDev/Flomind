@@ -31,9 +31,28 @@ export function AuthProvider({ children }) {
     await Promise.resolve(authResetPassword(email, newPassword));
   }, []);
 
+  const loginWithGoogle = useCallback(async (googleUserData) => {
+    try {
+      console.log("Usuario de Google:", googleUserData);
+      setUser(googleUserData);
+      return googleUserData;
+
+    } catch (error) {
+      console.error("Error en loginWithGoogle:", error);
+      throw error;
+    }
+  }, []);
+
   const value = useMemo(
-    () => ({ user, login, register, signOut, resetPassword }),
-    [user, login, register, signOut, resetPassword],
+    () => ({
+      user,
+      login,
+      loginWithGoogle,
+      register,
+      signOut,
+      resetPassword,
+    }),
+    [user, login, loginWithGoogle, register, signOut, resetPassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,15 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button.jsx";
 
-export default function Ajustes() {
+export default function Ajustes({ theme, setTheme }) {
   const navigate = useNavigate();
-
   const [darkMode, setDarkMode] = useState(() => {
-  const raw = localStorage.getItem("app:settings");
-  if (raw) {
-    const s = JSON.parse(raw);
-    if (typeof s.darkMode === "boolean") return s.darkMode;
-  }
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) return savedTheme === "dark";
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 });
 
@@ -29,7 +25,6 @@ export default function Ajustes() {
     } catch { /* empty */ }
   }, []);
 
-
   useEffect(() => {
     const html = document.documentElement;
     if (darkMode) html.classList.add("dark");
@@ -38,6 +33,14 @@ export default function Ajustes() {
     const settings = { darkMode, language, notifications };
     localStorage.setItem("app:settings", JSON.stringify(settings));
   }, [darkMode, language, notifications]);
+  useEffect(() => {
+  // Sincroniza el switch con el tema global de App.jsx
+  const isDark = theme === "dark";
+  if (isDark !== darkMode) {
+    setDarkMode(isDark);
+  }
+}, [theme]);
+
 
   return (
     <section
@@ -71,16 +74,17 @@ export default function Ajustes() {
             type="checkbox"
             checked={darkMode}
             onChange={(e) => {
-              const enabled = e.target.checked;
-              setDarkMode(enabled);
-              document.documentElement.classList.toggle("dark", enabled);
-              localStorage.setItem("theme", enabled ? "dark" : "light");
-            }}
+  const enabled = e.target.checked;
+  setDarkMode(enabled);
+  setTheme(enabled ? "dark" : "light"); // 🔄 sincroniza con el global
+  document.documentElement.classList.toggle("dark", enabled);
+  localStorage.setItem("theme", enabled ? "dark" : "light");
+}}
+
             className="w-5 h-5 accent-[var(--color-brand-600)] cursor-pointer"
     />
   </label>
 </div>
-
 
           {/* Idioma */}
           <div className="flex items-center justify-between py-3 border-b border-neutral-200/60">

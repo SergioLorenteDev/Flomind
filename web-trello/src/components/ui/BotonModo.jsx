@@ -1,32 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Sun, Moon } from "lucide-react";
 
-export default function BotonModo() {
-  const [isDark, setIsDark] = useState(
-    document.documentElement.classList.contains("dark")
-  );
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") setIsDark(true);
-  }, []);
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDark]);
+export default function BotonModo({ theme, toggleTheme }) {
+  const isDark = theme === "dark";
 
   return (
     <button
-      onClick={() => setIsDark((v) => !v)}
+      onClick={toggleTheme}
       className="
         fixed bottom-5 right-5
-        z-[999999]  /* siempre visible */
+        z-[999999]
         w-12 h-12
         flex items-center justify-center
         rounded-full shadow-lg
@@ -36,7 +19,7 @@ export default function BotonModo() {
         hover:scale-110 active:scale-95
         transition-all duration-300
       "
-      title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
     >
       {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>

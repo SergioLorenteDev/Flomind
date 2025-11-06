@@ -26,20 +26,12 @@ export default function App() {
 
   useEffect(() => {
   const root = document.documentElement;
-  const body = document.body;
 
-  if (theme === "dark") {
-    root.classList.add("dark");
-    body.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
-    body.classList.remove("dark");
-  }
+  root.classList.toggle("dark", theme === "dark");
 
   localStorage.setItem("theme", theme);
   console.log("Tema actual:", theme);
 }, [theme]);
-
 
   const toggleTheme = () => {
     const root = document.documentElement;
@@ -54,7 +46,7 @@ export default function App() {
 
   return (
     <div>
-      <BotonModo />
+      <BotonModo theme={theme} toggleTheme={toggleTheme} />
 
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -100,13 +92,14 @@ export default function App() {
         />
 
         <Route
-          path="/ajustes"
-          element={
-            <ProtectedRoute>
-              <Ajustes />
-            </ProtectedRoute>
-          }
-        />
+  path="/ajustes"
+  element={
+    <ProtectedRoute>
+      <Ajustes theme={theme} setTheme={setTheme} />
+    </ProtectedRoute>
+  }
+/>
+
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

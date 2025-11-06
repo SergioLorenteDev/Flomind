@@ -1,10 +1,8 @@
-import { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CheckCircle2, Circle, MoreHorizontal } from "lucide-react";
-import CardMenu from "./CardMenu.jsx";
-
-const CARD_PREFIX = "card-";
+import { MoreHorizontal, CheckCircle, Circle } from "lucide-react";
 
 export default function CardItem({
   card,
@@ -13,15 +11,6 @@ export default function CardItem({
   onToggleComplete,
   onMenuAction,
 }) {
-  const cardId = String(card.id);
-  const cardSortableId = `${CARD_PREFIX}${cardId}`;
-  const listKey = String(listId);
-  const labelColor = card?.label?.color ?? null;
-
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [anchorRect, setAnchorRect] = useState(null);
-  const itemRef = useRef(null);
-
   const {
     attributes,
     listeners,
@@ -30,109 +19,151 @@ export default function CardItem({
     transition,
     isDragging,
   } = useSortable({
-    id: cardSortableId,
-    data: { type: "card", listId: listKey, cardId },
+    id: `card-${card.id}`,
+    data: { type: "card", cardId: card.id, listId },
   });
 
-  const setRefs = useCallback(
-    (node) => {
-      setNodeRef(node);
-      itemRef.current = node;
+  const itemRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [itemHeight, setItemHeight] = useState(0);
+
+useEffect(() => {
+  if (itemRef.current) {
+    setItemHeight(itemRef.current.offsetHeight / 2);
+  }
+}, []);
+
+  const toggleMenu = useCallback(
+    (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setMenuOpen((v) => !v);
     },
-    [setNodeRef]
+    [setMenuOpen]
   );
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 60 : undefined,
-    opacity: isDragging ? 0 : 1,
+  const handleAction = (action) => {
+    setMenuOpen(false);
+    if (onMenuAction) onMenuAction(action, card);
   };
 
-  const handleMenuToggle = (event) => {
-    event.stopPropagation();
-    event.preventDefault();
-    if (!menuOpen && itemRef.current) {
-      const rect = itemRef.current.getBoundingClientRect();
-      setAnchorRect({
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height,
-      });
+ const adjustedTransform = transform
+  ? {
+      ...transform,
+      y: transform.y + (itemRef.current?.offsetHeight ?? 0) / 2,
     }
-    setMenuOpen((value) => !value);
+  : null;
+
+const style = {
+  transform: adjustedTransform
+    ? `translate3d(${adjustedTransform.x}px, ${adjustedTransform.y}px, 0)`
+    : undefined,
+  transition,
+  zIndex: isDragging ? 9999 : "auto",
+  opacity: isDragging ? 0.9 : 1,
+  pointerEvents: isDragging ? "none" : "auto",
+  position: isDragging ? "relative" : "static",
+  willChange: "transform, opacity",
+};
+
+  const renderMenu = () => {
+    if (!menuOpen || !itemRef.current) return null;
+
+    const rect = itemRef.current.getBoundingClientRect();
+    const top = rect.bottom + window.scrollY + 6;
+    const left = rect.right + window.scrollX - 150;
+
+    return ReactDOM.createPortal(
+      <div
+        className="fixed z-[9999] w-36 rounded-lg border border-neutral-200 bg-white py-1 shadow-xl"
+        style={{ top, left }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => handleAction("edit-labels")}
+          className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
+        >
+          Editar etiquetas
+        </button>
+        <button
+          onClick={() => handleAction("open-checklist")}
+          className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
+        >
+          Abrir checklist
+        </button>
+      </div>,
+      document.body
+    );
   };
 
   return (
-    <div
-      ref={setRefs}
-      data-draggable="card"
-      style={style}
-      className={`group relative overflow-hidden rounded-2xl border border-transparent bg-[#22222c] px-3 py-3 shadow-md transition hover:border-[#4b3acd]/40 hover:shadow-lg ${
-        isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""
-      }`}
-      {...attributes}
-      {...listeners}
-    >
-      {labelColor ? (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-1"
-          style={{ backgroundColor: labelColor }}
-        />
-      ) : null}
-      <div className="flex items-center gap-3 text-white">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleComplete();
-          }}
-          aria-label={
-            isComplete ? "Marcar como pendiente" : "Marcar como completada"
-          }
-          className="rounded-full text-[#9b8cff] transition hover:text-[#cdbfff]"
-        >
-          {isComplete ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          ) : (
-            <Circle className="h-4 w-4" />
-          )}
-        </button>
+    <>
+      <div
+        ref={(el) => {
+          setNodeRef(el);
+          itemRef.current = el;
+        }}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`
+          group relative overflow-hidden rounded-xl px-4 py-3 mb-3 cursor-pointer
+          shadow-sm transition-all duration-200
+          bg-[var(--color-surface-hover)]/80 backdrop-blur-sm
+          text-[var(--color-neutral-950)]
+          hover:bg-[var(--color-surface-hover)]/100 hover:shadow-md
+          ${isDragging ? "opacity-40" : ""}
+        `}
+        data-draggable="card"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onToggleComplete) onToggleComplete(card.id);
+            }}
+            className="text-[var(--color-brand-600)] hover:text-[var(--color-brand-700)] transition"
+            aria-label="Marcar como completada"
+          >
+            {isComplete ? (
+              <CheckCircle className="h-5 w-5" />
+            ) : (
+              <Circle className="h-5 w-5" />
+            )}
+          </button>
 
-        <div className="flex-1 pr-6 text-sm font-medium text-white">
-          {card.title}
-          {card.description && (
-            <p className="mt-1 text-xs font-normal text-neutral-300 line-clamp-2">
-              {card.description}
-            </p>
-          )}
+          <div className="flex-1 overflow-hidden">
+            <h3
+              className={`text-sm font-medium leading-tight truncate ${
+                isComplete ? "line-through text-neutral-400" : ""
+              }`}
+            >
+              {card.title || card.nombre || "Tarjeta sin título"}
+            </h3>
+
+            {card.label ? (
+              <div
+                className="mt-1 inline-block rounded-full px-2 py-[2px] text-[10px] font-semibold text-white shadow-sm"
+                style={{ backgroundColor: card.label.color }}
+              >
+                {card.label.text || "Etiqueta"}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={toggleMenu}
+              className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-800"
+              aria-label="Abrir menú de tarjeta"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-
-        <button
-          type="button"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={handleMenuToggle}
-          className="rounded-full border border-transparent bg-[#2d2d38] p-1.5 text-neutral-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100 hover:border-[#4b3acd]/40 hover:bg-[#383846]"
-          aria-label="Abrir menu de tarjeta"
-        >
-          <MoreHorizontal className="h-3.5 w-3.5" />
-        </button>
       </div>
 
-      {menuOpen && anchorRect && (
-        <CardMenu
-          anchorRect={anchorRect}
-          onClose={() => setMenuOpen(false)}
-          onAction={(action) => {
-            onMenuAction?.(action, card);
-            setMenuOpen(false);
-          }}
-        />
-      )}
-    </div>
+      {renderMenu()}
+    </>
   );
 }

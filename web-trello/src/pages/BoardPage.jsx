@@ -19,7 +19,7 @@ import {
   BOARD_BACKGROUND_OPTIONS, boardBackgroundToStyle, resolveBoardBackground
 } from "../constants/boardBackgrounds.js";
 import BotonModo from "../components/ui/BotonModo.jsx";
-
+import CardItem from "../components/board/CardItem.jsx";
 
 
 const SCROLLBAR_STYLE = `
@@ -1050,21 +1050,19 @@ export default function BoardPage() {
                 </div>
               </SortableContext>
               {createPortal(
- <DragOverlay>
-  <div
-    className={
-      document.documentElement.classList.contains("dark")
-        ? "dark card-drag-overlay"
-        : "card-drag-overlay"
-    }
-  >
+  <DragOverlay dropAnimation={null}>
     {activeCard ? (
-      <CardDragPreview card={activeCard} />
+      <CardItem
+        card={activeCard}
+        listId={activeCard.listId}
+        isComplete={activeCard.isComplete}
+        onToggleComplete={() => {}}
+        onMenuAction={() => {}}
+      />
     ) : activeList ? (
-      <ListDragPreview list={activeList} />
+      <ListColumn list={activeList} />
     ) : null}
-  </div>
-</DragOverlay>,
+  </DragOverlay>,
   document.body
 )}
 
@@ -1072,25 +1070,38 @@ export default function BoardPage() {
           </main>
 
           {isChecklistOpen && selectedCard ? (
-            <div className="fixed right-0 top-0 z-[999] h-full w-80 bg-white border-l border-neutral-200 shadow-xl p-4 overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-neutral-800">
-                  Checklist –{" "}
-                  {selectedCard.title ||
-                    selectedCard.nombre ||
-                    `Tarjeta ${selectedCard.id}`}
-                </h2>
-                <button
-                  onClick={() => setIsChecklistOpen(false)}
-                  className="text-neutral-400 hover:text-neutral-700"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+  <div
+    className={`
+      fixed right-0 top-0 z-[9999] h-full w-80 p-4 overflow-y-auto
+      border-l border-[var(--color-border)] shadow-xl transition-colors duration-300
+      bg-[var(--color-surface)] text-[var(--color-neutral-950)]
+      dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-neutral-50)]
+    `}
+  >
+    <div className="flex items-center justify-between mb-4">
+      <h2
+        className={`
+          text-base font-semibold truncate leading-tight transition-colors duration-300
+          text-[var(--color-neutral-900)] dark:text-white
+        `}
+      >
+        {selectedCard.title || selectedCard.nombre || `Tarjeta ${selectedCard.id}`}
+      </h2>
 
-              <InlineChecklist cardId={selectedCard.id} />
-            </div>
-          ) : null}
+      <button
+        onClick={() => setIsChecklistOpen(false)}
+        className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+        aria-label="Cerrar checklist"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+
+    <div className="divide-y divide-[var(--color-border)] dark:divide-white/10">
+      <InlineChecklist cardId={selectedCard.id} />
+    </div>
+  </div>
+) : null}
 
           <InviteModal
             open={isInviteOpen}
