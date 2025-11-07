@@ -91,9 +91,12 @@ export default function CardItem({
       ref={setRefs}
       data-draggable="card"
       style={style}
-      className={`group relative overflow-hidden rounded-2xl border border-transparent bg-[#22222c] px-3 py-3 shadow-md transition hover:border-[#4b3acd]/40 hover:shadow-lg ${
-        isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""
-      }`}
+      className={`group relative overflow-hidden rounded-2xl border border-transparent
+        bg-white dark:bg-[#22222c]
+        text-gray-800 dark:text-gray-100
+        px-3 py-3 shadow-md transition
+        hover:border-[#4b3acd]/40 hover:shadow-lg
+        ${isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""}`}
       {...attributes}
       {...listeners}
     >
@@ -104,7 +107,8 @@ export default function CardItem({
           style={{ backgroundColor: labelColor }}
         />
       ) : null}
-      <div className="flex items-center gap-3 text-white">
+
+      <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={(event) => {
@@ -114,7 +118,7 @@ export default function CardItem({
           aria-label={
             isComplete ? "Marcar como pendiente" : "Marcar como completada"
           }
-          className="rounded-full text-[#9b8cff] transition hover:text-[#cdbfff]"
+          className="rounded-full text-[#7f6dff] dark:text-[#cdbfff] transition hover:text-[#a493ff]"
         >
           {isComplete ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -123,10 +127,10 @@ export default function CardItem({
           )}
         </button>
 
-        <div className="flex-1 pr-6 text-sm font-medium text-white">
+        <div className="flex-1 pr-6 text-sm font-medium">
           {card.title}
           {card.description && (
-            <p className="mt-1 text-xs font-normal text-neutral-300 line-clamp-2">
+            <p className="mt-1 text-xs font-normal text-gray-600 dark:text-neutral-300 line-clamp-2">
               {card.description}
             </p>
           )}
@@ -136,21 +140,26 @@ export default function CardItem({
           type="button"
           onPointerDown={(event) => event.stopPropagation()}
           onClick={handleMenuToggle}
-          className="rounded-full border border-transparent bg-[#2d2d38] p-1.5 text-neutral-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100 hover:border-[#4b3acd]/40 hover:bg-[#383846]"
-          aria-label="Abrir menu de tarjeta"
+          className="rounded-full border border-transparent bg-gray-100 dark:bg-[#2d2d38]
+                     p-1.5 text-gray-600 dark:text-neutral-300 opacity-0
+                     transition group-hover:translate-x-1 group-hover:opacity-100
+                     hover:border-[#4b3acd]/40 hover:bg-gray-200 dark:hover:bg-[#383846]"
+          aria-label="Abrir menú de tarjeta"
         >
           <MoreHorizontal className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {hasDateBadge ? (
+      {hasDateBadge && (
         <div className="mt-3 flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-300/90 px-3 py-1 text-xs font-semibold text-neutral-900 shadow">
+          <div className="inline-flex items-center gap-1.5 rounded-full 
+                          bg-amber-300/90 px-3 py-1 text-xs font-semibold 
+                          text-neutral-900 dark:text-neutral-800 shadow">
             <Clock3 className="h-3.5 w-3.5" />
             <span>{dateLabel}</span>
           </div>
         </div>
-      ) : null}
+      )}
 
       {menuOpen && anchorRect && (
         <CardMenu

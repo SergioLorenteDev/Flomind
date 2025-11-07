@@ -313,7 +313,7 @@ body:not(.dark) .list-drag-preview {
   box-shadow: 0 0 0 2px rgba(177, 151, 249, 0.35);
 }
 
-/* Drag */
+/* Draggeables */
 .card-drag-overlay {
   background-color: var(--color-surface);
   color: var(--color-neutral-950);
@@ -326,4 +326,24 @@ body:not(.dark) .list-drag-preview {
   background-color: var(--color-surface-hover);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 10px 30px rgba(177, 151, 249, 0.25);
+}
+/* === BOTÓN GUARDAR === */
+button[type="submit"],
+.btn-primary {
+  color: #fff !important; /* fuerza el texto blanco */
+  background-color: var(--btn-primary-bg);
+  border: none;
+  font-weight: 600;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+button[type="submit"]:hover,
+.btn-primary:hover {
+  background-color: var(--btn-primary-bg-hover);
+}
+
+.dark button[type="submit"],
+.dark .btn-primary {
+  color: var(--btn-primary-text); /* usa blanco también en oscuro */
+  background-color: var(--btn-primary-bg);
 }
