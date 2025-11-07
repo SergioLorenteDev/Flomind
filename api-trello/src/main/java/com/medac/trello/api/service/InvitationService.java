@@ -12,10 +12,18 @@ import org.springframework.beans.factory.annotation.Value; // ⬅️ Necesario p
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static com.medac.trello.api.model.Invitation.Estado.ACEPTADA;
+import static com.medac.trello.api.model.Invitation.Estado.PENDIENTE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Service
 public class InvitationService {
@@ -68,21 +76,18 @@ public class InvitationService {
 
         // 3. CONSTRUIR EL ENLACE COMPLETO
         // Usa 'baseUrl' (inyectado) y 'token'
-        String acceptanceLink = baseUrl + "?token=" + token;
+        String path = String.format("invitations/accept?email=%s&token=%s", URLEncoder.encode(inviteeEmail, UTF_8), token);
+        String acceptanceLink = baseUrl + path;
+
 
         // 4. PREPARAR Y ENVIAR EL EMAIL
         String subject = "Has sido invitado a un tablero de Flomind!";
 
         // El cuerpo del email se construye en el EmailService, solo necesitas pasar los parámetros:
         emailService.sendBoardInvitation(inviteeEmail, board.getName(), acceptanceLink);
-
-        emailService.sendBoardInvitation(inviteeEmail, board.getName(), acceptanceLink);
-
-
         String emailBody = String.format(
                 "Hola,\n\n" +
-                        "Has sido invitado al tablero '%s'. Para aceptar, haz clic en el siguiente enlace:\n\n" +
-                        "%s\n\n" +
+                        "Has sido invitado al tablero '%s'. Para aceptar, haz clic en el siguiente <a href=\"%s\">enlace</a>\n\n" +
                         "Gracias.",
                 board.getName(), acceptanceLink
         );
@@ -96,7 +101,7 @@ public class InvitationService {
     public void acceptInvitation(String token, String userEmail) {
 
         // 1. Buscar la invitación por token
-        Invitation invitation = invitationRepository.findByToken(token)
+        Invitation invitation = invitationRepository.findByTokenAndStatus(token, PENDIENTE)
                 .orElseThrow(() -> new RuntimeException("No se encontró la invitación o es inválida"));
 
         // 2. Validar que la invitación es para el usuario actual
@@ -128,11 +133,12 @@ public class InvitationService {
 
 
         // 5. Añadir el usuario al tablero
-        board.getMembers().add(invitingUser);
+        board.addMember(invitingUser);
         boardRepository.save(board);
 
-        // 6. Eliminar la invitación después de la aceptación
-        invitationRepository.delete(invitation);
+        // 6. Actualizar la invitación a ACEPTADA
+        invitation.setStatus(ACEPTADA);
+        invitationRepository.save(invitation);
     }
 
     //------------------------------------CONSULTAR INVITACIONES----------------------

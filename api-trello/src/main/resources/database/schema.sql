@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS tokens_refresco (
 );
 
 --------------TABLA DE INVITACIONES ------------------
-CREATE TABLE invitacion (
+CREATE TABLE IF NOT EXISTS invitacion (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     token VARCHAR(255) NOT NULL UNIQUE,
     invitee_email VARCHAR(255) NOT NULL,
@@ -127,6 +127,7 @@ CREATE TABLE invitacion (
     id_usuario_invitador BIGINT NOT NULL,
     expires_at DATETIME,
     fecha_creacion DATETIME NOT NULL,
+    estado ENUM('PENDIENTE', 'ACEPTADA', 'RECHAZADA'),
 
     -- Restricción para asegurar que el tablero exista
     FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero),

@@ -22,15 +22,14 @@ public class InvitationController {
 
    //--------------------------ENDPOINT PARA ACEPTAR LA INVITACION----------------
 
-    @PostMapping("/accept")
-    public ResponseEntity<?> acceptInvitation(@RequestParam String token, Authentication authentication) {
+    @GetMapping("/accept")
+    public ResponseEntity<?> acceptInvitation(@RequestParam String token, @RequestParam String email) {
 
-        // 1. Obtener el email del usuario autenticado (se asume que el Principal es el email)
-        String userEmail = authentication.getName();
+        // 1. Obtener el email del enlace (no se puede asumir que el usuario esa logeado)
 
         try {
             // 2. Llamar al servicio para procesar la aceptación
-            invitationService.acceptInvitation(token, userEmail);
+            invitationService.acceptInvitation(token, email);
 
             return ResponseEntity.ok("Invitation successfully accepted. User added to board.");
 

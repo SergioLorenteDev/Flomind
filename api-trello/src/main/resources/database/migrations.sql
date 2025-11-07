@@ -106,7 +106,7 @@ SET @has_is_verified :=
         WHERE TABLE_SCHEMA = @schemaName
           AND TABLE_NAME = 'usuario'
           AND COLUMN_NAME = 'is_verified');
-SET @sql := IF(@has_background = 0,
+SET @sql := IF(@has_is_verified = 0,
     'ALTER TABLE usuario ADD COLUMN is_verified BOOLEAN NOT NULL DEFAULT false;',
     'SELECT ''is_verified already exists'';');
 PREPARE stmt FROM @sql;
@@ -119,7 +119,7 @@ SET @has_fecha_creacion :=
         WHERE TABLE_SCHEMA = @schemaName
           AND TABLE_NAME = 'usuario'
           AND COLUMN_NAME = 'fecha_creacion');
-SET @sql := IF(@has_background = 0,
+SET @sql := IF(@has_fecha_creacion = 0,
     'ALTER TABLE usuario ADD COLUMN fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;',
     'SELECT ''fecha_creacion already exists'';');
 PREPARE stmt FROM @sql;
@@ -132,7 +132,7 @@ SET @has_confirmation_token :=
         WHERE TABLE_SCHEMA = @schemaName
           AND TABLE_NAME = 'usuario'
           AND COLUMN_NAME = 'confirmation_token');
-SET @sql := IF(@has_background = 0,
+SET @sql := IF(@has_confirmation_token = 0,
     'ALTER TABLE usuario ADD COLUMN confirmation_token VARCHAR(255);',
     'SELECT ''confirmation_token already exists'';');
 PREPARE stmt FROM @sql;
@@ -171,6 +171,32 @@ SET @sql := IF(@has_tarjeta_etiqueta = 0,
         CONSTRAINT fk_tarjeta_etiqueta_etiqueta FOREIGN KEY (id_etiqueta) REFERENCES etiqueta(id_etiqueta) ON DELETE CASCADE
      );',
     'SELECT ''tarjeta_etiqueta already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add comienza_en column to tarjeta if missing
+SET @has_comienza_en :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'tarjeta'
+          AND COLUMN_NAME = 'comienza_en');
+SET @sql := IF(@has_comienza_en = 0,
+    'ALTER TABLE tarjeta ADD COLUMN comienza_en TIMESTAMP;',
+    'SELECT ''comienza_en already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add comienza_en column to invitacion if missing
+SET @has_estado :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'invitacion'
+          AND COLUMN_NAME = 'estado');
+SET @sql := IF(@has_estado = 0,
+    'ALTER TABLE invitacion ADD COLUMN estado ENUM(\'PENDIENTE\', \'ACEPTADA\', \'RECHAZADA\');',
+    'SELECT ''estado already exists'';');
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

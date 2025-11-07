@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
+import static jakarta.persistence.EnumType.STRING;
+
 @Entity
 @Table(name = "invitacion")
 public class Invitation {
@@ -33,8 +35,9 @@ public class Invitation {
     private Instant creationDate;
 
     // 6. Estado (pendiente, aceptada, rechazada)
+    @Enumerated(value = STRING)
     @Column(name = "estado")
-    private String status;
+    private Estado status;
 
     // 7. Relación con el Tablero (La FK se mapea en el JoinColumn)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,7 +48,7 @@ public class Invitation {
 
     public Invitation() {
         this.creationDate = Instant.now();
-        this.status = "PENDIENTE";
+        this.status = Estado.PENDIENTE;
     }
 
     // Constructor para crear la entidad desde el servicio
@@ -70,8 +73,12 @@ public class Invitation {
     public Long getInviterId() { return inviterId; }
     public void setInviterId(Long inviterId) { this.inviterId = inviterId; }
     public Instant getCreationDate() { return creationDate; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public Estado getStatus() { return status; }
+    public void setStatus(Estado status) { this.status = status; }
     public Board getBoard() { return board; }
     public void setBoard(Board board) { this.board = board; }
+
+    public enum Estado {
+        PENDIENTE, ACEPTADA, RECHAZADA
+    }
 }

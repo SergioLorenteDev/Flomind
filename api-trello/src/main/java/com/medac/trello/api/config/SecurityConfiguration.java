@@ -51,6 +51,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorise -> authorise
                         .requestMatchers(OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(GET, "/invitations/accept").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .authenticationProvider(authenticationProvider)

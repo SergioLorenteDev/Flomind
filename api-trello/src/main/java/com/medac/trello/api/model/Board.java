@@ -57,6 +57,11 @@ public class Board {
     public Set<User> getMembers() {
         return Collections.unmodifiableSet(members);
     }
+
+    public void addMember(User user) {
+        this.members.add(user);
+    }
+
     public void setMembers(Set<User> members) {
         this.members = members;
     }

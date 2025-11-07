@@ -84,8 +84,9 @@ public class BoardController implements TrelloApi {
     //-----------------------------endpoint de invitacion a tablero------------
 
 
-    @PostMapping("/invite")
+    @PostMapping("/{boardId}/invitaciones")
     public ResponseEntity<String> inviteUserToBoard(
+            @PathVariable Long boardId,
             @Valid @RequestBody InviteRequestDTO request,
             @AuthenticationPrincipal User authenticatedUser) {
 
@@ -94,7 +95,7 @@ public class BoardController implements TrelloApi {
             Long inviterId = authenticatedUser.getId();
 
             // 2. RECUPERAR EL OBJETO BOARD COMPLETO (NECESARIO PARA EL SERVICE)
-            Board board = boardService.obtenerBoardPorId(request.boardId());
+            Board board = boardService.obtenerBoardPorId(boardId);
 
             // 3. Validar si el usuario autenticado tiene permisos para invitar
             if (!board.getOwnerId().equals(authenticatedUser.getId()) && !board.getMembers().contains(authenticatedUser)) {
@@ -104,11 +105,11 @@ public class BoardController implements TrelloApi {
             // 4. Llamar al servicio con el objeto Board
             invitationService.createAndSendInvitation(
                     board,
-                    request.invitedEmail(),
+                    request.email(),
                     inviterId
             );
 
-            return ResponseEntity.ok("Invitación enviada con éxito a " + request.invitedEmail());
+            return ResponseEntity.ok("Invitación enviada con éxito a " + request.email());
 
         } catch (AccessDeniedException e) {
             return status(HttpStatus.FORBIDDEN).body(e.getMessage());
