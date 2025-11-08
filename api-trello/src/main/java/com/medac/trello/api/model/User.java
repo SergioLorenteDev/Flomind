@@ -5,13 +5,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
-import jakarta.persistence.GenerationType;
-
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
@@ -37,6 +33,15 @@ public class User implements UserDetails {
     @Column(name = "confirmation_token")
     private String confirmationToken;
 
+    @OneToMany(mappedBy = "createdBy", fetch = LAZY) // FetchType.LAZY es recomendable
+    private Set<Board> createdBoards;
+
+    @ManyToMany(fetch = LAZY) // FetchType.LAZY es recomendable
+    @JoinTable(
+            name = "miembro_tablero", //TABLA INTERMEDIAA
+            joinColumns = @JoinColumn(name = "id_usuario"),
+            inverseJoinColumns = @JoinColumn(name = "id_tablero"))
+    private Set<Board> invitedToBoards;
 
     protected User() {}
 
@@ -97,6 +102,14 @@ public class User implements UserDetails {
 
     public void setPassword(String password) {this.password = password;}
 
+    public Set<Board> getCreatedBoards() {
+        return createdBoards;
+    }
+
+    public Set<Board> getInvitedToBoards() {
+        return invitedToBoards;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
@@ -119,8 +132,6 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true;
     }
-
-
 
     @Override
     public boolean equals(Object o) {

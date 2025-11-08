@@ -1,30 +1,27 @@
 package com.medac.trello.api.model.controller;
 
+import com.medac.trello.api.dto.BoardRequestDTO;
+import com.medac.trello.api.dto.BoardResponseDTO;
 import com.medac.trello.api.dto.InviteRequestDTO;
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Invitation;
 import com.medac.trello.api.model.User;
-import com.medac.trello.api.service.BoardService;
 import com.medac.trello.api.resources.TrelloApi;
+import com.medac.trello.api.service.BoardService;
 import com.medac.trello.api.service.InvitationService;
-import com.medac.trello.api.view.BoardView;
-import com.medac.trello.api.view.UserView;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-//import java.nio.file.AccessDeniedException;
-import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
-import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.status;
 
@@ -44,28 +41,32 @@ public class BoardController implements TrelloApi {
 
     //CREAR
     @PostMapping
-    public ResponseEntity<Board> crearTablero(@RequestBody Board board) {
-        Board nuevoBoard = boardService.guardarBoard(board);
+    public ResponseEntity<BoardResponseDTO> crearTablero(
+            @RequestBody BoardRequestDTO board,
+            @AuthenticationPrincipal User authenticatedUser) {
+
+        BoardResponseDTO nuevoBoard = new BoardResponseDTO(boardService.guardarBoard(board, authenticatedUser));
         return new ResponseEntity<>(nuevoBoard, HttpStatus.CREATED);
     }
 
     //LEER TODOS
     @GetMapping
-    public List<Board> listarTodosLosTableros() {
-        return boardService.obtenerTodosLosBoards();
+    public Set<BoardResponseDTO> listarTodosLosTableros(@AuthenticationPrincipal User authenticatedUser) {
+        return boardService.obtenerTablerosPorUsuario(authenticatedUser.getId()).stream()
+                .map(BoardResponseDTO::new).collect(toSet());
     }
 
     //LEER UNO
     @GetMapping("/{id}")
-    public ResponseEntity<Board> obtenerTableroPorId(@PathVariable Long id) {
-        Board board = boardService.obtenerBoardPorId(id);
+    public ResponseEntity<BoardResponseDTO> obtenerTableroPorId(@PathVariable Long id) {
+        var board = new BoardResponseDTO(boardService.obtenerBoardPorId(id));
         return ResponseEntity.ok(board);
     }
 
     //ACTUALIZAR
     @PutMapping("/{id}")
-    public ResponseEntity<Board> actualizarTablero(@PathVariable Long id, @RequestBody Board boardDetalles) {
-        Board boardActualizado = boardService.actualizarBoard(id, boardDetalles);
+    public ResponseEntity<BoardResponseDTO> actualizarTablero(@PathVariable Long id, @RequestBody Board boardDetalles) {
+        var boardActualizado = new BoardResponseDTO(boardService.actualizarBoard(id, boardDetalles));
         return ResponseEntity.ok(boardActualizado);
     }
 
@@ -76,9 +77,10 @@ public class BoardController implements TrelloApi {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     @GetMapping("/by-user/{userId}")
-    public Set<Board> listarTablerosPorUsuario(@PathVariable Long userId) {
+    public Set<BoardResponseDTO> listarTablerosPorUsuario(@PathVariable Long userId) {
         // Llama al nuevo método del servicio
-        return boardService.obtenerTablerosPorUsuario(userId);
+        return boardService.obtenerTablerosPorUsuario(userId).stream()
+                .map(BoardResponseDTO::new).collect(toSet());
     }
 
     //-----------------------------endpoint de invitacion a tablero------------

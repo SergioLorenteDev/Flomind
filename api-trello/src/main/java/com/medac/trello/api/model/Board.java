@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
@@ -27,10 +28,12 @@ public class Board {
     private String background;
     @Column(name = "fecha_creacion", nullable = false)
     private Instant createdOn;
-    @Column(name = "id_usuario_creador", nullable = false)
-    private Long createdBy;
 
-    @ManyToMany(fetch = FetchType.LAZY) // FetchType.LAZY es recomendable
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "id_usuario_creador", nullable = false)
+    private User createdBy;
+
+    @ManyToMany(fetch = LAZY) // FetchType.LAZY es recomendable
     @JoinTable(
             name = "miembro_tablero", //TABLA INTERMEDIAA
             joinColumns = @JoinColumn(name = "id_tablero"),
@@ -41,7 +44,7 @@ public class Board {
     //------------------------METODOS PARA LAS INVITACIONES------------------
 
     public Long getOwnerId() {
-        return this.createdBy;
+        return this.createdBy.getId();
     }
 
     public boolean isMember(Long userId) {
@@ -72,20 +75,20 @@ public class Board {
         this.members =  new HashSet<>();
     }
 
-    public Board(String name, Instant createdOn, Long createdBy) {
+    public Board(String name, Instant createdOn, User createdBy) {
         this.name = name;
         this.createdOn = createdOn;
         this.createdBy = createdBy;
     }
 
-    public Board(String name, String description, Instant createdOn, Long createdBy) {
+    public Board(String name, String description, Instant createdOn, User createdBy) {
         this.name = name;
         this.description = description;
         this.createdOn = createdOn;
         this.createdBy = createdBy;
     }
 
-    public Board(String name, String description, String background, Instant createdOn, Long createdBy) {
+    public Board(String name, String description, String background, Instant createdOn, User createdBy) {
         this.name = name;
         this.description = description;
         this.background = background;
@@ -115,7 +118,7 @@ public class Board {
         return createdOn;
     }
 
-    public Long getCreatedBy() {
+    public User getCreatedBy() {
         return createdBy;
     }
 
@@ -137,7 +140,7 @@ public class Board {
         this.createdOn = createdOn;
     }
 
-    public void setCreatedBy(Long createdBy) {
+    public void setCreatedBy(User createdBy) {
         this.createdBy = createdBy;
     }
 

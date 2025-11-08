@@ -1,12 +1,11 @@
 package com.medac.trello.api.service;
 
+import com.medac.trello.api.dto.BoardRequestDTO;
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Lista;
-import com.medac.trello.api.model.repository.BoardRepository;
-import com.medac.trello.api.model.repository.HistorialMovimientoRepository;
-import com.medac.trello.api.model.repository.LabelRepository;
-import com.medac.trello.api.model.repository.ListaRepository;
+import com.medac.trello.api.model.User;
+import com.medac.trello.api.model.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.concat;
+
 @Service
 public class BoardService {
 
@@ -23,36 +25,36 @@ public class BoardService {
     private final ListaRepository listaRepository;
     private final HistorialMovimientoRepository historialMovimientoRepository;
     private final LabelRepository labelRepository;
+    private final InvitationRepository invitationRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public BoardService(
             BoardRepository boardRepository,
             ListaRepository listaRepository,
             HistorialMovimientoRepository historialMovimientoRepository,
-            LabelRepository labelRepository
+            LabelRepository labelRepository,
+            InvitationRepository invitationRepository, UserRepository userRepository
     ) {
         this.boardRepository = boardRepository;
         this.listaRepository = listaRepository;
         this.historialMovimientoRepository = historialMovimientoRepository;
         this.labelRepository = labelRepository;
+        this.invitationRepository = invitationRepository;
+        this.userRepository = userRepository;
     }
 
     //---------------------CREAR/GUARDAR-----------------------
     @Transactional
-    public Board guardarBoard(Board board) {
-
-        if (board.getCreatedOn() == null) {
-            board.setCreatedOn(Instant.now());
-        }
-        if (board.getBackground() != null && board.getBackground().isBlank()) {
-            board.setBackground(null);
-        }
-        // 2. Establecer el ID del usuario creador (si falta).
-        // HARDCODEAMOS 1L TEMPORALMENTE hasta que se implemente la autenticación.
-        if (board.getCreatedBy() == null || board.getCreatedBy().equals(0L)) {
-            board.setCreatedBy(1L);
-        }
-        return boardRepository.save(board);
+    public Board guardarBoard(BoardRequestDTO board, User user) {
+        Board newBoard = new Board(
+                board.getName(),
+                board.getDescription(),
+                board.getBackground(),
+                Instant.now(),
+                user
+        );
+        return boardRepository.save(newBoard);
     }
 
     //-------------------------------LEER ------------------
@@ -73,8 +75,10 @@ public class BoardService {
     //OBTENER POR USUARIO
     @Transactional(readOnly = true)
     public Set<Board> obtenerTablerosPorUsuario(Long userId) {
-        // Se asume que BoardRepository tiene el método: Set<Board> findAllByCreatedBy(Long userId);
-        return boardRepository.findAllByCreatedBy(userId);
+        final var maybeUser = userRepository.findById(userId);
+        return maybeUser.map(user ->
+                concat(user.getCreatedBoards().stream(), user.getInvitedToBoards().stream()).collect(toSet()))
+                .orElse(Set.of());
     }
 
     //  ------------------------ACTUALIZAR-----------------------

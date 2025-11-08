@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository
 public interface BoardRepository extends CrudRepository<Board, Long> {
 
-    Set<Board> findAllByCreatedBy(Long userId);
+    Set<Board> findAllByCreatedBy(User user);
 
     @Override
     List<Board> findAll();

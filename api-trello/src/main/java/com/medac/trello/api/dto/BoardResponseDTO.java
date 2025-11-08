@@ -22,7 +22,7 @@ public class BoardResponseDTO {
         this.name = board.getName();
         this.description = board.getDescription();
         this.background = board.getBackground();
-        this.createdBy = board.getCreatedBy();
+        this.createdBy = board.getCreatedBy().getId();
         this.createdOn = board.getCreatedOn();
         // Nota: No se incluyen las Listas directamente para evitar cargar datos innecesarios.
     }
