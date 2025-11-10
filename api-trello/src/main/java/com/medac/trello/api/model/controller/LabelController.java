@@ -1,4 +1,4 @@
-package com.medac.trello.api.resources;
+package com.medac.trello.api.model.controller;
 
 import com.medac.trello.api.dto.LabelRequestDTO;
 import com.medac.trello.api.dto.LabelResponseDTO;
@@ -14,11 +14,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
 @RequestMapping(value = "/tableros/{boardId}/etiquetas", produces = APPLICATION_JSON_VALUE)
-public class LabelResource {
+public class LabelController {
 
     private final LabelService labelService;
 
-    public LabelResource(LabelService labelService) {
+    public LabelController(LabelService labelService) {
         this.labelService = labelService;
     }
 
