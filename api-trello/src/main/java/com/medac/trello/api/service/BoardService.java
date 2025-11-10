@@ -3,6 +3,7 @@ package com.medac.trello.api.service;
 import com.medac.trello.api.dto.BoardRequestDTO;
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
+import com.medac.trello.api.model.Card;
 import com.medac.trello.api.model.Lista;
 import com.medac.trello.api.model.User;
 import com.medac.trello.api.model.repository.*;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -113,21 +113,13 @@ public class BoardService {
 
         // 2. Recolectar los IDs de las tarjetas asociadas al tablero.
         Set<Lista> listas = listaRepository.findAllByBoard_Id(id);
-        List<Long> cardIds = new ArrayList<>();
-        if (listas != null) {
-            for (Lista lista : listas) {
-                if (lista != null && lista.getTarjetas() != null) {
-                    lista.getTarjetas().forEach(card -> {
-                        if (card != null && card.getId() != null) {
-                            cardIds.add(card.getId());
-                        }
-                    });
-                }
-            }
-        }
+        Set<Long> cardIds = listas.stream()
+                .flatMap(lista -> lista.getTarjetas().stream())
+                .map(Card::getId)
+                .collect(toSet());
 
         if (!cardIds.isEmpty()) {
-            historialMovimientoRepository.deleteAllByTarjeta_IdIn(cardIds);
+            historialMovimientoRepository.deleteAllByTarjetaIdIn(cardIds);
         }
 
         // 3. Eliminar etiquetas asociadas al tablero
@@ -135,6 +127,8 @@ public class BoardService {
 
         // 4. Eliminar primero las listas asociadas para evitar violaciones de FK.
         listaRepository.deleteAllByBoard_Id(id);
+
+        invitationRepository.deleteAllByBoardId(boardExistente.getId());
 
         // 5. Eliminar el tablero.
         boardRepository.delete(boardExistente);

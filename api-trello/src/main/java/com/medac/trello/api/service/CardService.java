@@ -175,7 +175,7 @@ public class CardService {
         cardExistente.getLabels().clear();
         cardRepository.save(cardExistente);
 
-        historialMovimientoRepository.deleteAllByTarjeta_IdIn(java.util.Collections.singletonList(idTarjeta));
+        historialMovimientoRepository.deleteAllByTarjetaIdIn(java.util.Collections.singletonList(idTarjeta));
         commentRepository.deleteAllByOwningCardId(idTarjeta);
 
         cardRepository.delete(cardExistente);

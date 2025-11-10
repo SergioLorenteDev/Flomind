@@ -1,8 +1,12 @@
 package com.medac.trello.api.model.repository;
 
+import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Invitation;
 import com.medac.trello.api.model.Invitation.Estado;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -24,4 +28,7 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     //Listar las pendientes que recibió un usuario
     List<Invitation> findByInviteeEmailAndStatus(String inviteeEmail, Estado status);
 
-    }
+    @Modifying
+    @Query("delete from Invitation i where i.board.id = :boardId")
+    void deleteAllByBoardId(@Param("boardId") Long boardId);
+}

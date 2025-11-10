@@ -12,5 +12,5 @@ public interface HistorialMovimientoRepository extends JpaRepository<HistorialMo
 
     // Spring Data JPA crea la implementación automáticamente.
     // No se necesitan métodos adicionales por ahora, ya que el CardService solo hace un .save()
-    void deleteAllByTarjeta_IdIn(Collection<Long> cardIds);
+    void deleteAllByTarjetaIdIn(Collection<Long> cardIds);
 }
