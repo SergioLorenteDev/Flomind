@@ -11,9 +11,11 @@ public class BoardResponseDTO {
     private String name;
     private String description;
     private String background;
-    private Long createdBy; // ID del usuario creador
+    private Long createdBy;
     private Instant createdOn;
     private String currentUserRole;
+
+    private Long workspaceId;
 
     public BoardResponseDTO() {}
 
@@ -25,7 +27,10 @@ public class BoardResponseDTO {
         this.background = board.getBackground();
         this.createdBy = board.getCreatedBy().getId();
         this.createdOn = board.getCreatedOn();
-        // Nota: No se incluyen las Listas directamente para evitar cargar datos innecesarios.
+
+        if (board.getWorkspace() !=null){
+            this.workspaceId = board.getWorkspace().getId();
+        }
     }
 
     public BoardResponseDTO(Board board, String currentUserRole) {
@@ -34,6 +39,8 @@ public class BoardResponseDTO {
     }
 
     // --- Getters y Setters ---
+    public Long getWorkspaceId() {return workspaceId;}
+    public void setWorkspaceId(Long workspaceId) {this.workspaceId = workspaceId;}
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

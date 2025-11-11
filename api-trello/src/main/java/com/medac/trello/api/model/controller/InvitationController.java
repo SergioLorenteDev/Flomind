@@ -3,6 +3,7 @@ package com.medac.trello.api.model.controller;
 import com.medac.trello.api.model.Invitation;
 import com.medac.trello.api.model.User;
 import com.medac.trello.api.service.InvitationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication; // Para obtener el usuario actual
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,13 +24,14 @@ public class InvitationController {
    //--------------------------ENDPOINT PARA ACEPTAR LA INVITACION----------------
 
     @GetMapping("/accept")
-    public ResponseEntity<?> acceptInvitation(@RequestParam String token, @RequestParam String email) {
+    public ResponseEntity<?> acceptInvitation(@RequestParam String token, Authentication authentication) {
 
-        // 1. Obtener el email del enlace (no se puede asumir que el usuario esa logeado)
+        // 1. Obtener el email del usuario autenticado (se asume que el Principal es el email)
+        String userEmail = authentication.getName();
 
         try {
             // 2. Llamar al servicio para procesar la aceptación
-            invitationService.acceptInvitation(token, email);
+            invitationService.acceptInvitation(token, userEmail);
 
             return ResponseEntity.ok("Invitation successfully accepted. User added to board.");
 
@@ -50,4 +52,7 @@ public class InvitationController {
 
         return ResponseEntity.ok(invitations);
     }
+
+
+
 }

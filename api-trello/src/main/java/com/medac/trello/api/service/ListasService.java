@@ -1,152 +1,3 @@
-/*package com.medac.trello.api.service; // Asume tu paquete de servicio
-
-import com.medac.trello.api.exception.ResourceNotFoundException;
-import com.medac.trello.api.model.Lista;
-import com.medac.trello.api.model.repository.ListaRepository; // O ListaRepository, asegúrate del nombre
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.util.List; // <<-- ¡IMPORTANTE! Añade esta importación para java.util.List
-import java.util.Optional;
-
-@Service
-public class ListasService {
-
-    @Autowired
-    private ListaRepository listaRepository; // Asumo ListRepository existe
-
-    // C - Crear / Actualizar
-    public Lista guardarLista(Lista lista) {
-        return listaRepository.save(lista);
-    }
-
-    // R - Listar (Todos)
-    // CORREGIDO: El tipo de retorno debe ser java.util.List<Lista>
-    public List<Lista> obtenerTodasLasListas() {
-        return listaRepository.findAll();
-    }
-
-    // R - Listar (Por ID)
-    //public Optional<Lista> obtenerListaPorId(Long idLista) {
-        // CORREGIDO: Usar el parámetro idLista
-        //return listaRepository.findById(idLista);
-    //}
-    public Lista obtenerListaPorId(Long idLista) {
-        // Reemplaza ResourceNotFoundException por tu clase de excepción real
-        return listaRepository.findById(idLista)
-                .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
-    }
-    // U - Actualizar
-    public Lista actualizarLista(Long idLista, Lista listaDetalles) {
-        Optional<Lista> listaOptional = listaRepository.findById(idLista);
-
-        if (listaOptional.isPresent()) {
-            Lista listaExistente = listaOptional.get();
-
-            // Usando los nombres de variables de tu última entidad (nombre, orden, idTablero)
-            listaExistente.setNombre(listaDetalles.getNombre());
-            listaExistente.setOrden(listaDetalles.getOrden());
-            // CORREGIDO: Asumo que usas el ID, no el objeto Tablero, según tu última entidad.
-            listaExistente.setIdTablero(listaDetalles.getIdTablero());
-
-            return listaRepository.save(listaExistente);
-        } else {
-            // Esto se mapeará a un HTTP 404 en tu controlador
-            throw new RuntimeException("Lista no encontrada con id: " + idLista);
-        }
-    }
-
-    // D - Eliminar
-    public void eliminarLista(Long idLista) {
-        listaRepository.deleteById(idLista);
-    }
-}
-
-
- */
-/*package com.medac.trello.api.service;
-
-import com.medac.trello.api.exception.ResourceNotFoundException;
-import com.medac.trello.api.model.Lista;
-import com.medac.trello.api.model.repository.ListaRepository;
-import com.medac.trello.api.model.Board; // Necesario para la corrección (la entidad Board)
-import com.medac.trello.api.model.repository.BoardRepository; // Repositorio de Board
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Optional;
-
-@Service
-public class ListasService {
-
-    @Autowired
-    private ListaRepository listaRepository;
-
-    // Necesitamos el repositorio de Board para obtener la entidad completa
-    // y asignarla a la relación Many-to-One de Lista.
-    @Autowired
-    private BoardRepository boardRepository;
-
-    // C - Crear / Actualizar
-    public Lista guardarLista(Lista lista) {
-        return listaRepository.save(lista);
-    }
-
-    // R - Listar (Todos)
-    public List<Lista> obtenerTodasLasListas() {
-        return listaRepository.findAll();
-    }
-
-    // R - Listar (Por ID)
-    public Lista obtenerListaPorId(Long idLista) {
-        // Usa ResourceNotFoundException para manejar el caso de no encontrar el recurso
-        return listaRepository.findById(idLista)
-                .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
-    }
-
-    // U - Actualizar
-    public Lista actualizarLista(Long idLista, Lista listaDetalles) {
-        // 1. Obtener la lista existente o lanzar excepción
-        Lista listaExistente = listaRepository.findById(idLista)
-                .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
-
-        // 2. Actualizar campos simples
-        listaExistente.setNombre(listaDetalles.getNombre());
-        listaExistente.setOrden(listaDetalles.getOrden());
-
-        // 3. CORRECCIÓN CLAVE: Actualizar la relación Board
-        // Asumimos que listaDetalles.getBoard() contiene el objeto Board
-        // con al menos el ID del tablero destino.
-        Board nuevoBoardDetalles = listaDetalles.getBoard();
-
-        if (nuevoBoardDetalles != null && nuevoBoardDetalles.getId() > 0) {
-            Long nuevoBoardId = nuevoBoardDetalles.getId();
-
-            // Buscar la entidad Board completa en la base de datos
-            Board nuevoBoard = boardRepository.findById(nuevoBoardId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Tablero destino no encontrado con id: " + nuevoBoardId));
-
-            // Usar el setter de la relación JPA
-            listaExistente.setBoard(nuevoBoard);
-        }
-        // Nota: Si el board es null o no tiene ID, mantenemos la lista en su board actual.
-
-
-        // 4. Guardar y retornar la entidad actualizada
-        return listaRepository.save(listaExistente);
-    }
-
-    // D - Eliminar
-    public void eliminarLista(Long idLista) {
-        // Verificar si existe antes de intentar eliminar (opcional, pero buena práctica)
-        if (!listaRepository.existsById(idLista)) {
-            throw new ResourceNotFoundException("Lista no encontrada con id: " + idLista);
-        }
-        listaRepository.deleteById(idLista);
-    }
-}
-
-
- */
 
 package com.medac.trello.api.service;
 
@@ -160,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set; // Importado para el nuevo método obtenerListasPorTablero
+import java.util.Set;
+import java.util.Optional;
+
 
 @Service
 public class ListasService {
@@ -181,9 +34,23 @@ public class ListasService {
         // 2. Asignar la entidad Board completa a la lista
         lista.setBoard(board);
 
+        // 🔑 CORRECCIÓN CRÍTICA: Asignar la posición automáticamente.
+        // Las nuevas listas se añaden al final (la última posición + 1).
+        Long totalListas = listaRepository.countAllByBoard_Id(boardId);
+
+        // La posición será el número total de listas ya existentes (ej. si hay 0, la posición es 1)
+        // O si ya tiene posición definida en la solicitud, se respeta.
+        if (lista.getPosition() <= 0) {
+            lista.setPosition(totalListas.intValue() + 1);
+        } else {
+            // Si el cliente envía una posición, se asume que se gestionará el reordenamiento después.
+            // Por simplicidad de este método, asumimos que si no la envían, va al final.
+        }
+
         // 3. Guardar la lista
         return listaRepository.save(lista);
     }
+
  //------------------------------LEER LITAS-----------------------------
 
     // R - Listar (Todos)
@@ -193,15 +60,16 @@ public class ListasService {
 
     // LISTAR POR TABLERO
     public Set<Lista> obtenerListasPorTablero(Long boardId) {
-        // Primero, aseguramos que el tablero padre exista.
-        /*if (!boardRepository.existsById(boardId)) {
+        // 🔑 CORRECCIÓN CRÍTICA: Usamos el método que definimos en el repositorio
+        // para asegurar que estén ORDENADAS por la columna 'position'.
+        // Ya no necesitamos verificar la existencia del board si el repositorio lanza una lista vacía,
+        // pero es mejor para dar un error 404 claro.
+        if (!boardRepository.existsById(boardId)) {
             throw new ResourceNotFoundException("Tablero no encontrado con id: " + boardId);
+        }
 
-         */
-        //}
-
-        // 'Set<Lista> findAllByBoard_Id(Long boardId);'
-        return listaRepository.findAllByBoard_Id(boardId);
+        // Usamos la firma que definimos en ListaRepository: findAllByBoard_IdOrderByPositionAsc
+        return listaRepository.findAllByBoard_IdOrderByPositionAsc(boardId);
     }
 
 
@@ -218,13 +86,15 @@ public class ListasService {
         Lista listaExistente = listaRepository.findById(idLista)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
 
-        // 1. Actualizar campos simples (nombre y orden)
-        if (listaDetalles.getNombre() != null) {
-            listaExistente.setNombre(listaDetalles.getNombre());
+        // 1. Actualizar campos simples (nombre y position)
+        if (listaDetalles.getName() != null) { // ⬅️ CORREGIDO: Usar getName()
+            listaExistente.setName(listaDetalles.getName());
         }
 
-        if (listaDetalles.getOrden() != listaExistente.getOrden()) {
-            listaExistente.setOrden(listaDetalles.getOrden());
+        // 🔑 CORREGIDO: Usar getPosition() y setPosition()
+        if (listaDetalles.getPosition() > 0 && listaDetalles.getPosition() != listaExistente.getPosition()) {
+            listaExistente.setPosition(listaDetalles.getPosition());
+            // Nota: La lógica compleja de reordenamiento de otras listas no está aquí, solo se establece la nueva posición.
         }
 
         // 2. Lógica para mover la lista a otro tablero
@@ -233,16 +103,19 @@ public class ListasService {
         if (nuevoBoardDetalles != null && nuevoBoardDetalles.getId() != null) {
             Long nuevoBoardId = nuevoBoardDetalles.getId();
 
-
-            Long currentBoardId = listaExistente.getBoard() != null ? listaExistente.getBoard().getId() : null;
-
             // Solo actualizar si el ID del tablero es diferente al actual
-            if (!Objects.equals(listaExistente.getBoard().getId(), nuevoBoardId)) {
+            if (listaExistente.getBoard() == null || !Objects.equals(listaExistente.getBoard().getId(), nuevoBoardId)) {
 
                 Board nuevoBoard = boardRepository.findById(nuevoBoardId)
                         .orElseThrow(() -> new ResourceNotFoundException("Tablero destino no encontrado con id: " + nuevoBoardId));
 
                 listaExistente.setBoard(nuevoBoard);
+
+                // Si se mueve, la posición debe reajustarse al final del nuevo tablero
+                if (listaExistente.getPosition() <= 0 || listaExistente.getBoard().getId().equals(nuevoBoardId)) {
+                    Long totalListasNuevoBoard = listaRepository.countAllByBoard_Id(nuevoBoardId);
+                    listaExistente.setPosition(totalListasNuevoBoard.intValue() + 1);
+                }
             }
         }
 

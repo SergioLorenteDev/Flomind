@@ -11,14 +11,29 @@ CREATE TABLE IF NOT EXISTS usuario (
 );
 
 -- TABLA DE LOS TABLEROS
+-- MODIFICACIÓN DE LA TABLA TABLERO PARA IMPLEMENTAR SUSCRIPCION FREEMIUM
 CREATE TABLE IF NOT EXISTS tablero (
     id_tablero BIGINT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT,
     background VARCHAR(255),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Columna para el creador (usada en la lógica Freemium)
     id_usuario_creador BIGINT NOT NULL,
-    FOREIGN KEY (id_usuario_creador) REFERENCES usuario (id_usuario)
+
+    -- Columna que apunta al Workspace padre
+    id_workspace BIGINT NOT NULL,
+
+    -- Clave Foránea al Creador
+    FOREIGN KEY (id_usuario_creador)
+        REFERENCES usuario (id_usuario)
+        ON DELETE NO ACTION,
+
+    -- Clave Foránea al Workspace
+    FOREIGN KEY (id_workspace)
+        REFERENCES workspace (id)
+        ON DELETE CASCADE -- Si el Workspace se borra, los Tableros se borran
 );
 
 -- TABLA INTERMEDIA PARA USUARIOS-TABLERO
@@ -48,7 +63,6 @@ CREATE TABLE IF NOT EXISTS tarjeta (
     titulo VARCHAR(100) NOT NULL,
     descripcion TEXT,
     creada_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    comienza_en DATETIME,
     expira_en DATETIME,
     card_order INT NOT NULL,
     id_lista BIGINT NOT NULL,
@@ -119,7 +133,7 @@ CREATE TABLE IF NOT EXISTS tokens_refresco (
 );
 
 --------------TABLA DE INVITACIONES ------------------
-CREATE TABLE IF NOT EXISTS invitacion (
+CREATE TABLE invitacion (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     token VARCHAR(255) NOT NULL UNIQUE,
     invitee_email VARCHAR(255) NOT NULL,
@@ -127,8 +141,6 @@ CREATE TABLE IF NOT EXISTS invitacion (
     id_usuario_invitador BIGINT NOT NULL,
     expires_at DATETIME,
     fecha_creacion DATETIME NOT NULL,
-    estado ENUM('PENDIENTE', 'ACEPTADA', 'RECHAZADA'),
-    rol VARCHAR(20) NOT NULL DEFAULT 'lector',
 
     -- Restricción para asegurar que el tablero exista
     FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero),
@@ -137,17 +149,66 @@ CREATE TABLE IF NOT EXISTS invitacion (
     FOREIGN KEY (id_usuario_invitador) REFERENCES usuario(id_usuario)
 );
 
---------------TABLA DE NOTIFICACIONES ------------------
-CREATE TABLE IF NOT EXISTS notificaciones (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    descripcion VARCHAR(255) NOT NULL,
-    id_usuario_origen BIGINT NOT NULL,
-    id_usuario_destino BIGINT NOT NULL,
-    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+---------------TABLA WORKSPACE----------------
+CREATE TABLE IF NOT EXISTS WORKSPACE (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  nombre VARCHAR(255) NOT NULL,
 
-    -- Restricción para asegurar que el tablero exista
-    FOREIGN KEY (id_usuario_origen) REFERENCES usuario(id_usuario),
+  owner_id BIGINT NOT NULL,
 
-    -- Restricción para asegurar que el usuario invitador exista
-    FOREIGN KEY (id_usuario_destino) REFERENCES usuario(id_usuario)
-);
+  fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+
+  CONSTRAINT fk_workspace_owner_user
+    FOREIGN KEY (owner_id)
+    REFERENCES usuario (id_usuario)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB;
+
+
+-------------TABLA WORKSPACE_MIEMBROS (INTERMEDIA)------------------
+CREATE TABLE IF NOT EXISTS workspace_miembros (
+  workspace_id BIGINT NOT NULL,
+  miembro_id BIGINT NOT NULL,
+
+  -- Rol del usuario dentro del workspace (ej: 'MEMBER', 'ADMIN')
+  rol VARCHAR(50) NOT NULL DEFAULT 'MEMBER',
+
+  PRIMARY KEY (workspace_id, miembro_id),
+
+  CONSTRAINT fk_ws_miembros_workspace
+    FOREIGN KEY (workspace_id)
+    REFERENCES WORKSPACE (id)
+    ON DELETE CASCADE  -- Si se borra el Workspace, se borran las membresías
+    ON UPDATE NO ACTION,
+
+  CONSTRAINT fk_ws_miembros_user
+    FOREIGN KEY (miembro_id)
+    REFERENCES usuario (id_usuario)
+    ON DELETE CASCADE
+    ON UPDATE NO ACTION
+) ENGINE = InnoDB;
+
+-- TABLA DE SUSCRIPCIONES
+CREATE TABLE IF NOT EXISTS suscripcion (
+    id_usuario BIGINT NOT NULL PRIMARY KEY, -- Clave primaria es el ID del usuario (1 a 1)
+
+    -- ID del cliente en Stripe (o cualquier PSP)
+    stripe_customer_id VARCHAR(255) UNIQUE NULL,
+
+    -- ID del objeto de suscripción en Stripe
+    stripe_subscription_id VARCHAR(255) UNIQUE NULL,
+
+    -- Estado: 'FREE', 'ACTIVE', 'PAST_DUE', 'CANCELED'
+    estado VARCHAR(50) NOT NULL DEFAULT 'FREE',
+
+    -- Fecha del próximo cargo o expiración
+    fecha_expiracion DATETIME NULL,
+
+    -- FK al usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+        ON DELETE CASCADE
+        ON UPDATE NO ACTION
+) ENGINE = InnoDB;

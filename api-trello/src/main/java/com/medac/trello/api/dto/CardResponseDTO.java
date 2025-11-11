@@ -11,11 +11,11 @@ public class CardResponseDTO {
     private String title;
     private String description;
     private Instant createdOn;
+    private Instant expiresOn;
     private Integer cardOrder;
     private Long idLista;
+    private Long boardId;
     private LabelResponseDTO label;
-    private Instant startsOn;
-    private Instant expiresOn;
 
     public CardResponseDTO() {
     }
@@ -25,10 +25,12 @@ public class CardResponseDTO {
         this.title = card.getTitle();
         this.description = card.getDescription();
         this.createdOn = card.getCreatedOn();
-        this.cardOrder = card.getCardOrder();
-        this.idLista = card.getLista() != null ? card.getLista().getIdLista() : null;
-        this.startsOn = card.getStartsOn();
         this.expiresOn = card.getExpiresOn();
+        this.cardOrder = card.getCardOrder();
+
+        //mapeo de lista y tablero
+        this.idLista = card.getLista() != null ? card.getLista().getIdLista() : null;
+        //mapeo de la etiqueta
         Label primaryLabel = card.getPrimaryLabel();
         this.label = primaryLabel != null ? new LabelResponseDTO(primaryLabel) : null;
     }
@@ -69,6 +71,14 @@ public class CardResponseDTO {
         return cardOrder;
     }
 
+    public Instant getExpiresOn() { return expiresOn; }
+
+    public void setExpiresOn(Instant expiresOn) { this.expiresOn = expiresOn; }
+
+    public Long getBoardId() { return boardId; }
+
+    public void setBoardId(Long boardId) { this.boardId = boardId; }
+
     public void setCardOrder(Integer cardOrder) {
         this.cardOrder = cardOrder;
     }
@@ -88,20 +98,5 @@ public class CardResponseDTO {
     public void setLabel(LabelResponseDTO label) {
         this.label = label;
     }
-
-    public Instant getStartsOn() {
-        return startsOn;
-    }
-
-    public void setStartsOn(Instant startsOn) {
-        this.startsOn = startsOn;
-    }
-
-    public Instant getExpiresOn() {
-        return expiresOn;
-    }
-
-    public void setExpiresOn(Instant expiresOn) {
-        this.expiresOn = expiresOn;
-    }
 }
+

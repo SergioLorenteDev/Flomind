@@ -1,5 +1,6 @@
 package com.medac.trello.api.model;
 
+import com.medac.trello.api.dto.CreateBoardDTO;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -8,7 +9,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
@@ -28,12 +28,14 @@ public class Board {
     private String background;
     @Column(name = "fecha_creacion", nullable = false)
     private Instant createdOn;
+    @Column(name = "id_usuario_creador", nullable = false)
+    private Long createdBy;
 
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "id_usuario_creador", nullable = false)
-    private User createdBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", nullable = false)
+    private Workspace workspace;
 
-    @ManyToMany(fetch = LAZY) // FetchType.LAZY es recomendable
+    @ManyToMany(fetch = FetchType.LAZY) // FetchType.LAZY es recomendable
     @JoinTable(
             name = "miembro_tablero", //TABLA INTERMEDIAA
             joinColumns = @JoinColumn(name = "id_tablero"),
@@ -43,16 +45,27 @@ public class Board {
 
     //------------------------METODOS PARA LAS INVITACIONES------------------
 
+
     public Long getOwnerId() {
-        return this.createdBy.getId();
+        // 🎯 El Dueño real del tablero es el Dueño del Workspace
+        return this.workspace != null ? this.workspace.getOwner().getId() : null;
     }
 
+
+    // La membresía ahora debe verificar también el Workspace
     public boolean isMember(Long userId) {
-        if (this.members == null) {
-            return false;
+        if (this.members != null &&
+                this.members.stream().anyMatch(user -> user.getId() != null && user.getId().equals(userId))) {
+            return true; // Es miembro directo del tablero
         }
-        return this.members.stream()
-                .anyMatch(user -> user.getId() != null && user.getId().equals(userId));
+
+        // 🔑 Verificar si es miembro del Workspace
+        return this.workspace != null && this.workspace.isMember(userId);
+    }
+
+    // Este método es solo para el Dueño histórico (original)
+    public Long getHistoricalCreatorId() {
+        return createdBy;
     }
 
 //----------------------------------SETTERS Y GETTERS-----------------
@@ -60,40 +73,52 @@ public class Board {
     public Set<User> getMembers() {
         return Collections.unmodifiableSet(members);
     }
-
-    public void addMember(User user) {
-        this.members.add(user);
-    }
-
     public void setMembers(Set<User> members) {
         this.members = members;
     }
 
+
+    // 🔑 Nuevos Getters/Setters para Workspace
+    public Workspace getWorkspace() {
+        return workspace;
+    }
+    public void setWorkspace(Workspace workspace) {
+        this.workspace = workspace;
+    }
 
 
     public Board() {
         this.members =  new HashSet<>();
     }
 
-    public Board(String name, Instant createdOn, User createdBy) {
+    public Board(String name, Instant createdOn, Long createdBy, Workspace workspace) {
         this.name = name;
         this.createdOn = createdOn;
         this.createdBy = createdBy;
+        this.workspace = workspace; //NUEVO!!
     }
 
-    public Board(String name, String description, Instant createdOn, User createdBy) {
-        this.name = name;
-        this.description = description;
-        this.createdOn = createdOn;
-        this.createdBy = createdBy;
-    }
 
-    public Board(String name, String description, String background, Instant createdOn, User createdBy) {
+    // Constructor Completo (Obliga a incluir Workspace)
+    public Board(String name, String description, String background, Instant createdOn, Long createdBy, Workspace workspace) {
         this.name = name;
         this.description = description;
         this.background = background;
         this.createdOn = createdOn;
         this.createdBy = createdBy;
+        this.workspace = workspace;
+        this.members = new HashSet<>();
+    }
+
+    //constructor usando DTO
+    public Board(CreateBoardDTO dto, Long creatorId, Workspace workspace) {
+        this.name = dto.getName();
+        this.description = dto.getDescription();
+        this.background = dto.getBackground();
+        this.createdOn = Instant.now(); // Se establece aquí
+        this.createdBy = creatorId;     // Se establece aquí
+        this.workspace = workspace;
+        this.members = new HashSet<>();
     }
 
     //private Set<User> users = new HashSet<>(); // Inicializar para evitar NullPointerException
@@ -118,7 +143,7 @@ public class Board {
         return createdOn;
     }
 
-    public User getCreatedBy() {
+    public Long getCreatedBy() {
         return createdBy;
     }
 
@@ -140,7 +165,7 @@ public class Board {
         this.createdOn = createdOn;
     }
 
-    public void setCreatedBy(User createdBy) {
+    public void setCreatedBy(Long createdBy) {
         this.createdBy = createdBy;
     }
 
