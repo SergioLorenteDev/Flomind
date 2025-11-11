@@ -72,3 +72,20 @@ export function deleteBoardLabel(boardId, labelId) {
     method: "DELETE",
   });
 }
+
+export function fetchBoardMembers(boardId) {
+  return apiFetch(`/tableros/${boardId}/miembros`);
+}
+
+export function updateBoardMemberRole(boardId, memberId, payload) {
+  return apiFetch(`/tableros/${boardId}/miembros/${memberId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function removeBoardMember(boardId, memberId) {
+  return apiFetch(`/tableros/${boardId}/miembros/${memberId}`, {
+    method: "DELETE",
+  });
+}

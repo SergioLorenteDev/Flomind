@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS invitacion (
     expires_at DATETIME,
     fecha_creacion DATETIME NOT NULL,
     estado ENUM('PENDIENTE', 'ACEPTADA', 'RECHAZADA'),
+    rol VARCHAR(20) NOT NULL DEFAULT 'lector',
 
     -- Restricción para asegurar que el tablero exista
     FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero),

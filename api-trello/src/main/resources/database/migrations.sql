@@ -200,3 +200,16 @@ SET @sql := IF(@has_estado = 0,
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Ensure invitacion.rol column exists
+SET @has_invitacion_role :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'invitacion'
+          AND COLUMN_NAME = 'rol');
+SET @sql := IF(@has_invitacion_role = 0,
+    'ALTER TABLE invitacion ADD COLUMN rol VARCHAR(20) NOT NULL DEFAULT ''lector'';',
+    'SELECT ''invitacion.rol already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

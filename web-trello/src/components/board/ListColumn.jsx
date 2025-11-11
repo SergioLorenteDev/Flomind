@@ -22,6 +22,8 @@ export default function ListColumn({
   completedCards,
   onToggleCardComplete,
   onCardMenuAction,
+  canEditContent = true,
+  enableDrag = true,
 }) {
   const listId = String(list.idLista);
   const sortableId = `${LIST_SORTABLE_PREFIX}${listId}`;
@@ -52,6 +54,7 @@ export default function ListColumn({
   } = useSortable({
     id: sortableId,
     data: { type: "list", listId },
+    disabled: !enableDrag,
   });
 
   const { isOver, setNodeRef: setDroppableRef } = useDroppable({
@@ -69,6 +72,7 @@ export default function ListColumn({
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!canEditContent) return;
     const value = title.trim();
     if (!value) return;
     onAddCard(list.idLista, value);
@@ -93,9 +97,8 @@ export default function ListColumn({
         "shadow-[0_6px_18px_-6px_rgba(0,0,0,0.25)] dark:shadow-[0_6px_18px_-6px_rgba(255,255,255,0.05)]",
       ].join(" ")}
     >
-      {/* HEADER */}
       <header
-        className="mb-3 flex cursor-grab items-start justify-between px-4 pt-3 active:cursor-grabbing"
+        className={`mb-3 flex items-start justify-between px-4 pt-3 ${enableDrag ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
         {...attributes}
         {...listeners}
       >
@@ -116,12 +119,11 @@ export default function ListColumn({
       >
         <div ref={setDroppableRef} className="relative flex flex-col flex-1">
           <div
-            className={`
-              flex flex-col justify-center space-y-3 px-4 pb-1 border rounded-xl shadow-sm transition-all duration-300
-              ${isOver
+            className={`flex flex-col justify-center space-y-3 px-4 pb-1 border rounded-xl shadow-sm transition-all duration-300 ${
+              isOver
                 ? "bg-transparent border-transparent"
-                : "bg-[var(--color-surface)] border-[rgba(0,0,0,0.08)]"}
-            `}
+                : "bg-[var(--color-surface)] border-[rgba(0,0,0,0.08)]"
+            }`}
             style={{
               color: "var(--color-neutral-950)",
               minHeight: tarjetas.length === 0 ? "6rem" : "100%",
@@ -149,6 +151,7 @@ export default function ListColumn({
                   isComplete={completedSet.has(card.id)}
                   onToggleComplete={() => onToggleCardComplete?.(card.id)}
                   onMenuAction={(action) => onCardMenuAction?.(action, card)}
+                  canEditContent={canEditContent}
                 />
               ))
             )}
@@ -157,46 +160,52 @@ export default function ListColumn({
       </SortableContext>
 
       <div className="px-4 pb-4 pt-1">
-        {isComposing ? (
-          <form onSubmit={handleSubmit} className="space-y-2">
-            <textarea
-              ref={textareaRef}
-              rows={3}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Introduce un título o pega un enlace"
-              className={[
-                "w-full resize-none rounded-xl border px-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-colors duration-300",
-                "bg-[var(--color-surface-hover)] text-[var(--color-neutral-950)] border-[rgba(0,0,0,0.1)]",
-                "focus:border-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)]/40",
-                "dark:bg-[var(--color-brand-50)] dark:text-[var(--color-neutral-950)] dark:border-[rgba(255,255,255,0.15)]",
-                "dark:focus:border-[var(--color-brand-500)] dark:focus:ring-[var(--color-brand-500)]/40",
-              ].join(" ")}
-              disabled={isSavingCard}
-            />
-            <div className="flex items-center gap-2">
-              <Button type="submit" disabled={!title.trim() || isSavingCard}>
-                Añadir tarjeta
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={handleCancel}
+        {canEditContent ? (
+          isComposing ? (
+            <form onSubmit={handleSubmit} className="space-y-2">
+              <textarea
+                ref={textareaRef}
+                rows={3}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Introduce un titulo o pega un enlace"
+                className={[
+                  "w-full resize-none rounded-xl border px-3 py-2 text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-2 transition-colors duration-300",
+                  "bg-[var(--color-surface-hover)] text-[var(--color-neutral-950)] border-[rgba(0,0,0,0.1)]",
+                  "focus:border-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)]/40",
+                  "dark:bg-[var(--color-brand-50)] dark:text-[var(--color-neutral-950)] dark:border-[rgba(255,255,255,0.15)]",
+                  "dark:focus:border-[var(--color-brand-500)] dark:focus:ring-[var(--color-brand-500)]/40",
+                ].join(" ")}
                 disabled={isSavingCard}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
+              />
+              <div className="flex items-center gap-2">
+                <Button type="submit" disabled={!title.trim() || isSavingCard}>
+                  Anadir tarjeta
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCancel}
+                  disabled={isSavingCard}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsComposing(true)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-brand-600)] transition hover:text-[var(--color-brand-500)] dark:text-[var(--color-brand-400)] dark:hover:text-[var(--color-brand-200)]"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Añade una tarjeta</span>
+            </button>
+          )
         ) : (
-          <button
-            type="button"
-            onClick={() => setIsComposing(true)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-brand-600)] transition hover:text-[var(--color-brand-500)] dark:text-[var(--color-brand-400)] dark:hover:text-[var(--color-brand-200)]"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Añade una tarjeta</span>
-          </button>
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            Solo lectura
+          </p>
         )}
       </div>
     </div>

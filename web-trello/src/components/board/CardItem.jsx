@@ -30,6 +30,7 @@ export default function CardItem({
   isComplete,
   onToggleComplete,
   onMenuAction,
+  canEditContent = true,
 }) {
   const cardId = String(card.id);
   const cardSortableId = `${CARD_PREFIX}${cardId}`;
@@ -52,6 +53,7 @@ export default function CardItem({
   } = useSortable({
     id: cardSortableId,
     data: { type: "card", listId: listKey, cardId },
+    disabled: !canEditContent,
   });
 
   const setRefs = useCallback(
@@ -70,6 +72,7 @@ export default function CardItem({
   };
 
   const handleMenuToggle = (event) => {
+    if (!canEditContent) return;
     event.stopPropagation();
     event.preventDefault();
     if (!menuOpen && itemRef.current) {
@@ -112,13 +115,17 @@ export default function CardItem({
         <button
           type="button"
           onClick={(event) => {
+            if (!canEditContent) return;
             event.stopPropagation();
             onToggleComplete?.();
           }}
           aria-label={
             isComplete ? "Marcar como pendiente" : "Marcar como completada"
           }
-          className="rounded-full text-[#7f6dff] dark:text-[#cdbfff] transition hover:text-[#a493ff]"
+          disabled={!canEditContent}
+          className={`rounded-full text-[#7f6dff] dark:text-[#cdbfff] transition ${
+            canEditContent ? "hover:text-[#a493ff]" : "cursor-not-allowed opacity-60"
+          }`}
         >
           {isComplete ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -136,18 +143,20 @@ export default function CardItem({
           )}
         </div>
 
-        <button
-          type="button"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={handleMenuToggle}
-          className="rounded-full border border-transparent bg-gray-100 dark:bg-[#2d2d38]
+        {canEditContent ? (
+          <button
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={handleMenuToggle}
+            className="rounded-full border border-transparent bg-gray-100 dark:bg-[#2d2d38]
                      p-1.5 text-gray-600 dark:text-neutral-300 opacity-0
                      transition group-hover:translate-x-1 group-hover:opacity-100
                      hover:border-[#4b3acd]/40 hover:bg-gray-200 dark:hover:bg-[#383846]"
-          aria-label="Abrir menú de tarjeta"
-        >
-          <MoreHorizontal className="h-3.5 w-3.5" />
-        </button>
+            aria-label="Abrir menu de tarjeta"
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
       </div>
 
       {hasDateBadge && (
@@ -161,7 +170,7 @@ export default function CardItem({
         </div>
       )}
 
-      {menuOpen && anchorRect && (
+      {menuOpen && anchorRect && canEditContent ? (
         <CardMenu
           anchorRect={anchorRect}
           onClose={() => setMenuOpen(false)}
@@ -170,7 +179,7 @@ export default function CardItem({
             setMenuOpen(false);
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 }

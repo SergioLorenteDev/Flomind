@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
@@ -6,7 +6,7 @@ import {
   useSensor, useSensors, DragOverlay
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { Pencil, Check, X, Loader2, Plus, CalendarDays, Trash2, AlertTriangle } from "lucide-react";
+import { Pencil, Check, X, Loader2, Plus, CalendarDays, Trash2, AlertTriangle, Users } from "lucide-react";
 import Button from "../components/ui/Button.jsx";
 import ListColumn from "../components/board/ListColumn.jsx";
 import {
@@ -17,6 +17,9 @@ import {
   updateBoardLabel,
   deleteBoardLabel,
   deleteCard,
+  fetchBoardMembers,
+  updateBoardMemberRole,
+  removeBoardMember,
 } from "../modules/apiClient";
 import { useAuth } from "../modules/auth/AuthContext.jsx";
 import logo from "../assets/Logo dashboard2.png";
@@ -142,6 +145,7 @@ export default function BoardPage() {
   const [isSavingBackground, setIsSavingBackground] = useState(false);
   const [backgroundError, setBackgroundError] = useState(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [labels, setLabels] = useState(() => []);
   const [labelEditorState, setLabelEditorState] = useState({
     open: false,
@@ -155,6 +159,10 @@ export default function BoardPage() {
   const [deleteDialogState, setDeleteDialogState] = useState(() => ({
     ...DELETE_DIALOG_TEMPLATE,
   }));
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState(null);
+  const [memberActionBusy, setMemberActionBusy] = useState(null);
   const lastOverId = useRef(null);
   const scrollContainerRef = useRef(null);
   const panStateRef = useRef({
@@ -163,6 +171,61 @@ export default function BoardPage() {
     startX: 0,
     startScrollLeft: 0,
   });
+  const { user } = useAuth();
+
+  const replaceBoard = useCallback((nextBoard) => {
+    setBoard((prev) => {
+      if (!nextBoard) {
+        return nextBoard;
+      }
+      const nextRole =
+        typeof nextBoard.currentUserRole === "string"
+          ? nextBoard.currentUserRole
+          : null;
+      const fallbackRole = prev?.currentUserRole ?? null;
+      return { ...nextBoard, currentUserRole: nextRole ?? fallbackRole };
+    });
+  }, []);
+
+  const currentUserId = useMemo(() => {
+    if (user?.id == null) return null;
+    const parsed = Number(user.id);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [user?.id]);
+
+  const ownerId = useMemo(() => {
+    if (!board) return null;
+    const rawOwner = board.createdBy ?? board.idUsuarioCreador ?? board.ownerId;
+    if (rawOwner == null) return null;
+    const parsed = Number(rawOwner);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [board]);
+
+  const currentRole = useMemo(() => {
+    if (ownerId != null && currentUserId != null && ownerId === currentUserId) {
+      return "admin";
+    }
+    if (typeof board?.currentUserRole === "string") {
+      return board.currentUserRole.toLowerCase();
+    }
+    return null;
+  }, [board, ownerId, currentUserId]);
+
+  const canManageBoard = currentRole === "admin";
+  const canEditContent = currentRole === "editor" || currentRole === "admin";
+  const isReadOnly = !canEditContent;
+  const roleLabel = useMemo(() => {
+    switch (currentRole) {
+      case "admin":
+        return "Administrador";
+      case "editor":
+        return "Editor";
+      case "lector":
+        return "Solo lectura";
+      default:
+        return null;
+    }
+  }, [currentRole]);
 
   const backgroundOption = resolveBoardBackground(board?.background);
   const hasImageBackground = backgroundOption.type === "image";
@@ -177,6 +240,26 @@ export default function BoardPage() {
     ? "border-transparent bg-black/35 backdrop-blur-sm"
     : "border-white/50 bg-white/40 backdrop-blur-sm";
   const titleTextClass = hasImageBackground ? "text-white" : "text-neutral-900";
+  const roleBadgeClass = hasImageBackground
+    ? "border-white/40 bg-white/20 text-white"
+    : "border-[var(--color-brand-200)] bg-[var(--color-brand-50)] text-[var(--color-brand-700)]";
+
+  useEffect(() => {
+    if (canManageBoard) {
+      return;
+    }
+    if (isEditingTitle) {
+      setIsEditingTitle(false);
+      setTitleDraft("");
+    }
+    if (isBackgroundPickerOpen) {
+      setIsBackgroundPickerOpen(false);
+      setBackgroundError(null);
+    }
+    if (isInviteOpen) {
+      setIsInviteOpen(false);
+    }
+  }, [canManageBoard, isEditingTitle, isBackgroundPickerOpen, isInviteOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -306,6 +389,33 @@ export default function BoardPage() {
     return [];
   }, []);
 
+  const ensureBoardRole = useCallback(async () => {
+    if (!currentUserId || !boardId) {
+      return;
+    }
+    try {
+      const boards = await apiFetch(`/tableros/by-user/${currentUserId}`);
+      if (!Array.isArray(boards)) {
+        return;
+      }
+      const match =
+        boards.find((item) => {
+          const id =
+            item?.id ?? item?.idTablero ?? item?.id_tablero ?? null;
+          return id != null && Number(id) === Number(boardId);
+        }) ?? null;
+      if (match?.currentUserRole) {
+        setBoard((prev) =>
+          prev
+            ? { ...prev, currentUserRole: match.currentUserRole }
+            : prev,
+        );
+      }
+    } catch (fallbackError) {
+      console.warn("No se pudo refrescar el rol del tablero:", fallbackError);
+    }
+  }, [boardId, currentUserId]);
+
   const fetchBoardAndLists = useCallback(async () => {
     if (!boardId) {
       setError("ID de tablero no proporcionado.");
@@ -321,7 +431,10 @@ export default function BoardPage() {
         apiFetch(`/tableros/${boardId}`),
         apiFetch(`/tableros/${boardId}/listas`),
       ]);
-      setBoard(boardData);
+      replaceBoard(boardData);
+      if (!boardData?.currentUserRole) {
+        await ensureBoardRole();
+      }
 
       const sortedLists = (Array.isArray(listsData) ? listsData : []).sort(
         (a, b) => (a.orden ?? 0) - (b.orden ?? 0)
@@ -360,13 +473,20 @@ export default function BoardPage() {
     } finally {
       setLoading(false);
     }
-  }, [boardId]);
+  }, [boardId, replaceBoard, ensureBoardRole]);
 
   useEffect(() => {
     fetchBoardAndLists();
   }, [fetchBoardAndLists]);
 
+  useEffect(() => {
+    if (board && !board.currentUserRole) {
+      ensureBoardRole();
+    }
+  }, [board?.currentUserRole, ensureBoardRole]);
+
   const handleCreateCard = async (listId, title) => {
+    if (!canEditContent) return;
     if (!title.trim()) return;
     try {
       setCreatingCardFor(listId);
@@ -397,6 +517,7 @@ export default function BoardPage() {
   };
 
   const handleToggleCardComplete = (cardId) => {
+    if (!canEditContent) return;
     setCompletedCards((prev) => {
       const next = new Set(prev);
       if (next.has(cardId)) next.delete(cardId);
@@ -729,6 +850,7 @@ export default function BoardPage() {
   );
 
   const handleCardMenuAction = (action, card) => {
+    if (!canEditContent) return;
     if (!card) return;
     if (action === "edit-labels") {
       openLabelEditor(card);
@@ -917,6 +1039,7 @@ export default function BoardPage() {
   ]);
 
   const reorderLists = (activeListId, overListId) => {
+    if (!canEditContent) return;
     const sourceId =
       activeListId !== null && activeListId !== undefined
         ? String(activeListId)
@@ -991,6 +1114,7 @@ export default function BoardPage() {
   );
 
   const handleDragStart = ({ active }) => {
+    if (!canEditContent) return;
     const activeData = active.data.current;
     if (activeData?.type === "card") {
       const sourceContainer = activeData.listId
@@ -1029,7 +1153,7 @@ export default function BoardPage() {
 
   const handleDragEnd = async ({ active, over }) => {
     resetDragOverlay();
-    if (!over) return;
+    if (!canEditContent || !over) return;
 
     const activeData = active.data.current;
     const overData = over.data.current;
@@ -1151,6 +1275,7 @@ export default function BoardPage() {
 
   const handleAddList = async (event) => {
     event.preventDefault();
+    if (!canEditContent) return;
     if (!listName.trim()) return;
 
     try {
@@ -1177,6 +1302,7 @@ export default function BoardPage() {
   };
 
   const handleStartEditingTitle = () => {
+    if (!canManageBoard) return;
     setTitleDraft(board?.name ?? "");
     setIsEditingTitle(true);
   };
@@ -1188,6 +1314,7 @@ export default function BoardPage() {
 
   const handleSubmitTitle = async (event) => {
     event.preventDefault();
+    if (!canManageBoard) return;
     const nextTitle = titleDraft.trim();
     if (!nextTitle || !boardId) {
       return;
@@ -1199,7 +1326,7 @@ export default function BoardPage() {
         method: "PUT",
         body: JSON.stringify({ name: nextTitle }),
       });
-      setBoard(updatedBoard);
+      replaceBoard(updatedBoard);
       setIsEditingTitle(false);
     } catch (e) {
       console.error("Error al renombrar tablero:", e);
@@ -1210,6 +1337,7 @@ export default function BoardPage() {
   };
 
   const handleSelectBackground = async (nextBackground) => {
+    if (!canManageBoard) return;
     if (!boardId || !nextBackground || isSavingBackground) {
       return;
     }
@@ -1230,7 +1358,7 @@ export default function BoardPage() {
         method: "PUT",
         body: JSON.stringify({ background: resolved }),
       });
-      setBoard(updatedBoard);
+      replaceBoard(updatedBoard);
       setIsBackgroundPickerOpen(false);
     } catch (e) {
       console.error("Error al actualizar el fondo del tablero:", e);
@@ -1242,6 +1370,85 @@ export default function BoardPage() {
       );
     } finally {
       setIsSavingBackground(false);
+    }
+  };
+
+  const handleToggleBackgroundPicker = () => {
+    if (!canManageBoard || isSavingBackground) return;
+    setBackgroundError(null);
+    setIsBackgroundPickerOpen((value) => !value);
+  };
+
+  const handleOpenInvite = () => {
+    if (!canManageBoard) return;
+    setIsInviteOpen(true);
+  };
+
+  const normalizeRoleValue = useCallback((value) => {
+    if (!value) return null;
+    const normalized = value.toString().trim().toLowerCase();
+    return normalized === "editor" || normalized === "lector" ? normalized : null;
+  }, []);
+
+  const loadMembers = useCallback(async () => {
+    if (!boardId || !canManageBoard) return;
+    try {
+      setMembersLoading(true);
+      setMembersError(null);
+      const data = await fetchBoardMembers(boardId);
+      const normalized = Array.isArray(data)
+        ? data.map((member) => ({
+            ...member,
+            role: normalizeRoleValue(member.role),
+          }))
+        : [];
+      setMembers(normalized);
+    } catch (err) {
+      console.error("Error al cargar miembros:", err);
+      setMembers([]);
+      setMembersError(err.message);
+    } finally {
+      setMembersLoading(false);
+    }
+  }, [boardId, canManageBoard, normalizeRoleValue]);
+
+  const handleOpenMembers = () => {
+    if (!canManageBoard) return;
+    setIsMembersOpen(true);
+    loadMembers();
+  };
+
+  const handleChangeMemberRole = async (memberId, role) => {
+    if (!boardId || !canManageBoard) return;
+    setMemberActionBusy(memberId);
+    try {
+      const updated = await updateBoardMemberRole(boardId, memberId, { role });
+      const normalizedRole = normalizeRoleValue(updated.role);
+      setMembers((prev) =>
+        prev.map((m) => (m.id === updated.id ? { ...m, role: normalizedRole } : m))
+      );
+      if (memberId === currentUserId) {
+        replaceBoard({ ...(board ?? {}), currentUserRole: normalizedRole });
+      }
+    } catch (err) {
+      console.error("No se pudo actualizar el rol:", err);
+      setMembersError(err.message);
+    } finally {
+      setMemberActionBusy(null);
+    }
+  };
+
+  const handleRemoveMember = async (memberId) => {
+    if (!boardId || !canManageBoard) return;
+    setMemberActionBusy(memberId);
+    try {
+      await removeBoardMember(boardId, memberId);
+      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+    } catch (err) {
+      console.error("No se pudo eliminar al miembro:", err);
+      setMembersError(err.message);
+    } finally {
+      setMemberActionBusy(null);
     }
   };
 
@@ -1281,7 +1488,7 @@ export default function BoardPage() {
 
           <section className={["border-b", boardHeaderClass].join(" ")}>
             <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
-              {isEditingTitle ? (
+              {isEditingTitle && canManageBoard ? (
                 <form
                   onSubmit={handleSubmitTitle}
                   className="flex items-center gap-2"
@@ -1324,33 +1531,64 @@ export default function BoardPage() {
                   >
                     {board.name}
                   </h1>
-                  <button
-                    type="button"
-                    onClick={handleStartEditingTitle}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-brand-300)] bg-white/90 text-[var(--color-brand-700)] shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-200)]/60 focus:ring-offset-1"
-                    aria-label="Editar nombre del tablero"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
+                  {roleLabel ? (
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${roleBadgeClass}`}
+                    >
+                      {roleLabel}
+                    </span>
+                  ) : null}
+                  {canManageBoard ? (
+                    <button
+                      type="button"
+                      onClick={handleStartEditingTitle}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-brand-300)] bg-white/90 text-[var(--color-brand-700)] shadow-sm transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-200)]/60 focus:ring-offset-1"
+                      aria-label="Editar nombre del tablero"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  ) : null}
                 </div>
               )}
 
               <div className="flex items-center gap-3 self-start md:self-auto">
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsBackgroundPickerOpen((value) => !value)}
-                  disabled={isSavingBackground}
-                  className="rounded-full px-5 py-2 text-sm text-[#2d1b8a]"
-                >
-                  {isSavingBackground ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Guardando...
-                    </span>
-                  ) : (
-                    "Cambiar fondo"
-                  )}
-                </Button>
+                {canManageBoard ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      onClick={handleToggleBackgroundPicker}
+                      disabled={isSavingBackground}
+                      className="rounded-full px-5 py-2 text-sm text-[#2d1b8a] disabled:opacity-60"
+                    >
+                      {isSavingBackground ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Guardando...
+                        </span>
+                      ) : (
+                        "Cambiar fondo"
+                      )}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={handleOpenMembers}
+                      disabled={membersLoading}
+                      className="rounded-full px-5 py-2 text-sm text-[#2d1b8a] disabled:opacity-60"
+                    >
+                      {membersLoading ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Cargando...
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Miembros
+                        </span>
+                      )}
+                    </Button>
+                  </>
+                ) : null}
 
                 <div className="flex items-center gap-3">
                   <Button
@@ -1361,17 +1599,20 @@ export default function BoardPage() {
                     Volver a tableros
                   </Button>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsInviteOpen(true)}
-                    className="
-                      inline-flex items-center gap-2 rounded-full bg-[#e0d4ff] px-5 py-2 text-sm font-semibold text-[#2d1b8a] border border-[#c4b5fd] shadow-sm hover:bg-[#d2c4ff] hover:shadow-md transition">
-                    Invitar
-                  </button>
+                  {canManageBoard ? (
+                    <button
+                      type="button"
+                      onClick={handleOpenInvite}
+                      disabled={!canManageBoard}
+                      className="
+                      inline-flex items-center gap-2 rounded-full bg-[#e0d4ff] px-5 py-2 text-sm font-semibold text-[#2d1b8a] border border-[#c4b5fd] shadow-sm hover:bg-[#d2c4ff] hover:shadow-md transition disabled:cursor-not-allowed disabled:opacity-60">
+                      Invitar
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
-            {isBackgroundPickerOpen ? (
+            {canManageBoard && isBackgroundPickerOpen ? (
               <div className="mx-auto mb-4 max-w-7xl px-6">
                 <BackgroundPicker
                   currentValue={board?.background ?? backgroundOption.value}
@@ -1401,7 +1642,7 @@ export default function BoardPage() {
               >
                 <div
                   ref={scrollContainerRef}
-                  className="board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5 cursor-grab"
+                  className={`board-scroll flex items-start space-x-5 overflow-x-auto px-1 pb-4 pt-5 ${canEditContent ? "cursor-grab" : "cursor-default"}`}
                 >
                   {lists.map((list) => (
                     <ListColumn
@@ -1413,15 +1654,25 @@ export default function BoardPage() {
                       completedCards={completedCards}
                       onToggleCardComplete={handleToggleCardComplete}
                       onCardMenuAction={handleCardMenuAction}
+                      canEditContent={canEditContent}
+                      enableDrag={canEditContent}
                     />
                   ))}
 
-                  <NewListColumn
-                    listName={listName}
-                    setListName={setListName}
-                    isAddingList={isAddingList}
-                    onSubmit={handleAddList}
-                  />
+                  {canEditContent ? (
+                    <NewListColumn
+                      listName={listName}
+                      setListName={setListName}
+                      isAddingList={isAddingList}
+                      onSubmit={handleAddList}
+                    />
+                  ) : (
+                    <div
+                      className="flex w-72 flex-shrink-0 items-center justify-center rounded-2xl border border-dashed border-neutral-300 px-4 py-5 text-sm font-medium text-neutral-500 dark:border-neutral-700 dark:text-neutral-300"
+                    >
+                      Este tablero es de solo lectura.
+                    </div>
+                  )}
                 </div>
               </SortableContext>
               {createPortal(
@@ -1433,9 +1684,10 @@ export default function BoardPage() {
         isComplete={activeCard.isComplete}
         onToggleComplete={() => {}}
         onMenuAction={() => {}}
+        canEditContent={canEditContent}
       />
     ) : activeList ? (
-      <ListColumn list={activeList} />
+      <ListColumn list={activeList} canEditContent={canEditContent} enableDrag={canEditContent} />
     ) : null}
   </DragOverlay>,
   document.body
@@ -1483,6 +1735,19 @@ export default function BoardPage() {
             onClose={() => setIsInviteOpen(false)}
             boardId={boardId}
           />
+          {canManageBoard ? (
+            <MembersModal
+              open={isMembersOpen}
+              onClose={() => setIsMembersOpen(false)}
+              members={members}
+              loading={membersLoading}
+              errorMessage={membersError}
+              onRefresh={loadMembers}
+              onChangeRole={handleChangeMemberRole}
+              onRemoveMember={handleRemoveMember}
+              busyMemberId={memberActionBusy}
+            />
+          ) : null}
 
           <LabelEditorModal
             open={labelEditorState.open}
@@ -2708,6 +2973,115 @@ function InviteModal({ open, onClose, boardId }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function MembersModal({
+  open,
+  onClose,
+  members,
+  loading,
+  errorMessage,
+  onRefresh,
+  onChangeRole,
+  onRemoveMember,
+  busyMemberId,
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl relative">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 text-neutral-400 hover:text-neutral-700"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="flex items-center justify-between gap-3 pr-8">
+          <div>
+            <h2 className="text-lg font-semibold text-neutral-900">Miembros del tablero</h2>
+            <p className="text-sm text-neutral-500">
+              Cambia el rol o elimina miembros que ya no necesiten acceso.
+            </p>
+          </div>
+          <Button variant="secondary" onClick={onRefresh} disabled={loading}>
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Actualizando...
+              </span>
+            ) : (
+              "Actualizar"
+            )}
+          </Button>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {errorMessage ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {errorMessage}
+            </div>
+          ) : null}
+
+          {loading ? (
+            <p className="text-sm text-neutral-500">Cargando miembros...</p>
+          ) : members.length === 0 ? (
+            <p className="text-sm text-neutral-500">Este tablero aún no tiene miembros.</p>
+          ) : (
+            members.map((member) => {
+              const isOwner = member.owner;
+              const isBusy = busyMemberId === member.id;
+              const roleValue =
+                member.role === "editor" || member.role === "lector"
+                  ? member.role
+                  : "lector";
+              return (
+                <div
+                  key={member.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-neutral-200 px-4 py-3 text-sm shadow-sm md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold text-neutral-900">{member.name || member.email}</p>
+                    <p className="text-xs text-neutral-500">{member.email}</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {isOwner ? (
+                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600">
+                        Propietario
+                      </span>
+                    ) : (
+                      <select
+                        value={roleValue}
+                        onChange={(event) => onChangeRole(member.id, event.target.value)}
+                        disabled={isBusy}
+                        className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-[#4b2fc8]/40 disabled:cursor-not-allowed dark:bg-[var(--color-surface)] dark:text-[var(--color-neutral-50)]"
+                      >
+                        <option value="editor">Editor</option>
+                        <option value="lector">Lector</option>
+                      </select>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => onRemoveMember(member.id)}
+                      disabled={isOwner || isBusy}
+                      className="inline-flex items-center gap-2 rounded-full border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

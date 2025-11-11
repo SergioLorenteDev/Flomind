@@ -34,6 +34,9 @@ public class Invitation {
     @Column(name = "fecha_creacion", nullable = false)
     private Instant creationDate;
 
+    @Column(name = "rol", nullable = false)
+    private String role = "lector";
+
     // 6. Estado (pendiente, aceptada, rechazada)
     @Enumerated(value = STRING)
     @Column(name = "estado")
@@ -73,6 +76,8 @@ public class Invitation {
     public Long getInviterId() { return inviterId; }
     public void setInviterId(Long inviterId) { this.inviterId = inviterId; }
     public Instant getCreationDate() { return creationDate; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
     public Estado getStatus() { return status; }
     public void setStatus(Estado status) { this.status = status; }
     public Board getBoard() { return board; }

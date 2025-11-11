@@ -128,10 +128,26 @@ CREATE TABLE IF NOT EXISTS invitacion (
     expires_at DATETIME,
     fecha_creacion DATETIME NOT NULL,
     estado ENUM('PENDIENTE', 'ACEPTADA', 'RECHAZADA'),
+    rol VARCHAR(20) NOT NULL DEFAULT 'lector',
 
     -- Restricción para asegurar que el tablero exista
     FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero),
 
     -- Restricción para asegurar que el usuario invitador exista
     FOREIGN KEY (id_usuario_invitador) REFERENCES usuario(id_usuario)
+);
+
+--------------TABLA DE NOTIFICACIONES ------------------
+CREATE TABLE IF NOT EXISTS notificaciones (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    descripcion VARCHAR(255) NOT NULL,
+    id_usuario_origen BIGINT NOT NULL,
+    id_usuario_destino BIGINT NOT NULL,
+    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- Restricción para asegurar que el tablero exista
+    FOREIGN KEY (id_usuario_origen) REFERENCES usuario(id_usuario),
+
+    -- Restricción para asegurar que el usuario invitador exista
+    FOREIGN KEY (id_usuario_destino) REFERENCES usuario(id_usuario)
 );

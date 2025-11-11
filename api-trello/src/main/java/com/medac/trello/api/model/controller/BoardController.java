@@ -1,8 +1,10 @@
-package com.medac.trello.api.model.controller;
+﻿package com.medac.trello.api.model.controller;
 
+import com.medac.trello.api.dto.BoardMemberDTO;
 import com.medac.trello.api.dto.BoardRequestDTO;
 import com.medac.trello.api.dto.BoardResponseDTO;
 import com.medac.trello.api.dto.InviteRequestDTO;
+import com.medac.trello.api.dto.UpdateMemberRoleRequest;
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Invitation;
@@ -45,28 +47,45 @@ public class BoardController implements TrelloApi {
             @RequestBody BoardRequestDTO board,
             @AuthenticationPrincipal User authenticatedUser) {
 
-        BoardResponseDTO nuevoBoard = new BoardResponseDTO(boardService.guardarBoard(board, authenticatedUser));
+        var savedBoard = boardService.guardarBoard(board, authenticatedUser);
+        BoardResponseDTO nuevoBoard = boardService.mapToBoardResponse(
+                savedBoard,
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
         return new ResponseEntity<>(nuevoBoard, HttpStatus.CREATED);
     }
 
     //LEER TODOS
     @GetMapping
     public Set<BoardResponseDTO> listarTodosLosTableros(@AuthenticationPrincipal User authenticatedUser) {
-        return boardService.obtenerTablerosPorUsuario(authenticatedUser.getId()).stream()
-                .map(BoardResponseDTO::new).collect(toSet());
+        Long userId = authenticatedUser != null ? authenticatedUser.getId() : null;
+        return boardService.obtenerTablerosPorUsuario(userId).stream()
+                .map(board -> boardService.mapToBoardResponse(board, userId))
+                .collect(toSet());
     }
 
     //LEER UNO
     @GetMapping("/{id}")
-    public ResponseEntity<BoardResponseDTO> obtenerTableroPorId(@PathVariable Long id) {
-        var board = new BoardResponseDTO(boardService.obtenerBoardPorId(id));
+    public ResponseEntity<BoardResponseDTO> obtenerTableroPorId(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User authenticatedUser) {
+        var board = boardService.obtenerBoardConRol(
+                id,
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
         return ResponseEntity.ok(board);
     }
 
     //ACTUALIZAR
     @PutMapping("/{id}")
-    public ResponseEntity<BoardResponseDTO> actualizarTablero(@PathVariable Long id, @RequestBody Board boardDetalles) {
-        var boardActualizado = new BoardResponseDTO(boardService.actualizarBoard(id, boardDetalles));
+    public ResponseEntity<BoardResponseDTO> actualizarTablero(
+            @PathVariable Long id,
+            @RequestBody Board boardDetalles,
+            @AuthenticationPrincipal User authenticatedUser) {
+        var boardActualizado = boardService.mapToBoardResponse(
+                boardService.actualizarBoard(id, boardDetalles),
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
         return ResponseEntity.ok(boardActualizado);
     }
 
@@ -80,7 +99,50 @@ public class BoardController implements TrelloApi {
     public Set<BoardResponseDTO> listarTablerosPorUsuario(@PathVariable Long userId) {
         // Llama al nuevo método del servicio
         return boardService.obtenerTablerosPorUsuario(userId).stream()
-                .map(BoardResponseDTO::new).collect(toSet());
+                .map(board -> boardService.mapToBoardResponse(board, userId))
+                .collect(toSet());
+    }
+
+    @GetMapping("/{boardId}/miembros")
+    public ResponseEntity<List<BoardMemberDTO>> listarMiembrosDelTablero(
+            @PathVariable Long boardId,
+            @AuthenticationPrincipal User authenticatedUser
+    ) {
+        var miembros = boardService.obtenerMiembros(
+                boardId,
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
+        return ResponseEntity.ok(miembros);
+    }
+
+    @PutMapping("/{boardId}/miembros/{memberId}")
+    public ResponseEntity<BoardMemberDTO> actualizarRolMiembro(
+            @PathVariable Long boardId,
+            @PathVariable Long memberId,
+            @Valid @RequestBody UpdateMemberRoleRequest request,
+            @AuthenticationPrincipal User authenticatedUser
+    ) {
+        var actualizado = boardService.actualizarRolMiembro(
+                boardId,
+                authenticatedUser != null ? authenticatedUser.getId() : null,
+                memberId,
+                request.getRole()
+        );
+        return ResponseEntity.ok(actualizado);
+    }
+
+    @DeleteMapping("/{boardId}/miembros/{memberId}")
+    public ResponseEntity<Void> eliminarMiembro(
+            @PathVariable Long boardId,
+            @PathVariable Long memberId,
+            @AuthenticationPrincipal User authenticatedUser
+    ) {
+        boardService.eliminarMiembro(
+                boardId,
+                authenticatedUser != null ? authenticatedUser.getId() : null,
+                memberId
+        );
+        return ResponseEntity.noContent().build();
     }
 
     //-----------------------------endpoint de invitacion a tablero------------
@@ -101,17 +163,18 @@ public class BoardController implements TrelloApi {
 
             // 3. Validar si el usuario autenticado tiene permisos para invitar
             if (!board.getOwnerId().equals(authenticatedUser.getId()) && !board.getMembers().contains(authenticatedUser)) {
-                throw new AccessDeniedException("Solo el dueño o miembros del tablero pueden invitar.");
+                throw new AccessDeniedException("Solo el dueÃ±o o miembros del tablero pueden invitar.");
             }
 
             // 4. Llamar al servicio con el objeto Board
             invitationService.createAndSendInvitation(
                     board,
                     request.email(),
-                    inviterId
+                    inviterId,
+                    request.role()
             );
 
-            return ResponseEntity.ok("Invitación enviada con éxito a " + request.email());
+            return ResponseEntity.ok("InvitaciÃ³n enviada con Ã©xito a " + request.email());
 
         } catch (AccessDeniedException e) {
             return status(HttpStatus.FORBIDDEN).body(e.getMessage());
@@ -120,8 +183,8 @@ public class BoardController implements TrelloApi {
         } catch (IllegalArgumentException e) {
             return status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            // Esto capturará MailException o cualquier otro error no manejado.
-            return status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al procesar la invitación: " + e.getMessage());
+            // Esto capturarÃ¡ MailException o cualquier otro error no manejado.
+            return status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno al procesar la invitaciÃ³n: " + e.getMessage());
         }
     }
 
@@ -141,3 +204,4 @@ public class BoardController implements TrelloApi {
         return ResponseEntity.ok(invitations);
     }
 }
+

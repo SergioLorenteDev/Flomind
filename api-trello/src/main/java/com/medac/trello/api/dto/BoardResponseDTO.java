@@ -13,6 +13,7 @@ public class BoardResponseDTO {
     private String background;
     private Long createdBy; // ID del usuario creador
     private Instant createdOn;
+    private String currentUserRole;
 
     public BoardResponseDTO() {}
 
@@ -25,6 +26,11 @@ public class BoardResponseDTO {
         this.createdBy = board.getCreatedBy().getId();
         this.createdOn = board.getCreatedOn();
         // Nota: No se incluyen las Listas directamente para evitar cargar datos innecesarios.
+    }
+
+    public BoardResponseDTO(Board board, String currentUserRole) {
+        this(board);
+        this.currentUserRole = currentUserRole;
     }
 
     // --- Getters y Setters ---
@@ -45,4 +51,7 @@ public class BoardResponseDTO {
 
     public Instant getCreatedOn() { return createdOn; }
     public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
+
+    public String getCurrentUserRole() { return currentUserRole; }
+    public void setCurrentUserRole(String currentUserRole) { this.currentUserRole = currentUserRole; }
 }

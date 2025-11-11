@@ -81,12 +81,6 @@ export default function Dashboard() {
   }, [location.search, fetchBoards]);
 
  
-  const currentUserId = React.useMemo(() => {
-    if (user?.id == null) return null;
-    const parsed = Number(user.id);
-    return Number.isNaN(parsed) ? null : parsed;
-  }, [user?.id]);
-
   const resolveBoardId = React.useCallback(
     (board) => board?.id ?? board?.idTablero ?? board?.id_tablero ?? null,
     []
@@ -97,23 +91,7 @@ export default function Dashboard() {
     []
   );
 
-
-  const boardsByOwner = React.useMemo(() => {
-    if (!currentUserId) return boards;
-
-    return boards.filter((b) => {
-  
-      const ownerRaw = b?.idUsuarioCreador ?? b?.ownerId ?? b?.createdBy;
-      if (ownerRaw == null) return false; 
-
-      const ownerId = Number(ownerRaw);
-      if (Number.isNaN(ownerId)) return false;
-
-      return ownerId === currentUserId;
-    });
-  }, [boards, currentUserId]);
-
-  const boardsToShow = boardsByOwner.filter((b) => {
+  const boardsToShow = boards.filter((b) => {
     const q = search.toLowerCase();
     const name = (b.name || "").toLowerCase();
     const desc = (b.description || "").toLowerCase();

@@ -31,4 +31,10 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     @Modifying
     @Query("delete from Invitation i where i.board.id = :boardId")
     void deleteAllByBoardId(@Param("boardId") Long boardId);
+
+    Optional<Invitation> findFirstByBoard_IdAndInviteeEmailAndStatusOrderByCreationDateDesc(
+            Long boardId,
+            String inviteeEmail,
+            Estado status
+    );
 }

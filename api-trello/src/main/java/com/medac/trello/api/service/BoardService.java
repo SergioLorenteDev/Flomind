@@ -1,6 +1,8 @@
 package com.medac.trello.api.service;
 
+import com.medac.trello.api.dto.BoardMemberDTO;
 import com.medac.trello.api.dto.BoardRequestDTO;
+import com.medac.trello.api.dto.BoardResponseDTO;
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Card;
@@ -8,15 +10,17 @@ import com.medac.trello.api.model.Lista;
 import com.medac.trello.api.model.User;
 import com.medac.trello.api.model.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static com.medac.trello.api.model.Invitation.Estado.ACEPTADA;
 import static java.util.stream.Collectors.toSet;
-import static java.util.stream.Stream.concat;
 
 @Service
 public class BoardService {
@@ -75,10 +79,181 @@ public class BoardService {
     //OBTENER POR USUARIO
     @Transactional(readOnly = true)
     public Set<Board> obtenerTablerosPorUsuario(Long userId) {
-        final var maybeUser = userRepository.findById(userId);
-        return maybeUser.map(user ->
-                concat(user.getCreatedBoards().stream(), user.getInvitedToBoards().stream()).collect(toSet()))
+        if (userId == null) {
+            return Set.of();
+        }
+        return userRepository.findById(userId)
+                .map(user -> boardRepository.findDistinctByCreatedByOrMembersContaining(user, user))
                 .orElse(Set.of());
+    }
+
+    @Transactional(readOnly = true)
+    public BoardResponseDTO obtenerBoardConRol(Long boardId, Long userId) {
+        Board board = obtenerBoardPorId(boardId);
+        return mapToBoardResponse(board, userId);
+    }
+
+    public BoardResponseDTO mapToBoardResponse(Board board, Long userId) {
+        BoardResponseDTO dto = new BoardResponseDTO(board);
+        dto.setCurrentUserRole(resolveUserRole(board, userId));
+        return dto;
+    }
+
+    private String resolveUserRole(Board board, Long userId) {
+        if (board == null || userId == null) {
+            return null;
+        }
+        if (board.getCreatedBy() != null && userId.equals(board.getCreatedBy().getId())) {
+            return "admin";
+        }
+        return boardRepository.findMemberRole(board.getId(), userId)
+                .orElseGet(() -> recoverRoleFromInvitation(board, userId));
+    }
+
+    private String recoverRoleFromInvitation(Board board, Long userId) {
+        if (board == null || userId == null) {
+            return null;
+        }
+        return userRepository.findById(userId)
+                .flatMap(user -> invitationRepository
+                        .findFirstByBoard_IdAndInviteeEmailAndStatusOrderByCreationDateDesc(
+                                board.getId(),
+                                user.getEmail(),
+                                ACEPTADA
+                        )
+                )
+                .map(invitation -> {
+                    String normalized = normalizeRoleValue(invitation.getRole());
+                    if (normalized != null) {
+                        boardRepository.updateMemberRole(board.getId(), userId, normalized);
+                    }
+                    return normalized;
+                })
+                .orElse(null);
+    }
+
+    private String normalizeRoleValue(String role) {
+        if (role == null) {
+            return null;
+        }
+        String normalized = role.trim().toLowerCase();
+        return switch (normalized) {
+            case "admin", "editor", "lector" -> normalized;
+            default -> null;
+        };
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardMemberDTO> obtenerMiembros(Long boardId, Long requesterId) {
+        Board board = obtenerBoardPorId(boardId);
+        assertUserCanViewBoard(board, requesterId);
+
+        List<BoardMemberDTO> members = new ArrayList<>();
+        var owner = board.getCreatedBy();
+        if (owner != null) {
+            members.add(new BoardMemberDTO(
+                    owner.getId(),
+                    owner.getName(),
+                    owner.getEmail(),
+                    "admin",
+                    true
+            ));
+        }
+
+        boardRepository.findBoardMembers(boardId).forEach(projection -> {
+            // Evitar duplicar al propietario si aparece en la proyección por un estado inconsistente
+            boolean isOwner = projection.getOwnerFlag() != null && projection.getOwnerFlag() == 1;
+            if (isOwner && owner != null && owner.getId().equals(projection.getUserId())) {
+                return;
+            }
+            members.add(new BoardMemberDTO(
+                    projection.getUserId(),
+                    projection.getName(),
+                    projection.getEmail(),
+                    normalizeAssignableRole(projection.getRole()),
+                    isOwner
+            ));
+        });
+
+        return members;
+    }
+
+    @Transactional
+    public BoardMemberDTO actualizarRolMiembro(Long boardId, Long requesterId, Long memberId, String requestedRole) {
+        Board board = obtenerBoardPorId(boardId);
+        assertUserCanManageBoard(board, requesterId);
+        ensureNotOwner(board, memberId);
+
+        var normalizedRole = normalizeAssignableRole(requestedRole);
+        if (normalizedRole == null) {
+            throw new IllegalArgumentException("Rol inválido. Usa 'lector' o 'editor'.");
+        }
+
+        boardRepository.findMemberRole(boardId, memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado en este tablero."));
+
+        boardRepository.updateMemberRole(boardId, memberId, normalizedRole);
+
+        var memberUser = userRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado."));
+
+        return new BoardMemberDTO(
+                memberUser.getId(),
+                memberUser.getName(),
+                memberUser.getEmail(),
+                normalizedRole,
+                false
+        );
+    }
+
+    @Transactional
+    public void eliminarMiembro(Long boardId, Long requesterId, Long memberId) {
+        Board board = obtenerBoardPorId(boardId);
+        assertUserCanManageBoard(board, requesterId);
+        ensureNotOwner(board, memberId);
+
+        boardRepository.findMemberRole(boardId, memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado en este tablero."));
+
+        boardRepository.deleteMember(boardId, memberId);
+    }
+
+    private void assertUserCanViewBoard(Board board, Long userId) {
+        if (board == null || userId == null) {
+            throw new AccessDeniedException("No autorizado para ver los miembros de este tablero.");
+        }
+        if (board.getCreatedBy() != null && userId.equals(board.getCreatedBy().getId())) {
+            return;
+        }
+        boolean isMember = boardRepository.findMemberRole(board.getId(), userId).isPresent();
+        if (!isMember) {
+            throw new AccessDeniedException("No autorizado para ver este tablero.");
+        }
+    }
+
+    private void assertUserCanManageBoard(Board board, Long userId) {
+        if (board == null || userId == null || board.getCreatedBy() == null) {
+            throw new AccessDeniedException("No autorizado para modificar miembros.");
+        }
+        if (!userId.equals(board.getCreatedBy().getId())) {
+            throw new AccessDeniedException("Solo el propietario puede modificar los miembros.");
+        }
+    }
+
+    private void ensureNotOwner(Board board, Long memberId) {
+        if (board.getCreatedBy() != null && board.getCreatedBy().getId().equals(memberId)) {
+            throw new IllegalArgumentException("No se puede modificar al propietario del tablero.");
+        }
+    }
+
+    private String normalizeAssignableRole(String role) {
+        if (role == null) {
+            return null;
+        }
+        return switch (role.trim().toLowerCase()) {
+            case "editor", "lector" -> role.trim().toLowerCase();
+            default -> null;
+        };
     }
 
     //  ------------------------ACTUALIZAR-----------------------
