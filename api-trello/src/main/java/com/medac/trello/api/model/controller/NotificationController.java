@@ -22,7 +22,7 @@ public class NotificationController {
     }
 
     @GetMapping
-    public List<NotificationResponseDTO> listarTodosLosTableros(@AuthenticationPrincipal User authenticatedUser) {
+    public List<NotificationResponseDTO> listarTodasLasNotificaciones(@AuthenticationPrincipal User authenticatedUser) {
         return notificationService.findAllNotificationsForUser(authenticatedUser).stream()
                 .map(NotificationResponseDTO::new)
                 .toList();
