@@ -209,7 +209,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.swing.text.Position;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -274,7 +273,6 @@ public class Lista {
         return board;
     }
 
-
     // --- CONVENIENCE GETTER PARA id_tablero ---
     // Este getter es seguro de usar ya que solo devuelve el ID, no el objeto Board.
     public Long getIdTablero() {
@@ -303,8 +301,6 @@ public class Lista {
     }
 
     public void setIdLista(Long idLista) {this.idLista = idLista;}
-
-
 
     @Override
     public boolean equals(Object o) {

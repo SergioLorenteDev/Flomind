@@ -4,17 +4,12 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 
 // Usado para recibir datos del cliente al crear o actualizar una Tarjeta.
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 public class CardRequestDTO {
-    @NotBlank(message = "El título es obligatorio.")
-    @Size(max = 255, message = "El título no puede exceder los 255 caracteres.")
 
     private String title;
     private String description;
     private Integer cardOrder;
-    private Long idLista;
+    private Long idLista; // Clave: Solo se recibe el ID de la Lista padre
     private Long labelId;
     private java.time.Instant startsOn;
     private java.time.Instant expiresOn;

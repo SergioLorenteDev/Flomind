@@ -1,25 +1,17 @@
 package com.medac.trello.api.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
+// Usado para enviar la invitación desde el Frontend
 public record InviteRequestDTO(
-        Long boardId,
 
-        Long workspaceId,
+        @NotEmpty(message = "role es obligatorio")
+        String role,
 
         @Email(message = "Formato de email inválido")
-        @NotBlank(message = "El email del invitado no puede ser nulo")
-        String invitedEmail) {
-
-    // 🛡️ Lógica de validación para asegurar que AL MENOS un ID está presente
-    public InviteRequestDTO {
-        if (boardId == null && workspaceId == null) {
-            throw new IllegalArgumentException("Se requiere el ID del tablero o el ID del espacio de trabajo.");
-        }
-        if (boardId != null && workspaceId != null) {
-            throw new IllegalArgumentException("La invitación solo puede ser para un tablero O un espacio de trabajo, no ambos.");
-        }
-    }
+        @NotEmpty(message = "El email del invitado no puede estar vacio")
+        String email) {
 }
 

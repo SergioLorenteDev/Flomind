@@ -38,4 +38,6 @@ public class UserResponseDTO {
     public Instant getCreatedOn() { return createdOn; }
     public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
 
+    // public String getRole() { return role; }
+    // public void setRole(String role) { this.role = role; }
 }

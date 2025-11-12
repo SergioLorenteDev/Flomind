@@ -4,13 +4,10 @@ import com.medac.trello.api.dto.CardRequestDTO;
 import com.medac.trello.api.dto.CardResponseDTO;
 import com.medac.trello.api.model.Card;
 import com.medac.trello.api.model.Lista;
-import com.medac.trello.api.service.BoardAccessService;
 import com.medac.trello.api.service.CardService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,32 +16,31 @@ import java.util.stream.Collectors;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
-//@RequestMapping("/trello/v1/tarjetas")
+//@RequestMapping("/trello/v1/tarjetas") // Usar un prefijo de versión y base más claro
 @RequestMapping(produces = APPLICATION_JSON_VALUE)
 public class CardController {
 
     @Autowired
     private CardService cardService;
-    private final BoardAccessService boardAccessService;
-
-    public CardController(CardService cardService, BoardAccessService boardAccessService) {
-        this.cardService = cardService;
-        this.boardAccessService = boardAccessService;
-    }
 
     // --------------------------------CREAR TARJETA -----------------
     // POST /trello/v1/listas/{listId}/tarjetas
     @PostMapping("/listas/{listId}/tarjetas")
-    @PreAuthorize("@boardAccessService.canAccessList(#listId, authentication.principal.id)")
     public ResponseEntity<CardResponseDTO> crearTarjeta(
             @PathVariable Long listId,
-           @Valid @RequestBody CardRequestDTO cardDto
+            @RequestBody CardRequestDTO cardDto
     ) {
-        // 1. Mapeo DTO
+        // 1. Mapeo DTO -> Entidad (Solo los campos de datos)
         Card cardParaGuardar = new Card();
         cardParaGuardar.setTitle(cardDto.getTitle());
         cardParaGuardar.setDescription(cardDto.getDescription());
         cardParaGuardar.setCardOrder(cardDto.getCardOrder());
+        if (cardDto.isStartsOnPresent()) {
+            cardParaGuardar.setStartsOn(cardDto.getStartsOn());
+        }
+        if (cardDto.isExpiresOnPresent()) {
+            cardParaGuardar.setExpiresOn(cardDto.getExpiresOn());
+        }
 
         // 2. Llamada al servicio con la entidad y el ID de la lista padre
         Card cardGuardada = cardService.guardarCard(listId, cardParaGuardar, cardDto.getLabelId());
@@ -55,11 +51,19 @@ public class CardController {
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED); // 201
     }
 
+    /*// ---------------------- LEER POR TABLERO / GET ----------------------
+    // GET /trello/v1/tableros/{tableroId}/tarjetas
+    @GetMapping("/tableros/{tableroId}/tarjetas")
+    public ResponseEntity<List<Card>> obtenerTarjetasPorTablero(@PathVariable Long tableroId) {
+        List<Card> tarjetas = cardService.encontrarTarjetasPorTableroId(tableroId);
+        return ResponseEntity.ok(tarjetas); // 200
+    }
+
+     */
 
     // ---------------------- R - LEER TODAS LAS TARJETAS DE UNA LISTA ----------------------
     // URI: /listas/{listId}/tarjetas
     @GetMapping("/listas/{listId}/tarjetas")
-    @PreAuthorize("@boardAccessService.canAccessList(#listId, authentication.principal.id)")
     public List<CardResponseDTO> listarTarjetasPorLista(@PathVariable Long listId) {
 
         // 1. Llamada al servicio, que devuelve Entidades JPA
@@ -75,7 +79,6 @@ public class CardController {
     // ---------------------- R - LEER UNA TARJETA ----------------------
     // URI: /tarjetas/{cardId}
     @GetMapping("/tarjetas/{cardId}")
-    @PreAuthorize("@boardAccessService.canAccessCard(#cardId, authentication.principal.id)")
     public ResponseEntity<CardResponseDTO> obtenerTarjetaPorId(@PathVariable Long cardId) {
         Card card = cardService.obtenerCardPorId(cardId);
 
@@ -84,20 +87,36 @@ public class CardController {
     }
 
 
+
+
+   /* // --- EDITAR (Contenido) y MOVER (Lista) ---
+    // PUT /trello/v1/tarjetas/{idTarjeta}
+    @PutMapping("/tarjetas/{idTarjeta}")
+    public ResponseEntity<Card> actualizarTarjeta(@PathVariable Long idTarjeta, @RequestBody Card cardDetails){
+        // El servicio maneja la excepción ResourceNotFoundException (404)
+        Card cardActualizada  = cardService.actualizarCard(idTarjeta, cardDetails);
+        return ResponseEntity.ok(cardActualizada); // 200
+    }
+
+    */
 // ---------------------- U - ACTUALIZAR TARJETA (Incluye movimiento entre listas) ----------------------
    // URI: /tarjetas/{cardId}
    @PutMapping("/tarjetas/{cardId}")
-   @PreAuthorize("@boardAccessService.canAccessCard(#cardId, authentication.principal.id)")
-
    public ResponseEntity<CardResponseDTO> actualizarTarjeta(
            @PathVariable Long cardId,
-           @Valid @RequestBody CardRequestDTO cardDto
+           @RequestBody CardRequestDTO cardDto
    ) {
        // 1. Mapeo DTO
        Card cardParaActualizar = new Card();
        cardParaActualizar.setTitle(cardDto.getTitle());
        cardParaActualizar.setDescription(cardDto.getDescription());
        cardParaActualizar.setCardOrder(cardDto.getCardOrder());
+       if (cardDto.isStartsOnPresent()) {
+           cardParaActualizar.setStartsOn(cardDto.getStartsOn());
+       }
+       if (cardDto.isExpiresOnPresent()) {
+           cardParaActualizar.setExpiresOn(cardDto.getExpiresOn());
+       }
 
        // Lógica de MOVIMIENTO:
        if (cardDto.getIdLista() != null) {
@@ -108,7 +127,13 @@ public class CardController {
        }
 
        // 2. Llamada al servicio
-       Card cardActualizada = cardService.actualizarCard(cardId, cardParaActualizar, cardDto.getLabelId());
+       Card cardActualizada = cardService.actualizarCard(
+               cardId,
+               cardParaActualizar,
+               cardDto.getLabelId(),
+               cardDto.isStartsOnPresent(),
+               cardDto.isExpiresOnPresent()
+       );
 
        // 3. Mapeo Entidad -> DTO de Respuesta
        CardResponseDTO responseDto = new CardResponseDTO(cardActualizada);
@@ -117,10 +142,20 @@ public class CardController {
    }
 
 
+    //------------------------------------ ELIMINAR ----------------------
+    /*// DELETE /trello/v1/tarjetas/{idTarjeta}
+    @DeleteMapping("/tarjetas/{idTarjeta}")
+    public ResponseEntity<HttpStatus> eliminarTarjeta(@PathVariable Long idTarjeta){
+        // El servicio maneja la excepción ResourceNotFoundException (404)
+        cardService.eliminarTarjeta(idTarjeta);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204
+    }
+
+     */
+
     // ---------------------- D - ELIMINAR ----------------------
     // URI: /tarjetas/{cardId}
     @DeleteMapping("/tarjetas/{cardId}")
-    @PreAuthorize("@boardAccessService.canAccessCard(#cardId, authentication.principal.id)")
     public ResponseEntity<HttpStatus> eliminarTarjeta(@PathVariable Long cardId) {
         cardService.eliminarTarjeta(cardId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204
