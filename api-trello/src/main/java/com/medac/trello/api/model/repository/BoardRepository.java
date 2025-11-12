@@ -16,6 +16,8 @@ import java.util.Set;
 @Repository
 public interface BoardRepository extends JpaRepository<Board, Long> {
 
+    long countByCreatedBy(User createdBy);
+
     Set<Board> findAllByCreatedBy(User user);
 
     Set<Board> findDistinctByCreatedByOrMembersContaining(User owner, User member);

@@ -4,6 +4,7 @@ import com.medac.trello.api.dto.BoardMemberDTO;
 import com.medac.trello.api.dto.BoardRequestDTO;
 import com.medac.trello.api.dto.BoardResponseDTO;
 import com.medac.trello.api.exception.ResourceNotFoundException;
+import com.medac.trello.api.exception.SubscriptionLimitException;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Card;
 import com.medac.trello.api.model.Lista;
@@ -25,12 +26,16 @@ import static java.util.stream.Collectors.toSet;
 @Service
 public class BoardService {
 
+    // LÍMITE DE TABLEROS PARA USUARIOS NO SUSCRITOS
+    private static final int BOARD_LIMIT = 5;
+
     private final BoardRepository boardRepository;
     private final ListaRepository listaRepository;
     private final HistorialMovimientoRepository historialMovimientoRepository;
     private final LabelRepository labelRepository;
     private final InvitationRepository invitationRepository;
     private final UserRepository userRepository;
+    private final SubscriptionService subscriptionService;
 
     @Autowired
     public BoardService(
@@ -38,7 +43,9 @@ public class BoardService {
             ListaRepository listaRepository,
             HistorialMovimientoRepository historialMovimientoRepository,
             LabelRepository labelRepository,
-            InvitationRepository invitationRepository, UserRepository userRepository
+            InvitationRepository invitationRepository,
+            UserRepository userRepository,
+            SubscriptionService subscriptionService
     ) {
         this.boardRepository = boardRepository;
         this.listaRepository = listaRepository;
@@ -46,11 +53,28 @@ public class BoardService {
         this.labelRepository = labelRepository;
         this.invitationRepository = invitationRepository;
         this.userRepository = userRepository;
+        this.subscriptionService = subscriptionService;
     }
 
     //---------------------CREAR/GUARDAR-----------------------
     @Transactional
     public Board guardarBoard(BoardRequestDTO board, User user) {
+
+        // 1. VERIFICAR LÍMITE DE TABLEROS ANTES DE CREAR
+        long boardCount = boardRepository.countByCreatedBy(user); // <-- NUEVO MÉTODO DEL REPOSITORIO
+
+        if (boardCount >= BOARD_LIMIT) {
+
+            boolean isSubscribed = subscriptionService.isUserSubscribed(user);
+
+            if (!isSubscribed) {
+                // Si el usuario no está suscrito y ha alcanzado el límite, lanzar excepción
+                throw new SubscriptionLimitException("Has alcanzado el límite de " + BOARD_LIMIT +
+                        " tableros. Suscríbete para crear más.");
+            }
+        }
+        // FIN DE LA VERIFICACIÓN
+
         Board newBoard = new Board(
                 board.getName(),
                 board.getDescription(),
@@ -60,7 +84,6 @@ public class BoardService {
         );
         return boardRepository.save(newBoard);
     }
-
     //-------------------------------LEER ------------------
 
     // LISTAR TODOS

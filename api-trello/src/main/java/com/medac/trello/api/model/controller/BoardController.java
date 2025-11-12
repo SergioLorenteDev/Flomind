@@ -1,4 +1,4 @@
-﻿package com.medac.trello.api.model.controller;
+package com.medac.trello.api.model.controller;
 
 import com.medac.trello.api.dto.BoardMemberDTO;
 import com.medac.trello.api.dto.BoardRequestDTO;
@@ -155,18 +155,18 @@ public class BoardController implements TrelloApi {
             @AuthenticationPrincipal User authenticatedUser) {
 
         try {
-            // 1. Obtener el ID del usuario que invita (inviter)
+            // Obtener el ID del usuario que invita (inviter)
             Long inviterId = authenticatedUser.getId();
 
-            // 2. RECUPERAR EL OBJETO BOARD COMPLETO (NECESARIO PARA EL SERVICE)
+            // RECUPERAR EL OBJETO BOARD COMPLETO (NECESARIO PARA EL SERVICE)
             Board board = boardService.obtenerBoardPorId(boardId);
 
-            // 3. Validar si el usuario autenticado tiene permisos para invitar
+            // Validar si el usuario autenticado tiene permisos para invitar
             if (!board.getOwnerId().equals(authenticatedUser.getId()) && !board.getMembers().contains(authenticatedUser)) {
                 throw new AccessDeniedException("Solo el dueÃ±o o miembros del tablero pueden invitar.");
             }
 
-            // 4. Llamar al servicio con el objeto Board
+            // Llamar al servicio con el objeto Board
             invitationService.createAndSendInvitation(
                     board,
                     request.email(),
@@ -194,13 +194,13 @@ public class BoardController implements TrelloApi {
     public ResponseEntity<List<Invitation>> getReceivedInvitations(
             @AuthenticationPrincipal User authenticatedUser) { // Obtiene el usuario autenticado del JWT
 
-        // 1. Obtener el email del usuario autenticado
+        // Obtener el email del usuario autenticado
         String userEmail = authenticatedUser.getEmail();
 
-        // 2. Llamar al servicio
+        // Llamar al servicio
         List<Invitation> invitations = invitationService.getReceivedInvitations(userEmail);
 
-        // 3. Devolver la lista
+        // Devolver la lista
         return ResponseEntity.ok(invitations);
     }
 }

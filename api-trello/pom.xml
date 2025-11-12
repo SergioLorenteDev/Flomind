@@ -46,6 +46,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>20.108.0</version>
+        </dependency>
+
         <!-- JSON Web Token -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

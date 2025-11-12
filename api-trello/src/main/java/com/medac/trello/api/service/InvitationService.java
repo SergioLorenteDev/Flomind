@@ -1,4 +1,4 @@
-﻿package com.medac.trello.api.service;
+package com.medac.trello.api.service;
 
 import com.medac.trello.api.model.Invitation;
 import com.medac.trello.api.model.User;
@@ -24,13 +24,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @Service
 public class InvitationService {
 
-    // ðŸŽ¯ 1. DEFINICIÃ“N DE DEPENDENCIAS
+    // DEFINICION DE DEPENDENCIAS
     private final BoardRepository boardRepository;
     private final InvitationRepository invitationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
 
-    // â¬…ï¸ Inyectar la URL base de tu frontend/aplicaciÃ³n
+    //Inyectar la URL base de tu frontend/aplicaciÃ³n
     @Value("${app.base-url}")
     private String baseUrl;
 
@@ -89,24 +89,24 @@ public class InvitationService {
         emailService.sendEmail(inviteeEmail, subject, emailBody);
 
     }
-    //-------------------------------------BUSCAR, VALIDAR Y ELIMINAR INVITACIÃ“N-----------------
+    //-------------------------------------BUSCAR, VALIDAR Y ELIMINAR INVITACIÓN-----------------
 
     @Transactional
     public void acceptInvitation(String token, String userEmail) {
 
-        // 1. Buscar la invitaciÃ³n por token
+        // 1. Buscar la invitación por token
         Invitation invitation = invitationRepository.findByTokenAndStatus(token, PENDIENTE)
-                .orElseThrow(() -> new RuntimeException("No se encontrÃ³ la invitaciÃ³n o es invÃ¡lida"));
+                .orElseThrow(() -> new RuntimeException("No se encontrdo la invitación o es inválida"));
 
         // 2. Validar que la invitaciÃ³n es para el usuario actual
         if (!invitation.getInviteeEmail().equalsIgnoreCase(userEmail)) {
-            throw new RuntimeException("La invitaciÃ³n no es para el usuario.");
+            throw new RuntimeException("La invitación no es para el usuario.");
         }
 
         // 2b. Opcional: Validar si ha expirado
         if (invitation.getExpiresAt() != null && invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
             invitationRepository.delete(invitation);
-            throw new RuntimeException("La invitaciÃ³n ha caducado.");
+            throw new RuntimeException("La invitación ha caducado.");
         }
 
         // 3. Buscar el usuario (asumiendo que ya estÃ¡ autenticado)
@@ -116,7 +116,7 @@ public class InvitationService {
         // 4. Buscar el tablero
         Board board = invitation.getBoard();
         if (board == null) {
-            throw new RuntimeException("No se ha encontrado la invitaciÃ³n.");
+            throw new RuntimeException("No se ha encontrado la invitación.");
         }
 
         // 4b. Opcional: Verificar si ya es miembro

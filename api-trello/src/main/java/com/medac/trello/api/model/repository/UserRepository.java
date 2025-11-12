@@ -18,4 +18,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     //ACTUALIZACION DEL NOMBRE DE USUARIO
     Optional<User> findByUsername(String username);
+
+    //stripe
+    Optional<User> findByStripeCustomerId(String stripeCustomerId);
 }
+

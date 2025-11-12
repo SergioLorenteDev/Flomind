@@ -32,6 +32,13 @@ public class User implements UserDetails {
     private Instant createdOn = Instant.now(); // Asignar al crear
     @Column(name = "confirmation_token")
     private String confirmationToken;
+    //pasarela de pago externa
+    @Column(name = "stripe_customer_id", unique = true)
+    private String stripeCustomerId;
+
+
+    @OneToMany(mappedBy = "user", fetch = LAZY)
+    private Set<Subscription> subscriptions;
 
     @OneToMany(mappedBy = "createdBy", fetch = LAZY) // FetchType.LAZY es recomendable
     private Set<Board> createdBoards;
@@ -53,6 +60,23 @@ public class User implements UserDetails {
 
         // ⬅️ ASIGNACIÓN DEL TOKEN AQUÍ
         this.confirmationToken = UUID.randomUUID().toString();
+    }
+
+    //GETTER Y SETTER PARA SUSCRIPCIONES
+    public Set<Subscription> getSubscriptions() {
+        return subscriptions;
+    }
+
+    public void setSubscriptions(Set<Subscription> subscriptions) {
+        this.subscriptions = subscriptions;
+    }
+
+    public String getStripeCustomerId() {
+        return stripeCustomerId;
+    }
+
+    public void setStripeCustomerId(String stripeCustomerId) {
+        this.stripeCustomerId = stripeCustomerId;
     }
 
     public Long getId() {

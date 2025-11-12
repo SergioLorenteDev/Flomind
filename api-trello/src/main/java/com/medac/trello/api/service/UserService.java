@@ -25,9 +25,13 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    public Optional<User> findByStripeCustomerId(String customerId) {
+        return userRepository.findByStripeCustomerId(customerId);
+    }
 
 
-    // 🎯 Inyección por constructor (preferida)
+
+    // 🎯 Inyección por constructor
     @Autowired
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
@@ -101,6 +105,5 @@ public class UserService {
         return userRepository.save(userToUpdate);
     }
 
-    //------------------------------------FUNCIONALIDADES DE CONSULTA----------------
 
 }

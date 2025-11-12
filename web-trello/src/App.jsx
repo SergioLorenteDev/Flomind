@@ -10,6 +10,10 @@ import VerTableros from "./pages/VerTableros.jsx";
 import NuevoTablero from "./pages/NuevoTablero.jsx";
 import Ajustes from "./pages/Ajustes.jsx";
 import BoardPage from "./pages/BoardPage.jsx";
+import Subscription from "./pages/Subscription.jsx";
+import SuccessPage from "./pages/SuccessPage.jsx";
+import CancelPage from "./pages/CancelPage.jsx";
+import SubscriptionButton from "./components/ui/SubscriptionButton.jsx";
 import "./App.css";
 import BotonModo from "./components/ui/BotonModo.jsx";
 
@@ -54,6 +58,12 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/tableros/:boardId" element={<BoardPage />} />
+        <Route path="/suscripcion/" element={<Subscription />} />
+
+        {/* --- RUTAS DE CONFIRMACIÓN DE PAGO (STRIPE) --- */}
+        <Route path="/suscripcion/exito" element={<SuccessPage />} />
+        <Route path="/suscripcion/fallo" element={<CancelPage />} />
+        {/* ----------------------------------------------- */}
 
         <Route
           path="/dashboard"

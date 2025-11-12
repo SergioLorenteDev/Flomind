@@ -144,6 +144,10 @@ function AvatarArea() {
       Ajustes
     </MenuItem>
 
+    <MenuItem onClick={() => go('/suscripcion')}>
+      Flomind pro ⚡
+    </MenuItem>
+
     <MenuItem danger onClick={logout}>
       Cerrar sesi{'\u00f3'}n
     </MenuItem>
