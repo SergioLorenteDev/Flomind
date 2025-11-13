@@ -25,6 +25,22 @@ CREATE TABLE IF NOT EXISTS espacio_trabajo (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================
+-- RELACIÓN ESPACIOS <-> TABLEROS (links adicionales)
+-- =========================
+CREATE TABLE IF NOT EXISTS workspace_board_link (
+  id               BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  workspace_id     BIGINT NOT NULL,
+  board_id         BIGINT NOT NULL,
+  UNIQUE KEY uq_workspace_board (workspace_id, board_id),
+  CONSTRAINT fk_wb_workspace
+    FOREIGN KEY (workspace_id) REFERENCES espacio_trabajo(id_espacio)
+      ON DELETE CASCADE,
+  CONSTRAINT fk_wb_board
+    FOREIGN KEY (board_id) REFERENCES tablero(id_tablero)
+      ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================
 -- TABLEROS
 -- =========================
 CREATE TABLE IF NOT EXISTS tablero (

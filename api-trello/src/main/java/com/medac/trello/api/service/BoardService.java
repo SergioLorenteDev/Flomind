@@ -36,6 +36,7 @@ public class BoardService {
     private final InvitationRepository invitationRepository;
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
+    private final WorkspaceBoardLinkRepository workspaceBoardLinkRepository;
 
     // 🔹 NUEVO
     private final WorkspaceRepository workspaceRepository;
@@ -49,7 +50,8 @@ public class BoardService {
             InvitationRepository invitationRepository,
             UserRepository userRepository,
             SubscriptionService subscriptionService,
-            WorkspaceRepository workspaceRepository  // 👈
+            WorkspaceRepository workspaceRepository,
+            WorkspaceBoardLinkRepository workspaceBoardLinkRepository
     ) {
         this.boardRepository = boardRepository;
         this.listaRepository = listaRepository;
@@ -59,6 +61,7 @@ public class BoardService {
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
         this.workspaceRepository = workspaceRepository; // 👈
+        this.workspaceBoardLinkRepository = workspaceBoardLinkRepository;
     }
 
     // ---------- CREAR
@@ -123,6 +126,9 @@ public class BoardService {
     public BoardResponseDTO mapToBoardResponse(Board board, Long userId) {
         BoardResponseDTO dto = new BoardResponseDTO(board);
         dto.setCurrentUserRole(resolveUserRole(board, userId));
+        if (board.getId() != null) {
+            dto.setLinkedWorkspaceIds(workspaceBoardLinkRepository.findWorkspaceIdsByBoardId(board.getId()));
+        }
         return dto;
     }
 

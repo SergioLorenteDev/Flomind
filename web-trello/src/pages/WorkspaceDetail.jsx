@@ -6,7 +6,6 @@ import TemplateCard from "../components/dashboard/TemplateCard.jsx";
 import BoardCard from "../components/dashboard/BoardCard.jsx";
 import NewBoardModal from "../components/modals/NewBoardModal.jsx";
 import Button from "../components/ui/Button.jsx";
-import { useAuth } from "../modules/auth/AuthContext.jsx";
 import { apiFetch } from "../modules/apiClient";
 
 const TEMPLATES = [
@@ -33,8 +32,6 @@ const TEMPLATES = [
 export default function WorkspaceDetail() {
   const navigate = useNavigate();
   const { workspaceId } = useParams();
-  const { user } = useAuth();
-
   const [workspace, setWorkspace] = React.useState(null);
   const [boards, setBoards] = React.useState([]);
   const [search, setSearch] = React.useState("");
@@ -44,12 +41,6 @@ export default function WorkspaceDetail() {
   const [isNewBoardOpen, setIsNewBoardOpen] = React.useState(false);
   const [boardPendingDeletion, setBoardPendingDeletion] = React.useState(null);
   const [isDeletingBoard, setIsDeletingBoard] = React.useState(false);
-
-  const currentUserId = React.useMemo(() => {
-    if (user?.id == null) return null;
-    const parsed = Number(user.id);
-    return Number.isNaN(parsed) ? null : parsed;
-  }, [user?.id]);
 
   const wsIdNum = React.useMemo(() => {
     const parsed = Number(workspaceId);
@@ -105,29 +96,38 @@ export default function WorkspaceDetail() {
     []
   );
 
-  // Opcional: filtra por propietario actual si quieres que sólo muestre los suyos
-  const boardsByOwner = React.useMemo(() => {
-    if (!currentUserId) return boards;
-    return boards.filter((b) => {
-      const ownerRaw = b?.idUsuarioCreador ?? b?.ownerId ?? b?.createdBy;
-      if (ownerRaw == null) return false;
-      const ownerId = Number(ownerRaw);
-      if (Number.isNaN(ownerId)) return false;
-      return ownerId === currentUserId;
-    });
-  }, [boards, currentUserId]);
+  const resolveWorkspaceIdsFromBoard = React.useCallback(
+    (board) => {
+      const ids = [];
+      const primary = resolveWorkspaceIdFromBoard(board);
+      if (primary != null) {
+        const parsed = Number(primary);
+        if (!Number.isNaN(parsed)) {
+          ids.push(parsed);
+        }
+      }
+      const extras = board?.linkedWorkspaceIds ?? board?.workspaceIds ?? [];
+      if (Array.isArray(extras)) {
+        extras.forEach((value) => {
+          const parsed = Number(value);
+          if (!Number.isNaN(parsed)) {
+            ids.push(parsed);
+          }
+        });
+      }
+      return Array.from(new Set(ids));
+    },
+    [resolveWorkspaceIdFromBoard]
+  );
 
   // Sólo los tableros del espacio actual
   const boardsInWorkspace = React.useMemo(() => {
     if (!wsIdNum) return [];
-    return boardsByOwner.filter((b) => {
-      const wsId = resolveWorkspaceIdFromBoard(b);
-      if (wsId == null) return false;
-      const parsed = Number(wsId);
-      if (Number.isNaN(parsed)) return false;
-      return parsed === wsIdNum;
+    return boards.filter((b) => {
+      const workspaceIds = resolveWorkspaceIdsFromBoard(b);
+      return workspaceIds.includes(wsIdNum);
     });
-  }, [boardsByOwner, wsIdNum, resolveWorkspaceIdFromBoard]);
+  }, [boards, wsIdNum, resolveWorkspaceIdsFromBoard]);
 
   // Búsqueda local
   const boardsToShow = boardsInWorkspace.filter((b) => {

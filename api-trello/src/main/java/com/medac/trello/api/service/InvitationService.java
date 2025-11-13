@@ -3,9 +3,12 @@ package com.medac.trello.api.service;
 import com.medac.trello.api.model.Invitation;
 import com.medac.trello.api.model.User;
 import com.medac.trello.api.model.Board;
+import com.medac.trello.api.model.Workspace;
+import com.medac.trello.api.model.WorkspaceBoardLink;
 import com.medac.trello.api.model.repository.BoardRepository;
 import com.medac.trello.api.model.repository.InvitationRepository;
 import com.medac.trello.api.model.repository.UserRepository;
+import com.medac.trello.api.model.repository.WorkspaceBoardLinkRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value; // â¬…ï¸ Necesario para inyectar baseUrl
 import org.springframework.stereotype.Service;
@@ -29,6 +32,8 @@ public class InvitationService {
     private final InvitationRepository invitationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final WorkspaceService workspaceService;
+    private final WorkspaceBoardLinkRepository workspaceBoardLinkRepository;
 
     //Inyectar la URL base de tu frontend/aplicaciÃ³n
     @Value("${app.base-url}")
@@ -39,11 +44,15 @@ public class InvitationService {
             BoardRepository boardRepository,
             InvitationRepository invitationRepository,
             UserRepository userRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            WorkspaceService workspaceService,
+            WorkspaceBoardLinkRepository workspaceBoardLinkRepository) {
         this.boardRepository = boardRepository;
         this.invitationRepository = invitationRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.workspaceService = workspaceService;
+        this.workspaceBoardLinkRepository = workspaceBoardLinkRepository;
     }
 
     // -------------------------------------------------------------
@@ -131,6 +140,10 @@ public class InvitationService {
         boardRepository.save(board);
         String roleToAssign = normalizeRole(invitation.getRole());
         boardRepository.updateMemberRole(board.getId(), invitingUser.getId(), roleToAssign);
+
+        Workspace defaultWorkspace = workspaceService.ensureDefaultWorkspace(invitingUser);
+        workspaceBoardLinkRepository.findByWorkspace_IdAndBoard_Id(defaultWorkspace.getId(), board.getId())
+                .orElseGet(() -> workspaceBoardLinkRepository.save(new WorkspaceBoardLink(defaultWorkspace, board)));
 
         // 6. Actualizar la invitaciÃ³n a ACEPTADA
         invitation.setStatus(ACEPTADA);

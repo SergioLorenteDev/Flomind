@@ -24,6 +24,9 @@ public class WorkspaceService {
 
     @Transactional(readOnly = true)
     public List<Workspace> findMyWorkspaces(User owner) {
+        if (owner == null) {
+            return List.of();
+        }
         return workspaceRepository.findAllByOwner(owner);
     }
 
@@ -70,5 +73,20 @@ public class WorkspaceService {
         if (ws.getOwner() == null || requester == null || !ws.getOwner().getId().equals(requester.getId())) {
             throw new AccessDeniedException("No eres el propietario del espacio.");
         }
+    }
+
+    @Transactional
+    public Workspace ensureDefaultWorkspace(User owner) {
+        if (owner == null || owner.getId() == null) {
+            throw new IllegalArgumentException("Usuario inválido para crear espacio.");
+        }
+        return workspaceRepository.findFirstByOwner_IdOrderByCreatedOnAsc(owner.getId())
+                .orElseGet(() -> workspaceRepository.save(
+                        new Workspace(
+                                owner.getName() != null ? owner.getName() + " workspace" : "Mi espacio",
+                                "Creado automáticamente",
+                                owner
+                        )
+                ));
     }
 }

@@ -3,6 +3,7 @@ package com.medac.trello.api.dto;
 import com.medac.trello.api.model.Board;
 
 import java.time.Instant;
+import java.util.List;
 
 public class BoardResponseDTO {
 
@@ -13,9 +14,8 @@ public class BoardResponseDTO {
     private Long createdBy;
     private Instant createdOn;
     private String currentUserRole;
-
-    // 🔹 NUEVO
     private Long workspaceId;
+    private List<Long> linkedWorkspaceIds = List.of();
 
     public BoardResponseDTO() {}
 
@@ -26,7 +26,7 @@ public class BoardResponseDTO {
         this.background = board.getBackground();
         this.createdBy = board.getCreatedBy().getId();
         this.createdOn = board.getCreatedOn();
-        this.workspaceId = board.getWorkspaceId(); // 👈 importante
+        this.workspaceId = board.getWorkspaceId();
     }
 
     public BoardResponseDTO(Board board, String currentUserRole) {
@@ -57,4 +57,9 @@ public class BoardResponseDTO {
 
     public Long getWorkspaceId() { return workspaceId; }
     public void setWorkspaceId(Long workspaceId) { this.workspaceId = workspaceId; }
+
+    public List<Long> getLinkedWorkspaceIds() { return linkedWorkspaceIds; }
+    public void setLinkedWorkspaceIds(List<Long> linkedWorkspaceIds) {
+        this.linkedWorkspaceIds = linkedWorkspaceIds == null ? List.of() : List.copyOf(linkedWorkspaceIds);
+    }
 }

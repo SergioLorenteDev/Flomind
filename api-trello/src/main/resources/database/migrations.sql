@@ -100,6 +100,59 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+-- Ensure espacio_trabajo table exists (legacy databases might miss it)
+SET @has_workspace_table :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'espacio_trabajo');
+SET @sql := IF(@has_workspace_table = 0,
+    'CREATE TABLE espacio_trabajo (
+        id_espacio BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        descripcion TEXT,
+        fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        id_usuario_duenio BIGINT NOT NULL,
+        CONSTRAINT fk_espacio_usuario_duenio FOREIGN KEY (id_usuario_duenio) REFERENCES usuario(id_usuario) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
+    'SELECT ''espacio_trabajo already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Ensure workspace_board_link table exists
+SET @has_workspace_link_table :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'workspace_board_link');
+SET @sql := IF(@has_workspace_link_table = 0,
+    'CREATE TABLE workspace_board_link (
+        id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        workspace_id BIGINT NOT NULL,
+        board_id BIGINT NOT NULL,
+        UNIQUE KEY uq_workspace_board (workspace_id, board_id),
+        CONSTRAINT fk_wb_workspace FOREIGN KEY (workspace_id) REFERENCES espacio_trabajo(id_espacio) ON DELETE CASCADE,
+        CONSTRAINT fk_wb_board FOREIGN KEY (board_id) REFERENCES tablero(id_tablero) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;',
+    'SELECT ''workspace_board_link already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add id_espacio column to tablero if missing (required for workspace linkage)
+SET @has_tablero_workspace :=
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @schemaName
+          AND TABLE_NAME = 'tablero'
+          AND COLUMN_NAME = 'id_espacio');
+SET @sql := IF(@has_tablero_workspace = 0,
+    'ALTER TABLE tablero
+        ADD COLUMN id_espacio BIGINT NULL AFTER id_usuario_creador,
+        ADD CONSTRAINT fk_tablero_espacio FOREIGN KEY (id_espacio) REFERENCES espacio_trabajo(id_espacio) ON DELETE SET NULL;',
+    'SELECT ''tablero.id_espacio already exists'';');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- Add is_verified column to usuario if missing
 SET @has_is_verified :=
     (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
