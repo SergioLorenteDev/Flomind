@@ -13,9 +13,12 @@ import BoardPage from "./pages/BoardPage.jsx";
 import Subscription from "./pages/Subscription.jsx";
 import SuccessPage from "./pages/SuccessPage.jsx";
 import CancelPage from "./pages/CancelPage.jsx";
-import SubscriptionButton from "./components/ui/SubscriptionButton.jsx";
 import "./App.css";
 import BotonModo from "./components/ui/BotonModo.jsx";
+
+// 👇 importa tus páginas de espacios de trabajo
+import WorkspacesPage from "./pages/WorkspacesPage.jsx";          // listado
+import WorkspaceDetail from "./pages/WorkspaceDetail.jsx";        // detalle
 
 export default function App() {
   const getInitialTheme = () => {
@@ -29,20 +32,16 @@ export default function App() {
   const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-  const root = document.documentElement;
-
-  root.classList.toggle("dark", theme === "dark");
-
-  localStorage.setItem("theme", theme);
-  console.log("Tema actual:", theme);
-}, [theme]);
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+    console.log("Tema actual:", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     const root = document.documentElement;
     root.setAttribute("data-theme-transition", "true");
-
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-
     setTimeout(() => {
       root.removeAttribute("data-theme-transition");
     }, 400);
@@ -65,6 +64,7 @@ export default function App() {
         <Route path="/suscripcion/fallo" element={<CancelPage />} />
         {/* ----------------------------------------------- */}
 
+        {/* Dashboard (ya no muestra tableros si así lo decidiste) */}
         <Route
           path="/dashboard"
           element={
@@ -74,6 +74,7 @@ export default function App() {
           }
         />
 
+        {/* Tableros “globales” (si los mantienes) */}
         <Route
           path="/tableros"
           element={
@@ -83,6 +84,7 @@ export default function App() {
           }
         />
 
+        {/* PERFIL */}
         <Route
           path="/perfil"
           element={
@@ -92,6 +94,7 @@ export default function App() {
           }
         />
 
+        {/* Crear tablero suelto (si lo mantienes) */}
         <Route
           path="/tableros/nuevo"
           element={
@@ -101,19 +104,36 @@ export default function App() {
           }
         />
 
+        {/* ⚠️ NUEVAS RUTAS: ESPACIOS DE TRABAJO */}
         <Route
-  path="/ajustes"
-  element={
-    <ProtectedRoute>
-      <Ajustes theme={theme} setTheme={setTheme} />
-    </ProtectedRoute>
-  }
-/>
+          path="/espacios-trabajo"
+          element={
+            <ProtectedRoute>
+              <WorkspacesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/espacios-trabajo/:workspaceId"
+          element={
+            <ProtectedRoute>
+              <WorkspaceDetail />
+            </ProtectedRoute>
+          }
+        />
 
+        {/* AJUSTES */}
+        <Route
+          path="/ajustes"
+          element={
+            <ProtectedRoute>
+              <Ajustes theme={theme} setTheme={setTheme} />
+            </ProtectedRoute>
+          }
+        />
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-      
     </div>
   );
 }

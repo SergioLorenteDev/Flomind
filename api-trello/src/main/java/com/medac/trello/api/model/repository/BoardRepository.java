@@ -22,6 +22,9 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
     Set<Board> findDistinctByCreatedByOrMembersContaining(User owner, User member);
 
+    // ⬇⬇⬇ NUEVO: obtener tableros por espacio
+    Set<Board> findAllByWorkspace_Id(Long workspaceId);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = "UPDATE miembro_tablero SET rol = :role WHERE id_tablero = :boardId AND id_usuario = :userId", nativeQuery = true)
     void updateMemberRole(@Param("boardId") Long boardId, @Param("userId") Long userId, @Param("role") String role);

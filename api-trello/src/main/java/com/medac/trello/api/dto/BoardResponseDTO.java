@@ -3,7 +3,6 @@ package com.medac.trello.api.dto;
 import com.medac.trello.api.model.Board;
 
 import java.time.Instant;
-import java.util.List; // Opcional, si quieres incluir un recuento de listas o una lista de ellas
 
 public class BoardResponseDTO {
 
@@ -11,13 +10,15 @@ public class BoardResponseDTO {
     private String name;
     private String description;
     private String background;
-    private Long createdBy; // ID del usuario creador
+    private Long createdBy;
     private Instant createdOn;
     private String currentUserRole;
 
+    // 🔹 NUEVO
+    private Long workspaceId;
+
     public BoardResponseDTO() {}
 
-    // --- Constructor desde la Entidad (Mapeo) ---
     public BoardResponseDTO(Board board) {
         this.id = board.getId();
         this.name = board.getName();
@@ -25,7 +26,7 @@ public class BoardResponseDTO {
         this.background = board.getBackground();
         this.createdBy = board.getCreatedBy().getId();
         this.createdOn = board.getCreatedOn();
-        // Nota: No se incluyen las Listas directamente para evitar cargar datos innecesarios.
+        this.workspaceId = board.getWorkspaceId(); // 👈 importante
     }
 
     public BoardResponseDTO(Board board, String currentUserRole) {
@@ -33,7 +34,6 @@ public class BoardResponseDTO {
         this.currentUserRole = currentUserRole;
     }
 
-    // --- Getters y Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -54,4 +54,7 @@ public class BoardResponseDTO {
 
     public String getCurrentUserRole() { return currentUserRole; }
     public void setCurrentUserRole(String currentUserRole) { this.currentUserRole = currentUserRole; }
+
+    public Long getWorkspaceId() { return workspaceId; }
+    public void setWorkspaceId(Long workspaceId) { this.workspaceId = workspaceId; }
 }

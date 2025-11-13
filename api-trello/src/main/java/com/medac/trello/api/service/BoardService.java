@@ -10,6 +10,7 @@ import com.medac.trello.api.model.Card;
 import com.medac.trello.api.model.Lista;
 import com.medac.trello.api.model.User;
 import com.medac.trello.api.model.repository.*;
+import com.medac.trello.api.model.Workspace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,6 @@ import static java.util.stream.Collectors.toSet;
 @Service
 public class BoardService {
 
-    // LÍMITE DE TABLEROS PARA USUARIOS NO SUSCRITOS
     private static final int BOARD_LIMIT = 5;
 
     private final BoardRepository boardRepository;
@@ -37,6 +37,9 @@ public class BoardService {
     private final UserRepository userRepository;
     private final SubscriptionService subscriptionService;
 
+    // 🔹 NUEVO
+    private final WorkspaceRepository workspaceRepository;
+
     @Autowired
     public BoardService(
             BoardRepository boardRepository,
@@ -45,7 +48,8 @@ public class BoardService {
             LabelRepository labelRepository,
             InvitationRepository invitationRepository,
             UserRepository userRepository,
-            SubscriptionService subscriptionService
+            SubscriptionService subscriptionService,
+            WorkspaceRepository workspaceRepository  // 👈
     ) {
         this.boardRepository = boardRepository;
         this.listaRepository = listaRepository;
@@ -54,26 +58,21 @@ public class BoardService {
         this.invitationRepository = invitationRepository;
         this.userRepository = userRepository;
         this.subscriptionService = subscriptionService;
+        this.workspaceRepository = workspaceRepository; // 👈
     }
 
-    //---------------------CREAR/GUARDAR-----------------------
+    // ---------- CREAR
     @Transactional
     public Board guardarBoard(BoardRequestDTO board, User user) {
 
-        // 1. VERIFICAR LÍMITE DE TABLEROS ANTES DE CREAR
-        long boardCount = boardRepository.countByCreatedBy(user); // <-- NUEVO MÉTODO DEL REPOSITORIO
-
+        long boardCount = boardRepository.countByCreatedBy(user);
         if (boardCount >= BOARD_LIMIT) {
-
             boolean isSubscribed = subscriptionService.isUserSubscribed(user);
-
             if (!isSubscribed) {
-                // Si el usuario no está suscrito y ha alcanzado el límite, lanzar excepción
                 throw new SubscriptionLimitException("Has alcanzado el límite de " + BOARD_LIMIT +
                         " tableros. Suscríbete para crear más.");
             }
         }
-        // FIN DE LA VERIFICACIÓN
 
         Board newBoard = new Board(
                 board.getName(),
@@ -82,24 +81,29 @@ public class BoardService {
                 Instant.now(),
                 user
         );
+
+        // 🔹 asignar workspace si viene
+        if (board.getWorkspaceId() != null) {
+            Workspace ws = workspaceRepository.findById(board.getWorkspaceId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Espacio no encontrado"));
+            newBoard.setWorkspace(ws);
+        }
+
         return boardRepository.save(newBoard);
     }
-    //-------------------------------LEER ------------------
 
-    // LISTAR TODOS
+    // ---------- LEER
     @Transactional(readOnly = true)
     public List<Board> obtenerTodosLosBoards() {
         return boardRepository.findAll();
     }
 
-    // OBTENER POR ID
     @Transactional(readOnly = true)
     public Board obtenerBoardPorId(Long id) {
         return boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
     }
 
-    //OBTENER POR USUARIO
     @Transactional(readOnly = true)
     public Set<Board> obtenerTablerosPorUsuario(Long userId) {
         if (userId == null) {
@@ -123,9 +127,7 @@ public class BoardService {
     }
 
     private String resolveUserRole(Board board, Long userId) {
-        if (board == null || userId == null) {
-            return null;
-        }
+        if (board == null || userId == null) return null;
         if (board.getCreatedBy() != null && userId.equals(board.getCreatedBy().getId())) {
             return "admin";
         }
@@ -134,9 +136,7 @@ public class BoardService {
     }
 
     private String recoverRoleFromInvitation(Board board, Long userId) {
-        if (board == null || userId == null) {
-            return null;
-        }
+        if (board == null || userId == null) return null;
         return userRepository.findById(userId)
                 .flatMap(user -> invitationRepository
                         .findFirstByBoard_IdAndInviteeEmailAndStatusOrderByCreationDateDesc(
@@ -156,9 +156,7 @@ public class BoardService {
     }
 
     private String normalizeRoleValue(String role) {
-        if (role == null) {
-            return null;
-        }
+        if (role == null) return null;
         String normalized = role.trim().toLowerCase();
         return switch (normalized) {
             case "admin", "editor", "lector" -> normalized;
@@ -184,7 +182,6 @@ public class BoardService {
         }
 
         boardRepository.findBoardMembers(boardId).forEach(projection -> {
-            // Evitar duplicar al propietario si aparece en la proyección por un estado inconsistente
             boolean isOwner = projection.getOwnerFlag() != null && projection.getOwnerFlag() == 1;
             if (isOwner && owner != null && owner.getId().equals(projection.getUserId())) {
                 return;
@@ -245,9 +242,7 @@ public class BoardService {
         if (board == null || userId == null) {
             throw new AccessDeniedException("No autorizado para ver los miembros de este tablero.");
         }
-        if (board.getCreatedBy() != null && userId.equals(board.getCreatedBy().getId())) {
-            return;
-        }
+        if (board.getCreatedBy() != null && userId.equals(board.getCreatedBy().getId())) return;
         boolean isMember = boardRepository.findMemberRole(board.getId(), userId).isPresent();
         if (!isMember) {
             throw new AccessDeniedException("No autorizado para ver este tablero.");
@@ -270,16 +265,14 @@ public class BoardService {
     }
 
     private String normalizeAssignableRole(String role) {
-        if (role == null) {
-            return null;
-        }
+        if (role == null) return null;
         return switch (role.trim().toLowerCase()) {
             case "editor", "lector" -> role.trim().toLowerCase();
             default -> null;
         };
     }
 
-    //  ------------------------ACTUALIZAR-----------------------
+    // ---------- ACTUALIZAR
     @Transactional
     public Board actualizarBoard(Long id, Board boardDetalles) {
         Board boardExistente = boardRepository.findById(id)
@@ -288,28 +281,26 @@ public class BoardService {
         if (boardDetalles.getName() != null) {
             boardExistente.setName(boardDetalles.getName());
         }
-
         if (boardDetalles.getDescription() != null) {
             boardExistente.setDescription(boardDetalles.getDescription());
         }
-
         if (boardDetalles.getBackground() != null) {
             boardExistente.setBackground(
                     boardDetalles.getBackground().isBlank() ? null : boardDetalles.getBackground()
             );
         }
 
+        // (si quisieras mover el tablero de espacio, aquí podrías setear workspace)
+
         return boardRepository.save(boardExistente);
     }
 
-    //---------------------------ELIMINAR----------------------------
+    // ---------- ELIMINAR
     @Transactional
     public void eliminarBoard(Long id) {
-        // 1. Obtener la entidad para verificar su existencia.
         Board boardExistente = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
 
-        // 2. Recolectar los IDs de las tarjetas asociadas al tablero.
         Set<Lista> listas = listaRepository.findAllByBoard_Id(id);
         Set<Long> cardIds = listas.stream()
                 .flatMap(lista -> lista.getTarjetas().stream())
@@ -320,15 +311,9 @@ public class BoardService {
             historialMovimientoRepository.deleteAllByTarjetaIdIn(cardIds);
         }
 
-        // 3. Eliminar etiquetas asociadas al tablero
         labelRepository.deleteAllByOwningBoardId(id);
-
-        // 4. Eliminar primero las listas asociadas para evitar violaciones de FK.
         listaRepository.deleteAllByBoard_Id(id);
-
         invitationRepository.deleteAllByBoardId(boardExistente.getId());
-
-        // 5. Eliminar el tablero.
         boardRepository.delete(boardExistente);
     }
 }

@@ -1,5 +1,8 @@
 package com.medac.trello.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +15,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
 @Table(name = "usuario")
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 public class User implements UserDetails {
 
     @Id
@@ -21,33 +25,43 @@ public class User implements UserDetails {
 
     @Column(name = "nombre")
     private String name;
+
     @Column(name = "nombre_usuario")
     private String username;
+
     @Column(unique = true, nullable = false)
     private String email;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // no exponer password
     private String password;
+
     @Column(name = "is_verified", nullable = false)
-    private boolean isVerified = false; // Por defecto es FALSE, no verificado
+    private boolean isVerified = false;
+
     @Column(name = "fecha_creacion")
-    private Instant createdOn = Instant.now(); // Asignar al crear
+    private Instant createdOn = Instant.now();
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "confirmation_token")
     private String confirmationToken;
-    //pasarela de pago externa
+
     @Column(name = "stripe_customer_id", unique = true)
     private String stripeCustomerId;
 
-
     @OneToMany(mappedBy = "user", fetch = LAZY)
+    @JsonIgnore // ⬅️ evita LazyInitializationException
     private Set<Subscription> subscriptions;
 
-    @OneToMany(mappedBy = "createdBy", fetch = LAZY) // FetchType.LAZY es recomendable
+    @OneToMany(mappedBy = "createdBy", fetch = LAZY)
+    @JsonIgnore // ⬅️ evita recursión y lazy
     private Set<Board> createdBoards;
 
-    @ManyToMany(fetch = LAZY) // FetchType.LAZY es recomendable
+    @ManyToMany(fetch = LAZY)
     @JoinTable(
-            name = "miembro_tablero", //TABLA INTERMEDIAA
+            name = "miembro_tablero",
             joinColumns = @JoinColumn(name = "id_usuario"),
             inverseJoinColumns = @JoinColumn(name = "id_tablero"))
+    @JsonIgnore // ⬅️ evita lazy
     private Set<Board> invitedToBoards;
 
     protected User() {}
@@ -57,105 +71,43 @@ public class User implements UserDetails {
         this.username = username;
         this.email = email;
         this.password = password;
-
-        // ⬅️ ASIGNACIÓN DEL TOKEN AQUÍ
         this.confirmationToken = UUID.randomUUID().toString();
     }
 
-    //GETTER Y SETTER PARA SUSCRIPCIONES
-    public Set<Subscription> getSubscriptions() {
-        return subscriptions;
-    }
+    // getters/setters
+    public Long getId() { return id; }
+    public String getName() { return name; }
 
-    public void setSubscriptions(Set<Subscription> subscriptions) {
-        this.subscriptions = subscriptions;
-    }
+    public boolean isVerified() { return isVerified; }
+    public void setVerified(boolean verified) { isVerified = verified; }
 
-    public String getStripeCustomerId() {
-        return stripeCustomerId;
-    }
+    public String getConfirmationToken() { return confirmationToken; }
+    public void setConfirmationToken(String confirmationToken) { this.confirmationToken = confirmationToken; }
 
-    public void setStripeCustomerId(String stripeCustomerId) {
-        this.stripeCustomerId = stripeCustomerId;
-    }
+    @Override public String getUsername() { return email; }
+    @Override public String getPassword() { return password; }
+    public String getEmail() { return email; }
 
-    public Long getId() {
-        return id;
-    }
+    public Instant getCreatedOn() { return createdOn; }
+    public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
+    public void setUsername(String username) { this.username = username; }
+    public void setPassword(String password) { this.password = password; }
 
-    public String getName() {
-        return name;
-    }
+    public String getStripeCustomerId() { return stripeCustomerId; }
+    public void setStripeCustomerId(String stripeCustomerId) { this.stripeCustomerId = stripeCustomerId; }
 
-    public boolean isVerified() { // Getter para el campo boolean
-        return isVerified;
-    }
+    public Set<Subscription> getSubscriptions() { return subscriptions; }
+    public void setSubscriptions(Set<Subscription> subscriptions) { this.subscriptions = subscriptions; }
 
-    public void setVerified(boolean verified) {
-        isVerified = verified;
-    }
+    public Set<Board> getCreatedBoards() { return createdBoards; }
+    public Set<Board> getInvitedToBoards() { return invitedToBoards; }
 
-    public String getConfirmationToken() {
-        return confirmationToken;
-    }
-
-    public void setConfirmationToken(String confirmationToken) {
-        this.confirmationToken = confirmationToken;
-    }
-
-    @Override
-    public String getUsername() {
-        // Usa el email como identificador principal para Spring Security
-        return email;
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public Instant getCreatedOn() {return createdOn;}
-
-    public void setCreatedOn(Instant createdOn) {this.createdOn = createdOn;}
-
-    public void setUsername(String username) {this.username = username;}
-
-    public void setPassword(String password) {this.password = password;}
-
-    public Set<Board> getCreatedBoards() {
-        return createdBoards;
-    }
-
-    public Set<Board> getInvitedToBoards() {
-        return invitedToBoards;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
-    }
-
-    @Override
-    public boolean isEnabled() {return this.isVerified;}
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    // Spring Security
+    @Override public Collection<? extends GrantedAuthority> getAuthorities() { return List.of(); }
+    @Override public boolean isEnabled() { return this.isVerified; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
 
     @Override
     public boolean equals(Object o) {
@@ -163,9 +115,5 @@ public class User implements UserDetails {
         User user = (User) o;
         return Objects.equals(id, user.id);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(id);
-    }
+    @Override public int hashCode() { return Objects.hashCode(id); }
 }

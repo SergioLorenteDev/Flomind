@@ -1,15 +1,15 @@
 package com.medac.trello.api.dto;
 
-// Nota: Puedes usar Lombok para simplificar getters/setters si lo tienes.
-
 public class BoardRequestDTO {
 
     private String name;
     private String description;
     private String background;
-    private Long createdBy; // Opcional: si el cliente puede especificar el creador (en un entorno real, vendra del token de seguridad)
+    private Long createdBy;   // opcional (en producción vendría del token)
 
-    // --- Getters y Setters (simplicidad) ---
+    // 🔹 NUEVO
+    private Long workspaceId;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -21,4 +21,7 @@ public class BoardRequestDTO {
 
     public Long getCreatedBy() { return createdBy; }
     public void setCreatedBy(Long createdBy) { this.createdBy = createdBy; }
+
+    public Long getWorkspaceId() { return workspaceId; }
+    public void setWorkspaceId(Long workspaceId) { this.workspaceId = workspaceId; }
 }
