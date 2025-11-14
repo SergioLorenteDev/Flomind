@@ -11,36 +11,6 @@ CREATE TABLE IF NOT EXISTS usuario (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================
--- ESPACIOS DE TRABAJO
--- =========================
-CREATE TABLE IF NOT EXISTS espacio_trabajo (
-  id_espacio       BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  nombre           VARCHAR(100) NOT NULL,
-  descripcion      TEXT,
-  fecha_creacion   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  id_usuario_duenio BIGINT NOT NULL,
-  CONSTRAINT fk_espacio_usuario_duenio
-    FOREIGN KEY (id_usuario_duenio) REFERENCES usuario(id_usuario)
-      ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- =========================
--- RELACIÓN ESPACIOS <-> TABLEROS (links adicionales)
--- =========================
-CREATE TABLE IF NOT EXISTS workspace_board_link (
-  id               BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  workspace_id     BIGINT NOT NULL,
-  board_id         BIGINT NOT NULL,
-  UNIQUE KEY uq_workspace_board (workspace_id, board_id),
-  CONSTRAINT fk_wb_workspace
-    FOREIGN KEY (workspace_id) REFERENCES espacio_trabajo(id_espacio)
-      ON DELETE CASCADE,
-  CONSTRAINT fk_wb_board
-    FOREIGN KEY (board_id) REFERENCES tablero(id_tablero)
-      ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- =========================
 -- TABLEROS
 -- =========================
 CREATE TABLE IF NOT EXISTS tablero (
@@ -72,6 +42,36 @@ CREATE TABLE IF NOT EXISTS miembro_tablero (
       ON DELETE CASCADE,
   CONSTRAINT fk_miembro_tablero
     FOREIGN KEY (id_tablero) REFERENCES tablero(id_tablero)
+      ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================
+-- ESPACIOS DE TRABAJO
+-- =========================
+CREATE TABLE IF NOT EXISTS espacio_trabajo (
+  id_espacio       BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  nombre           VARCHAR(100) NOT NULL,
+  descripcion      TEXT,
+  fecha_creacion   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id_usuario_duenio BIGINT NOT NULL,
+  CONSTRAINT fk_espacio_usuario_duenio
+    FOREIGN KEY (id_usuario_duenio) REFERENCES usuario(id_usuario)
+      ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================
+-- RELACIÓN ESPACIOS <-> TABLEROS (links adicionales)
+-- =========================
+CREATE TABLE IF NOT EXISTS workspace_board_link (
+  id               BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  workspace_id     BIGINT NOT NULL,
+  board_id         BIGINT NOT NULL,
+  UNIQUE KEY uq_workspace_board (workspace_id, board_id),
+  CONSTRAINT fk_wb_workspace
+    FOREIGN KEY (workspace_id) REFERENCES espacio_trabajo(id_espacio)
+      ON DELETE CASCADE,
+  CONSTRAINT fk_wb_board
+    FOREIGN KEY (board_id) REFERENCES tablero(id_tablero)
       ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
