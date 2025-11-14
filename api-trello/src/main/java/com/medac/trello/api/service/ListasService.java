@@ -152,15 +152,25 @@ package com.medac.trello.api.service;
 
 import com.medac.trello.api.exception.ResourceNotFoundException;
 import com.medac.trello.api.model.Lista;
+import com.medac.trello.api.model.User;
+import com.medac.trello.api.model.notification.ListaAddedNotificationDetails;
+import com.medac.trello.api.model.notification.ListaDeletedNotificationDetails;
+import com.medac.trello.api.model.notification.ListaUpdatedNotificationDetails;
+import com.medac.trello.api.model.notification.NotificationDetails;
 import com.medac.trello.api.model.repository.ListaRepository;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.repository.BoardRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set; // Importado para el nuevo método obtenerListasPorTablero
+
+import static com.medac.trello.api.model.notification.ListaUpdatedNotificationDetails.ListaDetail.*;
+
 
 @Service
 public class ListasService {
@@ -171,9 +181,12 @@ public class ListasService {
     @Autowired
     private BoardRepository boardRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     // ----------------------CREAR LISTA-----------------
     @Transactional
-    public Lista guardarLista(Long boardId, Lista lista) {
+    public Lista guardarLista(User authenticatedUser, Long boardId, Lista lista) {
         // 1. Obtener el Board padre o lanzar excepción si no existe
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + boardId));
@@ -182,7 +195,14 @@ public class ListasService {
         lista.setBoard(board);
 
         // 3. Guardar la lista
-        return listaRepository.save(lista);
+        final var listaNueva =  listaRepository.save(lista);
+        board.getMembers().forEach(member ->
+                notificationService.addNotification(authenticatedUser.getId(), member.getId(),
+                        new ListaAddedNotificationDetails(
+                                listaNueva.getNombre(),
+                                listaNueva.getBoard().getName())
+                ));
+        return listaNueva;
     }
  //------------------------------LEER LITAS-----------------------------
 
@@ -201,7 +221,7 @@ public class ListasService {
         //}
 
         // 'Set<Lista> findAllByBoard_Id(Long boardId);'
-        return listaRepository.findAllByBoard_Id(boardId);
+        return listaRepository.findAllByBoardId(boardId);
     }
 
 
@@ -214,17 +234,27 @@ public class ListasService {
 
     // -----------------------U - ACTUALIZAR LISTAS---------------------------
     @Transactional
-    public Lista actualizarLista(Long idLista, Lista listaDetalles) {
+    public Lista actualizarLista(User usuario, Long idLista, Lista listaDetalles) {
         Lista listaExistente = listaRepository.findById(idLista)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
+
+        List<NotificationDetails> notificaciones = new ArrayList<>();
 
         // 1. Actualizar campos simples (nombre y orden)
         if (listaDetalles.getNombre() != null) {
             listaExistente.setNombre(listaDetalles.getNombre());
+            notificaciones.add(new ListaUpdatedNotificationDetails<>(
+                    listaExistente.getNombre(),
+                    listaExistente.getNombre(),
+                    listaDetalles.getNombre(), NAME));
         }
 
         if (listaDetalles.getOrden() != listaExistente.getOrden()) {
             listaExistente.setOrden(listaDetalles.getOrden());
+            notificaciones.add(new ListaUpdatedNotificationDetails<>(
+                    listaExistente.getNombre(),
+                    listaExistente.getOrden().toString(),
+                    listaDetalles.getOrden().toString(), ORDER));
         }
 
         // 2. Lógica para mover la lista a otro tablero
@@ -232,7 +262,6 @@ public class ListasService {
 
         if (nuevoBoardDetalles != null && nuevoBoardDetalles.getId() != null) {
             Long nuevoBoardId = nuevoBoardDetalles.getId();
-
 
             Long currentBoardId = listaExistente.getBoard() != null ? listaExistente.getBoard().getId() : null;
 
@@ -243,18 +272,31 @@ public class ListasService {
                         .orElseThrow(() -> new ResourceNotFoundException("Tablero destino no encontrado con id: " + nuevoBoardId));
 
                 listaExistente.setBoard(nuevoBoard);
+                notificaciones.add(new ListaUpdatedNotificationDetails<>(
+                        listaExistente.getNombre(),
+                        listaExistente.getBoard().getName(),
+                        nuevoBoard.getName(), BOARD));
             }
         }
 
-        return listaRepository.save(listaExistente);
+        final var listaActualizada = listaRepository.save(listaExistente);
+        listaExistente.getBoard().getMembers().forEach(member ->
+                notificationService.addNotifications(usuario.getId(), member.getId(), notificaciones));
+
+        return listaActualizada;
     }
     // -----------------------D - EÑLLIMINAR LISTA-------------------------
     @Transactional
-    public void eliminarLista(Long idLista) {
+    public void eliminarLista(User user, Long idLista) {
         // Verificar si existe antes de intentar eliminar (opcional, pero buena práctica)
-        if (!listaRepository.existsById(idLista)) {
-            throw new ResourceNotFoundException("Lista no encontrada con id: " + idLista);
-        }
+        final var listaParaBorrar = listaRepository.findById(idLista)
+                .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
+        listaParaBorrar.getBoard().getMembers().forEach(member ->
+                notificationService.addNotification(user.getId(), member.getId(),
+                        new ListaDeletedNotificationDetails(
+                                listaParaBorrar.getNombre(),
+                                listaParaBorrar.getBoard().getName())
+                ));
         listaRepository.deleteById(idLista);
     }
 }

@@ -307,7 +307,7 @@ public class BoardService {
         Board boardExistente = boardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
 
-        Set<Lista> listas = listaRepository.findAllByBoard_Id(id);
+        Set<Lista> listas = listaRepository.findAllByBoardId(id);
         Set<Long> cardIds = listas.stream()
                 .flatMap(lista -> lista.getTarjetas().stream())
                 .map(Card::getId)

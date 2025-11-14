@@ -1,4 +1,4 @@
-package com.medac.trello.api.model;
+package com.medac.trello.api.model.notification;
 
 import jakarta.persistence.*;
 

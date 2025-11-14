@@ -1,6 +1,6 @@
 package com.medac.trello.api.dto;
 
-import com.medac.trello.api.model.Notification;
+import com.medac.trello.api.model.notification.Notification;
 
 import java.time.Instant;
 

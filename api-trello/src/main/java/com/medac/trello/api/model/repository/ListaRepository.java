@@ -38,7 +38,7 @@ public interface ListaRepository extends JpaRepository<Lista, Long> {
      * @param boardId El ID del tablero.
      * @return Un conjunto (Set) de Listas.
      */
-    Set<Lista> findAllByBoard_Id(Long boardId);
+    Set<Lista> findAllByBoardId(Long boardId);
 
     void deleteAllByBoard_Id(Long boardId);
 }

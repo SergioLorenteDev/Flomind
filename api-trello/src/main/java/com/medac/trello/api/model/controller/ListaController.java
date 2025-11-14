@@ -70,10 +70,12 @@ import com.medac.trello.api.dto.ListaRequestDTO;
 import com.medac.trello.api.dto.ListaResponseDTO;
 import com.medac.trello.api.model.Board;
 import com.medac.trello.api.model.Lista;
+import com.medac.trello.api.model.User;
 import com.medac.trello.api.service.ListasService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.medac.trello.api.resources.TrelloApi; // Asegúrate de tener esta interfaz importada
 
@@ -96,7 +98,8 @@ public class ListaController {
     @PostMapping("/{boardId}/listas")
     public ResponseEntity<ListaResponseDTO> crearLista(
             @PathVariable Long boardId,
-            @RequestBody ListaRequestDTO listaDto
+            @RequestBody ListaRequestDTO listaDto,
+            @AuthenticationPrincipal User authenticatedUser
     ) {
         // MAPEO DTO
         Lista listaParaGuardar = new Lista();
@@ -105,7 +108,7 @@ public class ListaController {
 
         // 2. Llamada al servicio con la entidad y el ID del padre (boardId)
         // El servicio buscará el Board y asignará la relación
-        Lista listaGuardada = listasService.guardarLista(boardId, listaParaGuardar);
+        Lista listaGuardada = listasService.guardarLista(authenticatedUser, boardId, listaParaGuardar);
 
         // 3. Mapeo Entidad -> DTO de Respuesta
         ListaResponseDTO responseDto = new ListaResponseDTO(listaGuardada);
@@ -134,7 +137,8 @@ public class ListaController {
     @PutMapping("/listas/{idLista}")
     public ResponseEntity<ListaResponseDTO> actualizarLista(
             @PathVariable Long idLista,
-            @RequestBody ListaRequestDTO listaDto
+            @RequestBody ListaRequestDTO listaDto,
+            @AuthenticationPrincipal User authenticatedUser
     ) {
         // 1. Mapeo DTO -> Entidad (Crear una entidad temporal solo con los campos a actualizar)
         Lista listaParaActualizar = new Lista();
@@ -150,7 +154,7 @@ public class ListaController {
         }
 
         // 2. Llamada al servicio
-        Lista listaActualizada = listasService.actualizarLista(idLista, listaParaActualizar);
+        Lista listaActualizada = listasService.actualizarLista(authenticatedUser, idLista, listaParaActualizar);
 
         // 3. Mapeo Entidad -> DTO de Respuesta
         ListaResponseDTO responseDto = new ListaResponseDTO(listaActualizada);
@@ -161,8 +165,11 @@ public class ListaController {
 
     // ELIMINAR - DELETE /api/tableros/listas/{idLista}
     @DeleteMapping("/listas/{idLista}")
-    public ResponseEntity<HttpStatus> eliminarLista(@PathVariable Long idLista) {
-        listasService.eliminarLista(idLista);
+    public ResponseEntity<HttpStatus> eliminarLista(
+            @PathVariable Long idLista,
+            @AuthenticationPrincipal User authenticatedUser) {
+
+        listasService.eliminarLista(authenticatedUser, idLista);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204
     }
 }
