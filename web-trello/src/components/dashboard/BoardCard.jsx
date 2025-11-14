@@ -10,9 +10,13 @@ export default function BoardCard({
   background,
   onOpen,
   onDelete,
+  hasExpiredTasks = false,
 }) {
   const isInteractive = typeof onOpen === "function";
   const coverStyle = boardBackgroundToStyle(background);
+  const alertStyle = hasExpiredTasks
+  ? "ring-2 ring-red-400 animate-pulse"
+  : "";
 
   const handleKeyDown = (event) => {
     if (!isInteractive) return;

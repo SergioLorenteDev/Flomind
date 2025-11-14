@@ -43,7 +43,7 @@ export default function ListColumn({
       textareaRef.current.focus();
     }
   }, [isComposing]);
-
+  
   const {
     attributes,
     listeners,

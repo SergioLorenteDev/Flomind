@@ -24,6 +24,16 @@ const formatDateRange = (startsOn, expiresOn) => {
   return start || end || "";
 };
 
+const getDeadlineStatus = (expiresOn) => {
+  if (!expiresOn) return "none";
+  const now = new Date();
+  const due = new Date(expiresOn);
+  const diff = due - now;
+  if (diff < 0) return "expired";
+  if (diff < 24 * 60 * 60 * 1000) return "soon";
+  return "ok";
+};
+
 export default function CardItem({
   card,
   listId,
@@ -42,6 +52,7 @@ export default function CardItem({
   const itemRef = useRef(null);
   const dateLabel = formatDateRange(card.startsOn, card.expiresOn);
   const hasDateBadge = dateLabel.length > 0;
+  const deadlineStatus = getDeadlineStatus(card.expiresOn);
 
   const {
     attributes,
@@ -88,21 +99,39 @@ export default function CardItem({
     }
     setMenuOpen((value) => !value);
   };
+   const now = new Date();
+  const expiresOn = card.expiresOn ? new Date(card.expiresOn) : null;
+  let dateStatus = "";
+
+  if (expiresOn && !isComplete) {
+    const diff = expiresOn - now;
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (diff < 0) dateStatus = "expired"; 
+    else if (diff < oneDay) dateStatus = "near"; 
+  }
+
+  const deadlineClass =
+    dateStatus === "expired"
+      ? "border-red-500 animate-pulse bg-red-50 dark:bg-red-900/30"
+      : dateStatus === "near"
+      ? "border-yellow-400 animate-pulse bg-yellow-50 dark:bg-yellow-900/30"
+      : "";
 
   return (
     <div
-      ref={setRefs}
-      data-draggable="card"
-      style={style}
-      className={`group relative overflow-hidden rounded-2xl border border-transparent
-        bg-white dark:bg-[#22222c]
-        text-gray-800 dark:text-gray-100
-        px-3 py-3 shadow-md transition
-        hover:border-[#4b3acd]/40 hover:shadow-lg
-        ${isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""}`}
-      {...attributes}
-      {...listeners}
-    >
+  ref={setRefs}
+  data-draggable="card"
+  style={style}
+  className={`group relative overflow-hidden rounded-2xl border 
+    text-gray-800 dark:text-gray-100 px-3 py-3 shadow-md transition
+    hover:border-[#4b3acd]/40 hover:shadow-lg
+    ${isDragging ? "border-[#7f6dff]/60 shadow-[#6b4dff]/50" : ""}
+    ${deadlineClass}`}
+  {...attributes}
+  {...listeners}
+>
+
       {labelColor ? (
         <span
           aria-hidden="true"
@@ -161,9 +190,17 @@ export default function CardItem({
 
       {hasDateBadge && (
         <div className="mt-3 flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full 
-                          bg-amber-300/90 px-3 py-1 text-xs font-semibold 
-                          text-neutral-900 dark:text-neutral-800 shadow">
+  <div
+    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold shadow
+      ${
+        deadlineStatus === "expired"
+          ? "bg-red-500/90 text-white animate-pulse"
+          : deadlineStatus === "soon"
+          ? "bg-amber-400/90 text-neutral-900"
+          : "bg-amber-300/90 text-neutral-900 dark:text-neutral-800"
+      }`}
+  >
+
             <Clock3 className="h-3.5 w-3.5" />
             <span>{dateLabel}</span>
           </div>

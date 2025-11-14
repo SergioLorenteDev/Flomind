@@ -124,14 +124,40 @@ const normalizeCards = (items, listId) =>
 export default function BoardPage() {
   const { boardId } = useParams();
   const navigate = useNavigate();
-
   const [board, setBoard] = useState(null);
   const [lists, setLists] = useState([]);
+  console.log("Ejemplo de lista:", JSON.stringify(lists[0], null, 2));
+  useEffect(() => {
+  console.log("Listas actuales:", lists.map(l => ({ nombre: l.nombreLista, id: l.idLista })));
+}, [lists]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [listName, setListName] = useState("");
   const [isAddingList, setIsAddingList] = useState(false);
   const [cardsByListId, setCardsByListId] = useState({});
+  const LIST_IDS = {
+  PENDIENTE: lists.find((l) => l.nombreLista?.toLowerCase() === "pendiente")?.idLista,
+  HECHO: lists.find((l) => l.nombreLista?.toLowerCase() === "hecho")?.idLista,
+  FUERA_DE_PLAZO: lists.find((l) => l.nombreLista?.toLowerCase() === "fuera de plazo")?.idLista,
+};
+
+useEffect(() => {
+  const existe = lists.some(
+    (l) => l.nombreLista?.toLowerCase() === "fuera de plazo"
+  );
+
+  if (!existe) {
+    const nuevaLista = {
+      idLista: crypto.randomUUID(),
+      nombreLista: "Fuera de plazo",
+      tarjetas: [],
+    };
+    setLists((prev) => [...prev, nuevaLista]);
+  }
+
+}, [lists]);
+  const [expiredCards, setExpiredCards] = useState([]);
   const [creatingCardFor, setCreatingCardFor] = useState(null);
   const [completedCards, setCompletedCards] = useState(() => new Set());
   const [activeCard, setActiveCard] = useState(null);
@@ -478,6 +504,97 @@ export default function BoardPage() {
   useEffect(() => {
     fetchBoardAndLists();
   }, [fetchBoardAndLists]);
+  
+
+useEffect(() => {
+  if (!canEditContent || !lists.length) return;
+
+  const now = new Date();
+  const fueraDePlazoList = lists.find(l => l.nombre === "Fuera de plazo");
+  if (!fueraDePlazoList) return;
+
+  const vencidas = [];
+  const reactivadas = [];
+
+  Object.entries(cardsByListId).forEach(([listId, cards]) => {
+    cards.forEach(card => {
+      if (!card.expiresOn || completedCards.has(card.id)) return;
+
+      const exp = new Date(card.expiresOn);
+
+      if (exp < now && listId !== String(fueraDePlazoList.idLista)) {
+        vencidas.push({ ...card, listId });
+      } else if (exp >= now && listId === String(fueraDePlazoList.idLista)) {
+        reactivadas.push({ ...card, listId });
+      }
+    });
+  });
+
+  if (vencidas.length === 0 && reactivadas.length === 0) return;
+
+  (async () => {
+    let targetList = fueraDePlazoList;
+
+    if (!targetList) {
+      try {
+        const nueva = await apiFetch(`/tableros/${boardId}/listas`, {
+          method: "POST",
+          body: JSON.stringify({
+            nombre: "Fuera de plazo",
+            orden: lists.length,
+          }),
+        });
+        targetList = nueva;
+        setLists(prev => [...prev, nueva]);
+        setCardsByListId(prev => ({ ...prev, [String(nueva.idLista)]: [] }));
+      } catch (err) {
+        console.error("Error creando lista 'Fuera de plazo':", err);
+        return;
+      }
+    }
+
+    const fueraDePlazoId = String(targetList.idLista);
+    const updated = { ...cardsByListId };
+
+    for (const card of vencidas) {
+      try {
+        await updateCard(card.id, { idLista: Number(fueraDePlazoId) });
+        updated[card.listId] = (updated[card.listId] || []).filter(
+          c => c.id !== card.id
+        );
+        updated[fueraDePlazoId] = [
+          ...(updated[fueraDePlazoId] || []),
+          { ...card, listId: fueraDePlazoId },
+        ];
+      } catch (err) {
+        console.error(`⚠️ Error moviendo tarjeta ${card.id}:`, err);
+      }
+    }
+
+    for (const card of reactivadas) {
+      const destino = lists.find(
+        l => l.nombre === "En curso" || l.orden === 0
+      );
+      if (!destino) continue;
+
+      try {
+        await updateCard(card.id, { idLista: Number(destino.idLista) });
+        updated[fueraDePlazoId] = (updated[fueraDePlazoId] || []).filter(
+          c => c.id !== card.id
+        );
+        updated[String(destino.idLista)] = [
+          ...(updated[String(destino.idLista)] || []),
+          { ...card, listId: String(destino.idLista) },
+        ];
+      } catch (err) {
+        console.error(`⚠️ Error moviendo tarjeta ${card.id}:`, err);
+      }
+    }
+
+    setCardsByListId(updated);
+  })();
+}, [boardId, canEditContent, lists, cardsByListId, completedCards]);
+
 
   useEffect(() => {
     if (board && !board.currentUserRole) {
@@ -516,15 +633,83 @@ export default function BoardPage() {
     }
   };
 
-  const handleToggleCardComplete = (cardId) => {
-    if (!canEditContent) return;
-    setCompletedCards((prev) => {
-      const next = new Set(prev);
-      if (next.has(cardId)) next.delete(cardId);
-      else next.add(cardId);
+  const handleToggleCardComplete = async (cardId) => {
+  if (!canEditContent) return;
+  setCompletedCards((prev) => {
+
+let hechoList = lists.find((l) => (l.nombre || "").toLowerCase().trim() === "hecho");
+
+if (!hechoList) {
+  const nuevaHecho = {
+    idLista: crypto.randomUUID(),
+    nombre: "Hecho",
+    orden: lists.length,
+    idTablero: lists[0]?.idTablero || 1,
+    tarjetas: [],
+  };
+
+  setLists((prevLists) => {
+    const updated = [...prevLists, nuevaHecho];
+    console.log("Lista 'Hecho' creada y añadida:", updated);
+    return updated;
+  });
+
+  hechoList = nuevaHecho;
+}
+
+    const next = new Set(prev);
+    if (next.has(cardId)) next.delete(cardId);
+    else next.add(cardId);
+    return next;
+  });
+
+  let currentListId = null;
+  let card = null;
+  for (const [listId, cards] of Object.entries(cardsByListId)) {
+    const found = cards.find((c) => c.id === cardId);
+    if (found) {
+      currentListId = listId;
+      card = found;
+      break;
+    }
+  }
+  if (!card || !currentListId) return;
+
+  const hechoList = lists.find((l) => l.nombre?.toLowerCase() === "hecho");
+  const enCursoList =
+    lists.find((l) => l.nombre?.toLowerCase() === "en curso") || lists[0];
+
+  if (!hechoList || !enCursoList) return;
+
+  const hechoId = String(hechoList.idLista);
+  const enCursoId = String(enCursoList.idLista);
+
+  const isCompleted = !completedCards.has(cardId);
+
+  const targetListId = isCompleted ? hechoId : enCursoId;
+  if (String(currentListId) === targetListId) return;
+
+  try {
+    await updateCard(card.id, { idLista: Number(targetListId) });
+
+    setCardsByListId((prev) => {
+      const next = structuredClone(prev);
+
+      next[currentListId] = (next[currentListId] || []).filter(
+        (c) => c.id !== card.id
+      );
+
+      next[targetListId] = [
+        ...(next[targetListId] || []),
+        { ...card, listId: targetListId },
+      ];
+
       return next;
     });
-  };
+  } catch (err) {
+    console.error("Error moviendo tarjeta:", err);
+  }
+};
 
   const closeLabelEditor = useCallback(() => {
     setLabelEditorState({
@@ -574,29 +759,70 @@ export default function BoardPage() {
     );
   }, []);
 
-  const mutateCardDates = useCallback((cardId, listKey, startsOn, expiresOn) => {
-    if (!cardId) return;
-    setCardsByListId((prev) => {
-      let resolvedKey = listKey;
-      if (!resolvedKey || !prev[resolvedKey]) {
-        resolvedKey = Object.keys(prev).find((key) =>
-          (prev[key] || []).some((card) => card.id === cardId)
-        );
-      }
-      if (!resolvedKey) return prev;
-      const updatedCards = (prev[resolvedKey] || []).map((card) =>
-        card.id === cardId ? { ...card, startsOn, expiresOn } : card
-      );
-      return { ...prev, [resolvedKey]: updatedCards };
-    });
+const mutateCardDates = useCallback((cardId, listKey, startsOn, expiresOn) => {
+  if (!cardId) return;
 
-    setSelectedCard((prev) =>
-      prev && prev.id === cardId ? { ...prev, startsOn, expiresOn } : prev
-    );
-    setActiveCard((prev) =>
-      prev && prev.id === cardId ? { ...prev, startsOn, expiresOn } : prev
-    );
-  }, []);
+  setCardsByListId((prev) => {
+    const next = structuredClone(prev);
+
+    let sourceListKey = listKey;
+    if (!sourceListKey || !next[sourceListKey]) {
+      sourceListKey = Object.keys(next).find((key) =>
+        (next[key] || []).some((card) => card.id === cardId)
+      );
+    }
+    if (!sourceListKey) return prev;
+
+    const card = (next[sourceListKey] || []).find(c => c.id === cardId);
+    if (!card) return prev;
+
+    card.startsOn = startsOn;
+    card.expiresOn = expiresOn;
+
+    const now = new Date();
+    const exp = expiresOn ? new Date(expiresOn) : null;
+    const isExpired = exp && exp < now;
+
+    // Listas
+    const fueraDePlazo = lists.find(l => l.nombre?.toLowerCase() === "fuera de plazo");
+    const hechoList = lists.find(l => l.nombre?.toLowerCase() === "hecho");
+    const enCursoList = lists.find(l => l.nombre?.toLowerCase() === "en curso") || lists[0];
+
+    const fueraId = fueraDePlazo ? String(fueraDePlazo.idLista) : null;
+    const hechoId = hechoList ? String(hechoList.idLista) : null;
+    const enCursoId = String(enCursoList.idLista);
+    const isInFuera = fueraId && sourceListKey === fueraId;
+    const isInHecho = hechoId && sourceListKey === hechoId;
+    const isCompleted = completedCards.has(card.id);
+    if (isCompleted) {
+
+      return { ...next };
+    }
+
+    if (isExpired && fueraId && !isInFuera) {
+      next[sourceListKey] = next[sourceListKey].filter(c => c.id !== card.id);
+      next[fueraId] = [...(next[fueraId] || []), { ...card, listId: fueraId }];
+    }
+
+    if (!isExpired && isInFuera) {
+      next[fueraId] = next[fueraId].filter(c => c.id !== card.id);
+      next[enCursoId] = [
+        ...(next[enCursoId] || []),
+        { ...card, listId: enCursoId },
+      ];
+    }
+
+    return { ...next };
+  });
+
+  setSelectedCard((prev) =>
+    prev && prev.id === cardId ? { ...prev, startsOn, expiresOn } : prev
+  );
+  setActiveCard((prev) =>
+    prev && prev.id === cardId ? { ...prev, startsOn, expiresOn } : prev
+  );
+}, [lists, completedCards]);
+
 
   const handleSelectLabelForCard = useCallback(
     async (labelId, labelOverride = null) => {
@@ -2852,7 +3078,7 @@ function InlineChecklist({ cardId }) {
 
 function InviteModal({ open, onClose, boardId }) {
   const [inviteEmail, setInviteEmail] = useState("");
-  const [role, setRole] = useState("lector"); // 👈 rol seleccionado
+  const [role, setRole] = useState("lector");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -2876,7 +3102,7 @@ function InviteModal({ open, onClose, boardId }) {
         method: "POST",
         body: JSON.stringify({
           email,
-          role, // 👈 mandamos el rol al back
+          role,
         }),
       });
 
