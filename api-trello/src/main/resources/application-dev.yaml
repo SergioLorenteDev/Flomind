@@ -1,46 +1,8 @@
 spring:
-  jpa:
-    show-sql: true
-    hibernate:
-      ddl-auto: none
-  sql:
-    init:
-      schema-locations: classpath*:database/schema.sql
-      data-locations: classpath*:database/migrations.sql
-      mode: always
+  config:
+    activate:
+      on-profile: dev
   datasource:
     url: jdbc:mysql://localhost:3306/trello
     username: root  
     password: ***REMOVED***
-    driverClassName: com.mysql.cj.jdbc.Driver
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ***REMOVED***
-    password: ***REMOVED***
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-    default-encoding: UTF-8
-
-security:
-  jwt:
-    secret-key: ***REMOVED***
-    expiration-time: 3600000
-    refresh-expiration-time: 2592000000
-app:
-  base-url: http://localhost:8080/trello/v1/
-  domain:
-    success-url: http://localhost:3000/suscripcion/exito
-    cancel-url: http://localhost:3000/suscripcion/fallo
-
-
-stripe:
-  api:
-    secretKey: sk_test_TU_CLAVE_SECRETA_COMPLETA_AQUI
-  webhook:
-    secret: ***REMOVED***
