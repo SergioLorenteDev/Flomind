@@ -4,5 +4,5 @@ spring:
       on-profile: dev
   datasource:
     url: jdbc:mysql://localhost:3306/trello
-    username: root  
+    username: root
     password: ***REMOVED***
