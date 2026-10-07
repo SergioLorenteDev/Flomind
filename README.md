@@ -182,6 +182,10 @@ and members. **Invitar** sends an invitation by email for a chosen role, and the
 they accept it. Readers get the same board with drag and editing disabled, which makes a board safe to share for
 a review.
 
+Those rules are enforced by the API and not just hidden in the interface: every request for a board, list, card,
+label, workspace or notification is checked against the caller's role or ownership before it is read or changed,
+and anything else is answered with a `403`.
+
 The bell in the header collects the notifications the API writes for card and list activity, with per-item and
 clear-all actions.
 
