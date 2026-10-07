@@ -42,6 +42,14 @@ public class WorkspaceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Espacio no encontrado o sin permisos."));
     }
 
+    // Sólo el propietario puede leer el espacio: 404 si no existe, 403 si no es suyo.
+    @Transactional(readOnly = true)
+    public Workspace findForOwnerAccess(Long id, User requester) {
+        var ws = findByIdOrThrow(id);
+        ensureOwner(ws, requester);
+        return ws;
+    }
+
     @Transactional
     public Workspace create(String name, String description, User owner) {
         var ws = new Workspace(name, description, owner);

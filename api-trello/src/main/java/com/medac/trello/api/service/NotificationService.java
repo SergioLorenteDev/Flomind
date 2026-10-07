@@ -7,6 +7,7 @@ import com.medac.trello.api.model.notification.NotificationDetails;
 import com.medac.trello.api.model.repository.NotificationRepository;
 import com.medac.trello.api.model.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,5 +67,18 @@ public class NotificationService {
                 .ifPresentOrElse(
                         notificationRepository::delete,
                         () -> { throw new ResourceNotFoundException("No se encontro notificacion con id " + id); });
+    }
+
+    // Sólo el usuario destinatario puede borrar la notificación.
+    @Transactional
+    public void deleteNotification(Long id, Long userId) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontro notificacion con id " + id));
+
+        if (userId == null || !userId.equals(notification.getDestinationUserId())) {
+            throw new AccessDeniedException("No autorizado para eliminar esta notificacion.");
+        }
+
+        notificationRepository.delete(notification);
     }
 }

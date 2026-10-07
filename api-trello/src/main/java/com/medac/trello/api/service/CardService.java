@@ -45,6 +45,13 @@ public class CardService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private BoardService boardService;
+
+    private Long userIdOf(User user) {
+        return user != null ? user.getId() : null;
+    }
+
     // ---------------------- C - CREAR TARJETA ----------------------
 
     @Transactional
@@ -53,7 +60,10 @@ public class CardService {
         Lista lista = listaRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + listId));
 
-        // 2. Asignar propiedades de creacion
+        // 2. Comprobar permisos de edición sobre el tablero antes de crear la tarjeta
+        boardService.requireEditAccess(lista.getBoard().getId(), userIdOf(authenticatedUser));
+
+        // 3. Asignar propiedades de creacion
         card.setLista(lista);
         if (card.getCreatedOn() == null) {
             card.setCreatedOn(Instant.now());
@@ -62,7 +72,7 @@ public class CardService {
 
         applyLabel(card, labelId, lista);
 
-        // 3. Guardar
+        // 4. Guardar
         final var updatedCard = cardRepository.save(card);
         boardMembersWithOwner(lista.getBoard()).forEach(member ->
                 notificationService.addNotification(authenticatedUser.getId(), member.getId(),
@@ -82,14 +92,25 @@ public class CardService {
     }
      */
 
-    public List<Card> obtenerCardsPorLista(Long listaId) {
+    public List<Card> obtenerCardsPorLista(Long listaId, Long userId) {
+        Lista lista = listaRepository.findById(listaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + listaId));
+
+        // Sólo el propietario o un miembro del tablero pueden ver sus tarjetas.
+        boardService.requireViewAccess(lista.getBoard().getId(), userId);
+
         return cardRepository.findByLista_IdListaOrderByCardOrderAsc(listaId);
     }
 
     // Obtener por ID
-    public Card obtenerCardPorId(Long idTarjeta) {
-        return cardRepository.findById(idTarjeta)
+    public Card obtenerCardPorId(Long idTarjeta, Long userId) {
+        Card card = cardRepository.findById(idTarjeta)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta));
+
+        // Sólo el propietario o un miembro del tablero pueden ver la tarjeta.
+        boardService.requireViewAccess(card.getLista().getBoard().getId(), userId);
+
+        return card;
     }
 
     public List<Card> encontrarTarjetasPorTableroId(Long tableroId) {
@@ -112,6 +133,10 @@ public class CardService {
         // 1. Obtener la tarjeta existente
         Card cardExistente = cardRepository.findById(idTarjeta)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta));
+
+        // Comprobar permisos de edición sobre el tablero actual antes de modificar la tarjeta
+        boardService.requireEditAccess(cardExistente.getLista().getBoard().getId(), userIdOf(usuario));
+
         Lista listaOriginal = cardExistente.getLista(); // Lista de origen
         Long listaOrigenId = listaOriginal != null ? listaOriginal.getIdLista() : null;
 
@@ -172,6 +197,9 @@ public class CardService {
             listaDestino = listaRepository.findById(listaDestinoId)
                     .orElseThrow(() -> new ResourceNotFoundException("Lista destino no encontrada con id: " + listaDestinoId));
 
+            // Nadie puede mover una tarjeta al tablero de otra persona.
+            boardService.requireEditAccess(listaDestino.getBoard().getId(), userIdOf(usuario));
+
             cardExistente.setLista(listaDestino);
 
             HistorialMovimiento registro = new HistorialMovimiento(
@@ -217,6 +245,9 @@ public class CardService {
     public void eliminarTarjeta(User user, Long idTarjeta) {
         Card cardExistente = cardRepository.findById(idTarjeta)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada con id: " + idTarjeta));
+
+        // Comprobar permisos de edición sobre el tablero antes de borrar la tarjeta
+        boardService.requireEditAccess(cardExistente.getLista().getBoard().getId(), userIdOf(user));
 
         cardExistente.getLabels().clear();
         cardRepository.save(cardExistente);

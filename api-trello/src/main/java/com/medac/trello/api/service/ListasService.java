@@ -193,6 +193,13 @@ public class ListasService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private BoardService boardService;
+
+    private Long userIdOf(User user) {
+        return user != null ? user.getId() : null;
+    }
+
     // ----------------------CREAR LISTA-----------------
     @Transactional
     public Lista guardarLista(User authenticatedUser, Long boardId, Lista lista) {
@@ -200,10 +207,13 @@ public class ListasService {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + boardId));
 
-        // 2. Asignar la entidad Board completa a la lista
+        // 2. Comprobar permisos de edición antes de modificar nada
+        boardService.requireEditAccess(boardId, userIdOf(authenticatedUser));
+
+        // 3. Asignar la entidad Board completa a la lista
         lista.setBoard(board);
 
-        // 3. Guardar la lista
+        // 4. Guardar la lista
         final var listaNueva =  listaRepository.save(lista);
         boardMembersWithOwner(board).forEach(member ->
                 notificationService.addNotification(authenticatedUser.getId(), member.getId(),
@@ -221,13 +231,9 @@ public class ListasService {
     }
 
     // LISTAR POR TABLERO
-    public Set<Lista> obtenerListasPorTablero(Long boardId) {
-        // Primero, aseguramos que el tablero padre exista.
-        /*if (!boardRepository.existsById(boardId)) {
-            throw new ResourceNotFoundException("Tablero no encontrado con id: " + boardId);
-
-         */
-        //}
+    public Set<Lista> obtenerListasPorTablero(Long boardId, Long userId) {
+        // Sólo el propietario o un miembro del tablero pueden ver sus listas.
+        boardService.requireViewAccess(boardId, userId);
 
         // 'Set<Lista> findAllByBoard_Id(Long boardId);'
         return listaRepository.findAllByBoardId(boardId);
@@ -246,6 +252,9 @@ public class ListasService {
     public Lista actualizarLista(User usuario, Long idLista, Lista listaDetalles) {
         Lista listaExistente = listaRepository.findById(idLista)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
+
+        // Comprobar permisos de edición sobre el tablero de la lista antes de modificarla
+        boardService.requireEditAccess(listaExistente.getBoard().getId(), userIdOf(usuario));
 
         List<NotificationDetails> notificaciones = new ArrayList<>();
 
@@ -280,6 +289,9 @@ public class ListasService {
                 Board nuevoBoard = boardRepository.findById(nuevoBoardId)
                         .orElseThrow(() -> new ResourceNotFoundException("Tablero destino no encontrado con id: " + nuevoBoardId));
 
+                // Nadie puede mover una lista al tablero de otra persona.
+                boardService.requireEditAccess(nuevoBoardId, userIdOf(usuario));
+
                 listaExistente.setBoard(nuevoBoard);
                 notificaciones.add(new ListaUpdatedNotificationDetails<>(
                         listaExistente.getNombre(),
@@ -299,6 +311,9 @@ public class ListasService {
         public void eliminarLista(User user, Long idLista) {
         final var listaParaBorrar = listaRepository.findById(idLista)
                 .orElseThrow(() -> new ResourceNotFoundException("Lista no encontrada con id: " + idLista));
+
+        // Comprobar permisos de edición sobre el tablero de la lista antes de borrarla
+        boardService.requireEditAccess(listaParaBorrar.getBoard().getId(), userIdOf(user));
 
         // Eliminar historiales y tarjetas asociadas para evitar violaciones de FK
         historialMovimientoRepository.deleteByListId(idLista);

@@ -107,6 +107,48 @@ public class BoardService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tablero no encontrado con id: " + id));
     }
 
+    // ---------- AUTORIZACIÓN (helpers públicos para los controladores/servicios) ----------
+
+    // Ver: propietario o cualquier miembro del tablero.
+    @Transactional
+    public void requireViewAccess(Long boardId, Long userId) {
+        Board board = obtenerBoardPorId(boardId);
+        assertUserCanViewBoard(board, userId);
+    }
+
+    // Editar: propietario, o miembro con rol 'admin' o 'editor'.
+    @Transactional
+    public void requireEditAccess(Long boardId, Long userId) {
+        Board board = obtenerBoardPorId(boardId);
+        if (board.getCreatedBy() != null && userId != null && userId.equals(board.getCreatedBy().getId())) {
+            return;
+        }
+        String role = resolveUserRole(board, userId);
+        if (!"admin".equals(role) && !"editor".equals(role)) {
+            throw new AccessDeniedException("No autorizado para modificar este tablero.");
+        }
+    }
+
+    // Gestionar: propietario, o miembro con rol 'admin'.
+    @Transactional
+    public void requireManageAccess(Long boardId, Long userId) {
+        Board board = obtenerBoardPorId(boardId);
+        if (board.getCreatedBy() != null && userId != null && userId.equals(board.getCreatedBy().getId())) {
+            return;
+        }
+        String role = resolveUserRole(board, userId);
+        if (!"admin".equals(role)) {
+            throw new AccessDeniedException("Solo el propietario o un administrador pueden gestionar este tablero.");
+        }
+    }
+
+    // Propietario: sólo el creador del tablero.
+    @Transactional
+    public void requireOwnerAccess(Long boardId, Long userId) {
+        Board board = obtenerBoardPorId(boardId);
+        assertUserCanManageBoard(board, userId);
+    }
+
     @Transactional(readOnly = true)
     public Set<Board> obtenerTablerosPorUsuario(Long userId) {
         if (userId == null) {
@@ -246,11 +288,11 @@ public class BoardService {
 
     private void assertUserCanViewBoard(Board board, Long userId) {
         if (board == null || userId == null) {
-            throw new AccessDeniedException("No autorizado para ver los miembros de este tablero.");
+            throw new AccessDeniedException("No autorizado para ver este tablero.");
         }
-        if (board.getCreatedBy() != null && userId.equals(board.getCreatedBy().getId())) return;
-        boolean isMember = boardRepository.findMemberRole(board.getId(), userId).isPresent();
-        if (!isMember) {
+        // Se usa resolveUserRole para que ver, editar y gestionar compartan el mismo
+        // criterio, incluida la recuperacion del rol desde una invitacion aceptada.
+        if (resolveUserRole(board, userId) == null) {
             throw new AccessDeniedException("No autorizado para ver este tablero.");
         }
     }

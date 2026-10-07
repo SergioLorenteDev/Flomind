@@ -68,10 +68,15 @@ public class CardController {
     // ---------------------- R - LEER TODAS LAS TARJETAS DE UNA LISTA ----------------------
     // URI: /listas/{listId}/tarjetas
     @GetMapping("/listas/{listId}/tarjetas")
-    public List<CardResponseDTO> listarTarjetasPorLista(@PathVariable Long listId) {
+    public List<CardResponseDTO> listarTarjetasPorLista(
+            @PathVariable Long listId,
+            @AuthenticationPrincipal User authenticatedUser) {
 
         // 1. Llamada al servicio, que devuelve Entidades JPA
-        List<Card> cards = cardService.obtenerCardsPorLista(listId);
+        List<Card> cards = cardService.obtenerCardsPorLista(
+                listId,
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
 
         // 2. Mapeo de la colección de Entidades a colección de DTO de Respuesta
         return cards.stream()
@@ -83,8 +88,13 @@ public class CardController {
     // ---------------------- R - LEER UNA TARJETA ----------------------
     // URI: /tarjetas/{cardId}
     @GetMapping("/tarjetas/{cardId}")
-    public ResponseEntity<CardResponseDTO> obtenerTarjetaPorId(@PathVariable Long cardId) {
-        Card card = cardService.obtenerCardPorId(cardId);
+    public ResponseEntity<CardResponseDTO> obtenerTarjetaPorId(
+            @PathVariable Long cardId,
+            @AuthenticationPrincipal User authenticatedUser) {
+        Card card = cardService.obtenerCardPorId(
+                cardId,
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
 
         CardResponseDTO responseDto = new CardResponseDTO(card);
         return ResponseEntity.ok(responseDto); // 200

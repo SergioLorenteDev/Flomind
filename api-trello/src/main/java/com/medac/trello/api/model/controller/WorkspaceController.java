@@ -28,8 +28,8 @@ public class WorkspaceController {
 
     @GetMapping("/{id}")
     public Workspace getOne(@PathVariable Long id, @AuthenticationPrincipal User user) {
-        // opcional: validar que el usuario puede verlo; si sólo owner, usa findForOwner(id, user.getId())
-        return workspaceService.findByIdOrThrow(id);
+        // Sólo el propietario puede ver el espacio de trabajo.
+        return workspaceService.findForOwnerAccess(id, user);
     }
 
     public static record CreateWorkspaceRequest(@NotBlank String name, String description) {}

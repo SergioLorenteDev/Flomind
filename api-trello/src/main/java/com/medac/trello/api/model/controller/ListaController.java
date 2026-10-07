@@ -119,10 +119,15 @@ public class ListaController {
 
     // LEER TODAS las listas de un tablero - GET /api/tableros/{boardId}/listas
     @GetMapping("/{boardId}/listas")
-    public Set<ListaResponseDTO> listarListasPorTablero(@PathVariable Long boardId) {
+    public Set<ListaResponseDTO> listarListasPorTablero(
+            @PathVariable Long boardId,
+            @AuthenticationPrincipal User authenticatedUser) {
 
         // 1. Llamada al servicio, que devuelve Entidades JPA
-        Set<Lista> listas = listasService.obtenerListasPorTablero(boardId);
+        Set<Lista> listas = listasService.obtenerListasPorTablero(
+                boardId,
+                authenticatedUser != null ? authenticatedUser.getId() : null
+        );
 
         // 2. Mapeo de la colección de Entidades a colección de DTOs de Respuesta
         return listas.stream()

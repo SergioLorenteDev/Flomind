@@ -71,10 +71,9 @@ public class BoardController implements TrelloApi {
     public ResponseEntity<BoardResponseDTO> obtenerTableroPorId(
             @PathVariable Long id,
             @AuthenticationPrincipal User authenticatedUser) {
-        var board = boardService.obtenerBoardConRol(
-                id,
-                authenticatedUser != null ? authenticatedUser.getId() : null
-        );
+        Long callerId = authenticatedUser != null ? authenticatedUser.getId() : null;
+        boardService.requireViewAccess(id, callerId);
+        var board = boardService.obtenerBoardConRol(id, callerId);
         return ResponseEntity.ok(board);
     }
 
@@ -84,21 +83,32 @@ public class BoardController implements TrelloApi {
             @PathVariable Long id,
             @RequestBody Board boardDetalles,
             @AuthenticationPrincipal User authenticatedUser) {
+        Long callerId = authenticatedUser != null ? authenticatedUser.getId() : null;
+        boardService.requireManageAccess(id, callerId);
         var boardActualizado = boardService.mapToBoardResponse(
                 boardService.actualizarBoard(id, boardDetalles),
-                authenticatedUser != null ? authenticatedUser.getId() : null
+                callerId
         );
         return ResponseEntity.ok(boardActualizado);
     }
 
     //ELIMINAR
     @DeleteMapping("/{id}")
-    public ResponseEntity<HttpStatus> eliminarTablero(@PathVariable Long id) {
+    public ResponseEntity<HttpStatus> eliminarTablero(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User authenticatedUser) {
+        boardService.requireOwnerAccess(id, authenticatedUser != null ? authenticatedUser.getId() : null);
         boardService.eliminarBoard(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     @GetMapping("/by-user/{userId}")
-    public Set<BoardResponseDTO> listarTablerosPorUsuario(@PathVariable Long userId) {
+    public Set<BoardResponseDTO> listarTablerosPorUsuario(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User authenticatedUser) {
+        Long callerId = authenticatedUser != null ? authenticatedUser.getId() : null;
+        if (callerId == null || !callerId.equals(userId)) {
+            throw new AccessDeniedException("No autorizado para ver los tableros de otro usuario.");
+        }
         // Llama al nuevo método del servicio
         return boardService.obtenerTablerosPorUsuario(userId).stream()
                 .map(board -> boardService.mapToBoardResponse(board, userId))
@@ -160,9 +170,8 @@ public class BoardController implements TrelloApi {
         Long inviterId = authenticatedUser.getId();
         Board board = boardService.obtenerBoardPorId(boardId);
 
-        if (!board.getOwnerId().equals(authenticatedUser.getId()) && !board.getMembers().contains(authenticatedUser)) {
-            throw new AccessDeniedException("Solo el dueno o miembros del tablero pueden invitar.");
-        }
+        // Sólo el propietario o un miembro con rol 'admin' pueden invitar.
+        boardService.requireManageAccess(boardId, inviterId);
 
         invitationService.createAndSendInvitation(
                 board,
