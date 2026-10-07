@@ -37,3 +37,11 @@ build/
 ### Mac OS ###
 .DS_Store
 /api-trello/.idea
+
+### Credenciales y entorno ###
+# Los .env locales guardan secretos y nunca se versionan.
+# La plantilla versionada es api-trello/example.env
+.env
+.env.*
+!.env.example
+!example.env

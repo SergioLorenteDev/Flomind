@@ -60,7 +60,7 @@ public class PasswordResetService {
     private void sendNewPasswordEmail(String toEmail, String newPassword) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("***REMOVED***"); 
+            // El remitente lo toma JavaMailSender de spring.mail.username (ver .env).
             message.setTo(toEmail);
             message.setSubject("Trello App: Reseteo de Contraseña Exitoso");
             message.setText("Hola,\n\n"

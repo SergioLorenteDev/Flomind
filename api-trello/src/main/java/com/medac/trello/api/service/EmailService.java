@@ -78,7 +78,7 @@ public class EmailService {
 
     public void sendEmail(String toEmail, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("***REMOVED***");
+        // El remitente lo toma JavaMailSender de spring.mail.username (ver .env).
         message.setTo(toEmail);
         message.setSubject(subject);
         message.setText(body);
